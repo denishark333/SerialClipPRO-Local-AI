@@ -1,7 +1,8 @@
 """Modelo de IA local (Ollama) usado na curadoria, escolhido pelo usuário.
 
-O padrão continua sendo o llama3.1, que o instalador baixa. Qualquer modelo
-já instalado no Ollama pode ser escolhido; trocar de modelo invalida os
+O padrão é o llama3.1, o mais leve. O instalador baixa os modelos marcados e
+grava aqui o mais forte entre eles. Qualquer modelo já instalado no Ollama pode
+ser escolhido; trocar de modelo invalida os
 checkpoints de curadoria automaticamente, porque o nome do modelo faz parte
 da chave do cache.
 """

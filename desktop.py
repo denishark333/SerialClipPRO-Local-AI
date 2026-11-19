@@ -76,6 +76,20 @@ def run():
             instancia.close()
 
 
+def kick_disponivel():
+    """O yt-dlp só acessa a Kick se passando por navegador, via curl_cffi e sua biblioteca nativa.
+
+    Importar o módulo do yt-dlp carrega o curl_cffi de verdade e recusa versões
+    que ele não aceita: confirma que o pacote compilado trouxe as duas partes.
+    """
+    try:
+        import yt_dlp.networking._curlcffi  # noqa: F401
+        from curl_cffi import requests  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 def self_test():
     """Verifica imports e recursos do pacote sem abrir janela nem baixar modelos."""
     from core.config import BASE_DIR, DATA_DIR
@@ -87,8 +101,8 @@ def self_test():
         from PIL import Image
         resultado = {'ok': True, 'frontend': (BASE_DIR / 'frontend/dist/index.html').is_file(),
                      'webview2': winforms._is_chromium(), 'rotas': len(app.routes),
-                     'dados': str(DATA_DIR), 'recursos': str(BASE_DIR)}
-        resultado['ok'] = resultado['frontend'] and resultado['webview2']
+                     'kick': kick_disponivel(), 'dados': str(DATA_DIR), 'recursos': str(BASE_DIR)}
+        resultado['ok'] = resultado['frontend'] and resultado['webview2'] and resultado['kick']
     except Exception as error:
         import traceback
         resultado = {'ok': False, 'erro': str(error), 'traceback': traceback.format_exc()}
