@@ -49,6 +49,6 @@ build/
 build-env/
 build-tools/
 dist/
-transcricoes/*.json
+transcricoes/
 social_canais.json
 self-test.json
