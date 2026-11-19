@@ -3,6 +3,7 @@ import socket
 import webbrowser
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from api.media import MediaFiles
 
@@ -21,6 +22,11 @@ allowed_origins = [
     for origem in os.getenv("CLIPPRO_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
     if origem.strip()
 ]
+
+# Só aceita requisições endereçadas ao próprio computador. Sem isso, um site
+# aberto no navegador poderia usar DNS rebinding para apontar um domínio dele
+# para 127.0.0.1 e chamar esta API (listar, apagar ou gerar cortes).
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
 
 app.add_middleware(
     CORSMiddleware,
