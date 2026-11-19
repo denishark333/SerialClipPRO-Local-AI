@@ -8,6 +8,8 @@ class PipelineRequest(BaseModel):
     modo_curadoria: Literal["hibrido", "contexto", "picos"] = "hibrido"
     limite_amostras: int = Field(default=40, ge=10, le=80)
     termos_jogo: str = Field(default="", max_length=500)
+    idioma: Literal["pt", "en", "es", "fr", "de", "it", "ja", "ko", "auto"] = "pt"
+    foco: str = Field(default="", max_length=500)
 
     @field_validator("entrada")
     @classmethod

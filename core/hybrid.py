@@ -7,6 +7,7 @@ import wave
 
 from core import transcription
 from core.whisper import MODELO, carregar_modelo, dispositivo
+from core.idiomas import para_whisper
 from core.audio import detectar_segmentos_narrativos
 from core.config import atualizar_estado
 from core.execution import executar_comando
@@ -65,7 +66,7 @@ def planejar_picos(picos, duracao, ignorar_inicio=0, tamanho=90.):
     return janelas
 
 
-def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempos):
+def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempos, idioma="pt"):
     """Transcreve uma amostra. Tempos relativos ao início da amostra."""
     t = time.monotonic()
     res = executar_comando([
@@ -80,7 +81,7 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
         with wave.open(str(arquivo), 'rb') as wav:
             duracao = wav.getnframes()/wav.getframerate()
         t = time.monotonic()
-        iterator, _ = modelo.transcribe(str(arquivo), language='pt', word_timestamps=True,
+        iterator, _ = modelo.transcribe(str(arquivo), language=para_whisper(idioma), word_timestamps=True,
                                         beam_size=5, vad_filter=True, hotwords=termos or None)
         segmentos = []
         for seg in iterator:
@@ -101,7 +102,7 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
 
 
 def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar, entrada=None,
-                        modo='hibrido'):
+                        modo='hibrido', idioma='pt'):
     """Amostra e transcreve a fonte.
 
     No Híbrido, as amostras combinam picos de áudio e cobertura temporal; no
@@ -135,7 +136,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
         if entrada is not None:
             cache = transcription.CACHE_DIR / 'amostras' / (transcription.chave(
                 'amostra_hibrido', 1, transcription.identidade_entrada(entrada), round(janela['inicio'], 3),
-                round(janela['fim'], 3), MODELO, 'pt', termos) + '.json')
+                round(janela['fim'], 3), MODELO, idioma, termos) + '.json')
         dados = transcription.ler_json(cache) if cache else None
         if dados and dados.get('versao') == 1 and isinstance(dados.get('segmentos'), list):
             tempos['amostras_do_cache'] += 1
@@ -145,7 +146,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
                 modelo = carregar_modelo()
                 tempos['carregamento_whisper'] = time.monotonic()-t
             dados = _transcrever_amostra(modelo, fonte, janela, Path(pasta_temp) / f"amostra_{indice}.wav",
-                                         execucao, termos, tempos)
+                                         execucao, termos, tempos, idioma)
             execucao.verificar()
             if cache:
                 transcription.salvar_json(cache, dados)

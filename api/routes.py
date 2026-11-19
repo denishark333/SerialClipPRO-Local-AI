@@ -69,7 +69,7 @@ def iniciar_pipeline(data: PipelineRequest, background_tasks: BackgroundTasks):
     try:
         background_tasks.add_task(executar_pipeline_background, data.entrada, data.max_cortes, execucao, data.ignorar_inicio_segundos,
                                   modo_curadoria=data.modo_curadoria, termos_jogo=data.termos_jogo,
-                                  limite_amostras=data.limite_amostras)
+                                  limite_amostras=data.limite_amostras, idioma=data.idioma, foco=data.foco)
     except Exception:
         finalizar_execucao(execucao)
         raise

@@ -151,7 +151,7 @@ def obter_dimensoes_video(caminho_ou_url, execucao=None):
         print(f"⚠️ Erro ao obter dimensões via ffprobe: {e}. Usando padrão 1920x1080.")
     return 1920, 1080
 
-def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, ignorar_inicio_segundos=600, modo_curadoria="picos", termos_jogo="", limite_amostras=40):
+def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, ignorar_inicio_segundos=600, modo_curadoria="picos", termos_jogo="", limite_amostras=40, idioma="pt", foco=""):
     execucao = execucao or reservar_execucao()
     if execucao is None:
         raise RuntimeError("Já existe uma execução em andamento.")
@@ -231,7 +231,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         cortes_validados = preparar_cortes_contextuais(
             entrada, audio_analise_path, video_corte_fonte, pasta_temp,
             max_cortes, execucao, ignorar_inicio_segundos, termos_jogo, resolver_video=resolver_video,
-            modo=modo_curadoria, limite_amostras=limite_amostras,
+            modo=modo_curadoria, limite_amostras=limite_amostras, idioma=idioma, foco=foco,
         )
 
         total_validos = len(cortes_validados)

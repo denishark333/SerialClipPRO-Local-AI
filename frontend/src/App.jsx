@@ -14,6 +14,14 @@ import { BrandTab } from './components/tabs/BrandTab';
 import { ReviewTab } from './components/tabs/ReviewTab';
 import { CopyrightTab } from './components/tabs/CopyrightTab';
 
+function lerPreferencia(chave, padrao) {
+  try { return window.localStorage.getItem(chave) ?? padrao; } catch { return padrao; }
+}
+
+function salvarPreferencia(chave, valor) {
+  try { window.localStorage.setItem(chave, valor); } catch { /* armazenamento indisponível */ }
+}
+
 function App() {
   const { notify, ask } = useDialog();
   async function limparCache() {
@@ -30,6 +38,11 @@ function App() {
   const [modoCuradoria, setModoCuradoria] = useState('hibrido');
   const [limiteAmostras, setLimiteAmostras] = useState(40);
   const [termosJogo, setTermosJogo] = useState('');
+  // Idioma e foco costumam se repetir entre lives; ficam lembrados neste navegador.
+  const [idioma, setIdioma] = useState(() => lerPreferencia('clippro_idioma', 'pt'));
+  const [foco, setFoco] = useState(() => lerPreferencia('clippro_foco', ''));
+  useEffect(() => { salvarPreferencia('clippro_idioma', idioma); }, [idioma]);
+  useEffect(() => { salvarPreferencia('clippro_foco', foco); }, [foco]);
   const [detalhesClips, setDetalhesClips] = useState({});
   const executandoRef = useRef(false);
   const [statusInfo, setStatusInfo] = useState({ 
@@ -112,7 +125,8 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entrada, max_cortes: Number(maxCortes), ignorar_inicio_segundos: Number(ignorarInicio),
-          modo_curadoria: modoCuradoria, termos_jogo: termosJogo, limite_amostras: Number(limiteAmostras) })
+          modo_curadoria: modoCuradoria, termos_jogo: termosJogo, limite_amostras: Number(limiteAmostras),
+          idioma, foco })
       });
       executandoRef.current = true;
     } catch (e) {
@@ -220,6 +234,7 @@ function App() {
                 modoCuradoria={modoCuradoria} setModoCuradoria={setModoCuradoria}
                 limiteAmostras={limiteAmostras} setLimiteAmostras={setLimiteAmostras}
                 termosJogo={termosJogo} setTermosJogo={setTermosJogo} detalhesClips={detalhesClips}
+                idioma={idioma} setIdioma={setIdioma} foco={foco} setFoco={setFoco}
                 carregando={carregando} iniciarGeracao={iniciarGeracao}
                 statusInfo={statusInfo}
                 selecionados={selecionados} toggleCheckbox={toggleCheckbox} 

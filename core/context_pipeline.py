@@ -16,7 +16,7 @@ REPORT_DIR = DATA_DIR / "relatorios_curadoria"
 AMOSTRADOS = ("hibrido", "picos")
 
 
-def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, max_cortes, execucao, ignorar_inicio, termos, resolver_video=None, modo="contexto", limite_amostras=40):
+def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, max_cortes, execucao, ignorar_inicio, termos, resolver_video=None, modo="contexto", limite_amostras=40, idioma="pt", foco=""):
     report_id = uuid.uuid4().hex + ".json"
     caminho = REPORT_DIR / report_id
     estado_pipeline["relatorio_curadoria"] = f"/api/relatorios-curadoria/{report_id}"
@@ -31,15 +31,15 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
     try:
         if modo in AMOSTRADOS:
             transcricao, _ = transcrever_hibrido(fonte_audio, pasta_temp, execucao, termos, ignorar_inicio,
-                                                 limite_amostras, registrar, entrada=entrada, modo=modo)
+                                                 limite_amostras, registrar, entrada=entrada, modo=modo, idioma=idioma)
             cache = str(REPORT_DIR / (report_id[:-5] + "_amostras.json"))
             salvar_json(cache, transcricao)
         else:
-            transcricao, cache = transcrever_completo(fonte_audio, entrada, pasta_temp, execucao, termos)
-        registrar({"transcricao": cache, "termos_jogo": termos, "estado": "analisando"})
+            transcricao, cache = transcrever_completo(fonte_audio, entrada, pasta_temp, execucao, termos, idioma)
+        registrar({"transcricao": cache, "termos_jogo": termos, "idioma": idioma, "foco": foco, "estado": "analisando"})
         inicio_curadoria = time.monotonic()
         resultado = analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio, termos, registrar,
-                                      usar_cache=True)
+                                      usar_cache=True, idioma=idioma, foco=foco)
         resumo = resultado.get('resumo_curadoria') or resumir_curadoria(resultado)
         with estado_lock:
             estado_pipeline['resumo_curadoria'] = resumo

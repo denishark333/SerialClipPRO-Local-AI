@@ -4,12 +4,28 @@ import { apiFetch, MEDIA_BASE_URL, API_BASE_URL } from '../../api';
 import { StudioCropper } from '../studio/StudioCropper';
 import { clipIdentity } from '../../clipIdentity';
 
+const IDIOMAS = [
+  ['pt', 'Português'], ['en', 'English (inglês)'], ['es', 'Español (espanhol)'], ['fr', 'Français (francês)'],
+  ['de', 'Deutsch (alemão)'], ['it', 'Italiano'], ['ja', '日本語 (japonês)'], ['ko', '한국어 (coreano)'],
+  ['auto', 'Detectar automaticamente'],
+];
+
+// Pontos de partida editáveis. A IA recebe o texto como prioridade, não como molde.
+const PRESETS = {
+  nenhum: { rotulo: 'Sem preferência', texto: '' },
+  mmorpg: { rotulo: 'MMORPG / RPG', texto: 'Lutas contra chefes, PvP, morte do personagem ou do grupo, item raro, discussão ou confusão no grupo.' },
+  fps: { rotulo: 'FPS / Ação', texto: 'Jogadas decisivas, sequência de abates, escapadas por pouco, reações a jogadas inesperadas.' },
+  chatting: { rotulo: 'Just Chatting', texto: 'Histórias pessoais, interação engraçada com o chat, opiniões fortes, revelações.' },
+  podcast: { rotulo: 'Podcast / Entrevista', texto: 'Frases de impacto, revelações, discordâncias entre os participantes, conselhos práticos.' },
+};
+
 export function PipelineTab({
   abrirRevisao,
   modoInput, setModoInput,
   entrada, setEntrada,
   maxCortes, setMaxCortes, ignorarInicio, setIgnorarInicio,
   modoCuradoria, setModoCuradoria, termosJogo, setTermosJogo, detalhesClips = {},
+  idioma, setIdioma, foco, setFoco,
   limiteAmostras, setLimiteAmostras,
   carregando, iniciarGeracao,
   statusInfo,
@@ -18,6 +34,7 @@ export function PipelineTab({
   deletarSelecionados
 }) {
   const { notify } = useDialog();
+  const presetAtual = Object.keys(PRESETS).find(chave => PRESETS[chave].texto === foco) ?? 'personalizado';
   const [carregandoPreview, setCarregandoPreview] = React.useState(false);
   const [previewPronto, setPreviewPronto] = React.useState(0);
   const [selecionandoArquivo, setSelecionandoArquivo] = React.useState(false);
@@ -181,7 +198,7 @@ export function PipelineTab({
               className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2">
               <option value="hibrido">Híbrido — contexto sob demanda</option>
               <option value="contexto">Contexto completo — aprofundado</option>
-              <option value="picos">Picos de áudio — modo anterior</option>
+              <option value="picos">Picos de áudio — momentos mais intensos</option>
             </select>
             {modoCuradoria === 'contexto' && <span className="text-sm">Analisa as falas de toda a VOD. A primeira execução pode demorar mais.</span>}
           </label>
@@ -195,12 +212,33 @@ export function PipelineTab({
               <span>Até {Number(limiteAmostras) * 1.5} minutos de áudio para transcrição. Regiões fora das amostras podem passar despercebidas.</span>
             </label>
           </details>}
-          {modoCuradoria !== 'picos' && <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
+          <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
+            Idioma falado na live
+            <select value={idioma} onChange={e => setIdioma(e.target.value)} disabled={carregando}
+              className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2">
+              {IDIOMAS.map(([codigo, rotulo]) => <option key={codigo} value={codigo}>{rotulo}</option>)}
+            </select>
+            <span>As legendas saem neste idioma. Use “Detectar automaticamente” se a live mistura idiomas.</span>
+          </label>
+          <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
+            O que procurar (opcional)
+            <select value={presetAtual} disabled={carregando}
+              onChange={e => { if (e.target.value !== 'personalizado') setFoco(PRESETS[e.target.value].texto); }}
+              className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2">
+              {Object.entries(PRESETS).map(([chave, preset]) => <option key={chave} value={chave}>{preset.rotulo}</option>)}
+              {presetAtual === 'personalizado' && <option value="personalizado">Personalizado</option>}
+            </select>
+            <textarea value={foco} onChange={e => setFoco(e.target.value)} maxLength={500} disabled={carregando} rows={2}
+              placeholder="Descreva os momentos que você quer priorizar, ou escolha um modelo acima."
+              className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2" />
+            <span>A IA dá preferência a esse tipo de momento, mas ainda pode escolher outros que se destaquem.</span>
+          </label>
+          <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
             Termos do jogo e nomes (opcional)
             <input value={termosJogo} onChange={e => setTermosJogo(e.target.value)} maxLength={500} disabled={carregando}
               placeholder="Ex.: stun, nomes de skills e personagens"
               className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2" />
-          </label>}
+          </label>
           <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
             Ignorar abertura (segundos)
             <input type="number" min="0" value={ignorarInicio}

@@ -9,6 +9,7 @@ import uuid
 import wave
 
 from core.whisper import carregar_modelo, dispositivo
+from core.idiomas import para_whisper
 from core.config import DATA_DIR, atualizar_estado
 from core.execution import executar_comando
 
@@ -38,10 +39,10 @@ def ler_json(caminho):
         return None
 
 
-def chave_transcricao(entrada, termos):
+def chave_transcricao(entrada, termos, idioma="pt"):
     # "cpu"/"int8" é o rótulo histórico desta configuração; mantido para não
     # invalidar caches existentes. O texto não depende do dispositivo usado.
-    return chave(VERSAO, identidade_entrada(entrada), "small", "cpu", "int8", "pt", termos)
+    return chave(VERSAO, identidade_entrada(entrada), "small", "cpu", "int8", idioma, termos)
 
 
 def salvar_json(caminho, dados):
@@ -56,9 +57,9 @@ def salvar_json(caminho, dados):
             temporario.unlink()
 
 
-def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos=""):
+def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos="", idioma="pt"):
     execucao.verificar()
-    caminho_cache = CACHE_DIR / (chave_transcricao(entrada, termos) + ".json")
+    caminho_cache = CACHE_DIR / (chave_transcricao(entrada, termos, idioma) + ".json")
     if caminho_cache.exists():
         try:
             dados = json.loads(caminho_cache.read_text(encoding="utf-8"))
@@ -92,7 +93,7 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos=""):
             duracao = wav.getnframes() / wav.getframerate()
         atualizar_estado(f"Transcrevendo a VOD: bloco {indice+1}/{len(blocos)} ({dispositivo()})...", 2, 16 + int(18 * indice / len(blocos)))
         iterator, _ = modelo.transcribe(
-            str(bloco), language="pt", word_timestamps=True, beam_size=5,
+            str(bloco), language=para_whisper(idioma), word_timestamps=True, beam_size=5,
             vad_filter=True, hotwords=termos or None,
         )
         for seg in iterator:
