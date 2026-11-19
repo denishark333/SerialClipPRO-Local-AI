@@ -40,7 +40,7 @@ function ModelCard() {
     m.cabe_na_gpu === false ? 'não cabe na sua placa' : '',
   ].filter(Boolean).join(' · ');
   return (
-    <div className="p-4 border border-slate-800 rounded-xl text-sm flex flex-col gap-2">
+    <div className="bg-[#0e0a1a] border border-[#1f1633] p-5 rounded-xl text-sm flex flex-col gap-2">
       <h3 className="text-base font-bold text-slate-200">Modelo de IA da curadoria</h3>
       {!info && !mensagem && <p className="text-slate-400">Consultando o Ollama...</p>}
       {info && !info.ollama_online && <p className="text-amber-400">O Ollama não respondeu. Abra o Ollama e clique em Atualizar.</p>}
@@ -92,18 +92,18 @@ export function StepsTab() {
   }
   return (
     <div className="w-full lg:w-[94%] mx-auto bg-[#0a0712] border border-[#1b1528] p-6 rounded-2xl shadow-xl flex flex-col gap-6">
-      <div className="border-b border-[#1b1528] pb-3">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <span className="text-[#9333ea]">📖</span> Primeiros Passos com o Serial ClipPRO
-        </h2>
+      <div className="border-b border-[#1b1528] pb-4 text-center">
+        <h2 className="text-xl font-bold text-white">Primeiros Passos com o Serial ClipPRO</h2>
         <p className="text-sm text-slate-400 mt-1">
           Guia rápido para trabalhar com VODs, streams e conteúdo de longa duração sem perder tempo na configuração.
         </p>
       </div>
 
-      <div className="p-4 border border-slate-800 rounded-xl text-sm">
-        <button disabled={checking} onClick={check} className="bg-purple-700 rounded px-4 py-2">{checking ? 'Verificando...' : 'Verificar dependências'}</button>
-        <p className="text-slate-400 mt-2">Na versão 2.0, o instalador prepara os componentes e baixa os modelos automaticamente. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-6xl mx-auto items-start">
+      <div className="bg-[#0e0a1a] border border-[#1f1633] p-5 rounded-xl text-sm flex flex-col gap-2">
+        <h3 className="text-base font-bold text-slate-200">Dependências</h3>
+        <button disabled={checking} onClick={check} className="self-start bg-purple-700 rounded px-4 py-2">{checking ? 'Verificando...' : 'Verificar dependências'}</button>
+        <p className="text-slate-400">Na versão 2.0, o instalador prepara os componentes e baixa os modelos automaticamente. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
         <p role="status">{error}</p>
         {environment && <div className="mt-3">
           {Object.entries(environment.dependencias).map(([name, status]) => <p key={name}>{name}: {status}</p>)}
@@ -112,6 +112,7 @@ export function StepsTab() {
         </div>}
       </div>
       <ModelCard />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[#0e0a1a] border border-[#1f1633] p-4 rounded-xl flex flex-col gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#9333ea]/20 text-[#9333ea] font-mono font-bold flex items-center justify-center text-sm">01</div>
