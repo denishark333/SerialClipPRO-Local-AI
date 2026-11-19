@@ -2,6 +2,8 @@
 fastapi
 uvicorn
 yt_dlp
+# yt-dlp só acessa a Kick se passando por navegador; 0.17+ ainda não é aceito por ele.
+curl_cffi>=0.10,<0.17
 faster-whisper
 ollama
 pydantic>=2

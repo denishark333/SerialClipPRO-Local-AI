@@ -2,6 +2,8 @@ import re
 
 import yt_dlp
 
+from core import kick
+
 
 MENSAGEM_LIVE = ("Esse link é de uma live em andamento (ou do canal). O Serial ClipPRO trabalha com "
                  "vídeos completos: use o link do VOD, por exemplo twitch.tv/videos/… ou "
@@ -21,14 +23,12 @@ def extrair_info(opcoes: dict, url: str) -> dict:
         with yt_dlp.YoutubeDL(opcoes) as ydl:
             return ydl.extract_info(url, download=False)
     except yt_dlp.utils.DownloadError as erro:
-        texto = re.sub(r"\[[0-9;]*m", "", str(erro)).replace("ERROR: ", "").strip()
+        texto = re.sub(r"\x1b\[[0-9;]*m", "", str(erro)).replace("ERROR: ", "").strip()
         if re.search(r"is (currently )?offline|not (currently )?live", texto, re.I):
             raise ValueError("O canal está offline e o link não aponta para um VOD. "
                              "Use o link do VOD (twitch.tv/videos/… ou kick.com/canal/videos/…).") from erro
         if "kick.com" in url and re.search(r"HTTP Error (403|404)", texto):
-            # Sem o curl_cffi, o yt-dlp não consegue se passar por navegador e a Kick recusa a consulta.
-            raise ValueError("A Kick recusou a consulta ao VOD. Se o vídeo abre no navegador, falta o "
-                             "componente curl_cffi, que permite ao app acessar a Kick como um navegador.") from erro
+            raise ValueError("A Kick não encontrou esse VOD pela API.") from erro
         raise ValueError(f"Não foi possível abrir o link: {texto[:300]}") from erro
 
 
@@ -53,8 +53,19 @@ def _url_video(info: dict) -> str:
     return info.get('url') or (info.get('requested_formats')[0].get('url') if info.get('requested_formats') else info.get('formats')[-1].get('url'))
 
 
+def _fontes_kick(url_vod: str, erro: Exception) -> tuple[str, str]:
+    """Caminho alternativo para VODs da Kick que a API do yt-dlp não encontra."""
+    if not kick.eh_vod_kick(url_vod):
+        raise erro
+    print("[Kick] A API não encontrou o VOD; buscando o link do vídeo na página.")
+    return kick.fontes_pela_pagina(url_vod)
+
+
 def obter_url_direta_cdn(url_vod: str) -> str:
-    return _url_video(_extrair(url_vod))
+    try:
+        return _url_video(_extrair(url_vod))
+    except ValueError as erro:
+        return _fontes_kick(url_vod, erro)[1]
 
 
 def obter_fontes_cdn(url_vod: str) -> tuple[str, str]:
@@ -64,7 +75,10 @@ def obter_fontes_cdn(url_vod: str) -> tuple[str, str]:
     e na transcrição evita baixar o vídeo em alta resolução da VOD inteira só
     para medir volume. Sem essa variante, o áudio vem do próprio vídeo.
     """
-    info = _extrair(url_vod)
+    try:
+        info = _extrair(url_vod)
+    except ValueError as erro:
+        return _fontes_kick(url_vod, erro)
     video = _url_video(info)
     so_audio = [f for f in info.get('formats') or []
                 if f.get('url') and f.get('vcodec') == 'none' and f.get('acodec') not in (None, 'none')]
