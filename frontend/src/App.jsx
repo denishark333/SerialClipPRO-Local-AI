@@ -251,7 +251,7 @@ function App() {
             {abaAtiva === 'marca' && <BrandTab />}
             {abaAtiva === 'revisao' && <ReviewTab />}
 
-            {abaAtiva === 'copyright' && <CopyrightTab abrirMarca={() => setAbaAtiva('marca')} />}
+            {abaAtiva === 'copyright' && <CopyrightTab />}
 
           </main>
         </div>
