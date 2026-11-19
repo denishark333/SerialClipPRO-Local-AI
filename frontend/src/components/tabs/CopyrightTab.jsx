@@ -6,15 +6,17 @@ import { version } from '../../../../version.json';
 const GRADIENTE = 'text-transparent bg-clip-text bg-gradient-to-r';
 const LOGO_SERIAL = '/serial-healer.png';
 const ECOSSISTEMA = [
-  { chave: 'clippro', url: 'https://serialclip.pro', logo: LOGO_SERIAL, descricao: 'Página oficial e downloads.',
-    nome: <span className={`${GRADIENTE} from-[#b3ff33] via-[#9333ea] to-[#00ffff]`}>Serial ClipPRO</span> },
   { chave: 'serialhealer', url: 'https://serialhealer.com.br', logo: LOGO_SERIAL, descricao: 'Site do criador e da comunidade.',
     nome: <span className={`${GRADIENTE} from-[#b3ff33] to-[#ff5fd2]`}>Serial Healer</span> },
+  { chave: 'clippro', url: 'https://serialclip.pro', logo: LOGO_SERIAL, descricao: 'Página oficial e downloads.',
+    aviso: 'Em desenvolvimento',
+    nome: <span className={`${GRADIENTE} from-[#b3ff33] via-[#9333ea] to-[#00ffff]`}>Serial ClipPRO</span> },
   { chave: 'creatorstudio', url: 'https://creatorstudio.serialhealer.com.br', logo: LOGO_SERIAL,
-    descricao: 'Métricas e planejamento de conteúdo do canal.',
+    descricao: 'Métricas e planejamento de conteúdo do canal.', aviso: 'Em desenvolvimento',
     nome: <><span className="text-[#ff1f4f]">Serial</span> <span className="text-[#a78bfa]">Creator</span> <span className="text-[#53fc18]">Studio</span></> },
   { chave: 'chronoodyssey', url: 'https://chronoodyssey.com.br', logo: '/ecossistema/chronoodyssey.png', descricao: 'Projeto da comunidade.',
-    nome: <span className="text-[#d4af37]">Chrono Odyssey</span> },
+    aviso: 'Em desenvolvimento/Aguardando mais dados',
+    nome: <span className="text-[#d4af37]">Chrono Odyssey | Interactive Map</span> },
 ];
 
 const LINK = 'text-cyan-300 underline decoration-cyan-700 underline-offset-2 hover:text-cyan-200';
@@ -69,12 +71,15 @@ export function CopyrightTab() {
         <article className="rounded-xl border border-cyan-500/40 bg-gradient-to-br from-purple-950/40 to-cyan-950/20 p-5 space-y-3 text-sm">
           <h3 className="font-bold text-cyan-200">Ecossistema</h3>
           <ul className="space-y-3">
-            {ECOSSISTEMA.map(({ chave, nome, url, logo, descricao }) => (
+            {ECOSSISTEMA.map(({ chave, nome, url, logo, descricao, aviso }) => (
               <li key={chave}>
                 <a href={url} target="_blank" rel="noreferrer" className="group flex items-center gap-3">
                   <img src={logo} alt="" className="w-9 h-9 shrink-0 rounded-full bg-black object-cover" />
                   <span>
-                    <span className="block font-bold group-hover:brightness-125 transition">{nome}</span>
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-bold group-hover:brightness-125 transition">{nome}</span>
+                      {aviso && <span className="rounded-full border border-amber-500/40 bg-amber-950/30 px-2 py-0.5 text-[10px] font-medium text-amber-200">{aviso}</span>}
+                    </span>
                     <span className="block text-xs text-slate-400">{descricao}</span>
                   </span>
                 </a>
