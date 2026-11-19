@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import subprocess
+import time
 import uuid
 import wave
 
@@ -45,13 +46,32 @@ def chave_transcricao(entrada, termos, idioma="pt"):
     return chave(VERSAO, identidade_entrada(entrada), "small", "cpu", "int8", idioma, termos)
 
 
+TENTATIVAS_TROCA = (0.05, 0.1, 0.2, 0.4, 0.8, 1.5)
+
+
+def substituir(origem, destino):
+    """``os.replace`` que tolera o arquivo aberto por outro programa.
+
+    No Windows, o antivírus, o indexador ou um download do relatório podem
+    segurar o destino por instantes, e a troca falha com "Acesso negado".
+    Tenta de novo por até ~3 s antes de desistir.
+    """
+    for espera in TENTATIVAS_TROCA:
+        try:
+            os.replace(origem, destino)
+            return
+        except PermissionError:
+            time.sleep(espera)
+    os.replace(origem, destino)
+
+
 def salvar_json(caminho, dados):
     caminho = Path(caminho)
     caminho.parent.mkdir(parents=True, exist_ok=True)
     temporario = caminho.with_name(caminho.name + "." + uuid.uuid4().hex + ".tmp")
     try:
         temporario.write_text(json.dumps(dados, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
-        os.replace(temporario, caminho)
+        substituir(temporario, caminho)
     finally:
         if temporario.exists():
             temporario.unlink()
