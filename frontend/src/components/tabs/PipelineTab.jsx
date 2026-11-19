@@ -172,10 +172,7 @@ export function PipelineTab({
                   placeholder="https://www.twitch.tv/videos/..."
                   className="w-full bg-[#0e0a1a] border border-[#1f1633] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#9333ea]"
                 />
-                <p className="text-sm text-slate-400 mt-2">
-                  VOD da Twitch (twitch.tv/videos/…), da Kick (kick.com/canal/videos/…) ou vídeo do YouTube.
-                  Lives em andamento não são aceitas: use o VOD depois que a live terminar.
-                </p>
+                <p className="text-xs text-slate-500 mt-1.5">VOD da Twitch, Kick ou YouTube. Lives em andamento não.</p>
               </div>
             )}
 

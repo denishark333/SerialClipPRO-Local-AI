@@ -58,11 +58,11 @@ def obter_chave_unica(entrada: str) -> str:
     twitch_match = re.search(r"videos/(\d+)", entrada)
     if eh_url_twitch(entrada):
         identificador = twitch_match.group(1) if twitch_match else hashlib.md5(entrada.strip().encode('utf-8')).hexdigest()
-        # A nova chave impede reutilizar previews antigos extraídos no minuto 1.
-        return f"twitch_{identificador}_30m_10s"
-    
+        # O sufixo muda junto com o ponto do preview: previews antigos não são reaproveitados.
+        return f"twitch_{identificador}_meio_10s"
+
     # Para outros links ou caminhos de ficheiro locais, cria um hash MD5 único
-    return hashlib.md5(entrada.strip().encode('utf-8')).hexdigest()
+    return hashlib.md5(entrada.strip().encode('utf-8')).hexdigest() + "_meio"
 
 @router.post("/iniciar-pipeline")
 def iniciar_pipeline(data: PipelineRequest, background_tasks: BackgroundTasks):

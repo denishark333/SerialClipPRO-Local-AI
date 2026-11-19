@@ -24,6 +24,7 @@ from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
 from core.ia import modelo as modelo_ia
 from core.erros import ErroFFmpeg
+from core.audio import medir_duracao
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
@@ -402,9 +403,13 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
             "-c:a", "aac", trecho_preview_mp4
         ]
             
-        # Twitch: evita a abertura da live. Não recua para uma tela Starting Soon.
-        # Outras fontes mantêm o minuto 1 e a alternativa para vídeos curtos.
+        # A metade do vídeo quase sempre mostra a live em andamento, com a webcam: a
+        # abertura (Starting Soon) varia de canal para canal e nenhum ponto fixo serve.
+        # Sem duração conhecida, valem os pontos antigos (30 min na Twitch, 1 min nos demais).
         inicios = ("00:30:00",) if eh_url_twitch(entrada) else ("00:01:00", "0")
+        duracao = medir_duracao(video_corte_fonte)
+        if duracao and duracao > 20:
+            inicios = (f"{duracao / 2:.3f}",) + inicios
         for tentativa, inicio in enumerate(inicios):
             cmd_preview_10s[3] = inicio
             try:
