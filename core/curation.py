@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from core.config import atualizar_estado
 from core.execution import PipelineCancelado
 from core.curation_status import resumir_curadoria, tipo_falha
+from core.boundaries import refinar
 
 
 class Momento(BaseModel):
@@ -76,6 +77,26 @@ def selecionar(candidatos, limite):
         if candidato["selecao"] == "selecionado":
             selecionados.append(candidato)
     return selecionados
+
+
+def ajustar_limites(candidatos, palavras, duracao_total):
+    """Leva os limites de cada candidato a frases completas e pausas da fala.
+
+    No Híbrido, só as palavras da mesma amostra contam: amostras são trechos
+    independentes, separados por minutos. Quando o ajuste não respeita a duração,
+    o intervalo original da curadoria é mantido.
+    """
+    for candidato in candidatos:
+        inicio, fim = candidato["inicio"], candidato["fim"]
+        vizinhas = [p for p in palavras
+                    if inicio - 120 < p["start"] < fim + 120
+                    and p.get("amostra") == candidato.get("amostra")]
+        novo = refinar(vizinhas, inicio, fim, minimo=15.0, maximo=90.0)
+        if novo is None:
+            candidato["limites"] = "originais"
+            continue
+        candidato.update(inicio_original=inicio, fim_original=fim, limites="ajustados",
+                         inicio=novo[0], fim=min(novo[1], duracao_total))
 
 
 def sugestao_revisao(janela, janela_id, duracao_total):
@@ -175,6 +196,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
     execucao.verificar()
     if not relatorio["candidatos"]:
         relatorio["candidatos"] = sugestoes
+    ajustar_limites(relatorio["candidatos"], transcricao.get("palavras") or [], duracao)
     relatorio["selecionados"] = selecionar(relatorio["candidatos"], max_cortes)
     relatorio["resumo_curadoria"] = resumir_curadoria(relatorio)
     if any(c['avaliacao'] == 'sugestao' for c in relatorio['selecionados']):
