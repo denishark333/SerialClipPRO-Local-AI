@@ -21,6 +21,8 @@ router = APIRouter()
 
 preview_lock = threading.Lock()
 previews_ativos = set()
+# Motivo da última falha de cada preview, para o estúdio parar de esperar e avisar.
+previews_erros = {}
 
 
 @router.post('/selecionar-video')
@@ -41,7 +43,8 @@ def selecionar_video(request: Request):
 
 def executar_preview(entrada, nome_arquivo):
     try:
-        return gerar_preview_estudio(entrada, nome_arquivo)
+        return gerar_preview_estudio(entrada, nome_arquivo,
+                                     ao_falhar=lambda motivo: previews_erros.__setitem__(nome_arquivo, motivo))
     finally:
         with preview_lock:
             previews_ativos.discard(nome_arquivo)
@@ -108,6 +111,7 @@ def disparar_geracao_preview(data: PipelineRequest, background_tasks: Background
         print(f"🎬 [Cache Miss] A gerar novo preview exclusivo para a chave: {chave_vod}")
         with preview_lock:
             if nome_arquivo not in previews_ativos:
+                previews_erros.pop(nome_arquivo, None)
                 previews_ativos.add(nome_arquivo)
                 background_tasks.add_task(executar_preview, data.entrada, nome_arquivo)
 
@@ -172,7 +176,12 @@ def get_frame_base(entrada: str = Query(None)):
                 "tipo": "video_real"
             })
         
-        # 3. Se o preview específico ainda não existe, retorna a logo estática
+        # 3. A geração falhou: o estúdio para de esperar e mostra o motivo.
+        if nome_especifico in previews_erros and nome_especifico not in previews_ativos:
+            return JSONResponse(content={"url": "/serial-healer.png", "tipo": "erro",
+                                         "mensagem": previews_erros[nome_especifico]})
+
+        # 4. Se o preview específico ainda não existe, retorna a logo estática
         return JSONResponse(content={"url": "/serial-healer.png", "tipo": "estatico"})
         
     except Exception as e:

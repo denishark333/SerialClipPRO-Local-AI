@@ -367,12 +367,13 @@ def eh_url_twitch(entrada: str) -> bool:
     return url.scheme in ("http", "https") and (host == "twitch.tv" or host.endswith(".twitch.tv"))
 
 
-def gerar_preview_estudio(entrada: str, nome_arquivo: str = "preview_10s.mp4"):
+def gerar_preview_estudio(entrada: str, nome_arquivo: str = "preview_10s.mp4", ao_falhar=None):
+    """Gera o preview do estúdio; ``ao_falhar`` recebe o motivo quando não dá certo."""
     with tempfile.TemporaryDirectory(prefix="preview_job_", dir=PASTA_TEMP) as pasta_temp:
-        return _gerar_preview(entrada, os.path.basename(nome_arquivo), pasta_temp)
+        return _gerar_preview(entrada, os.path.basename(nome_arquivo), pasta_temp, ao_falhar)
 
 
-def _gerar_preview(entrada, nome_arquivo, pasta_temp):
+def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
     """Extrai o preview de 10 segundos rapidamente sob demanda."""
     try:
         os.makedirs(PASTA_TEMP, exist_ok=True)
@@ -419,7 +420,11 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp):
             os.replace(trecho_preview_mp4, os.path.join(PASTA_TEMP, nome_arquivo))
             return True
             
+        if ao_falhar:
+            ao_falhar("O preview não foi gerado.")
         return False
     except Exception as e:
         print(f"⚠️ Erro ao gerar preview isolado: {e}")
+        if ao_falhar:
+            ao_falhar(str(e))
         return False

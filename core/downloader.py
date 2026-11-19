@@ -25,6 +25,10 @@ def extrair_info(opcoes: dict, url: str) -> dict:
         if re.search(r"is (currently )?offline|not (currently )?live", texto, re.I):
             raise ValueError("O canal está offline e o link não aponta para um VOD. "
                              "Use o link do VOD (twitch.tv/videos/… ou kick.com/canal/videos/…).") from erro
+        if "kick.com" in url and re.search(r"HTTP Error (403|404)", texto):
+            # Sem o curl_cffi, o yt-dlp não consegue se passar por navegador e a Kick recusa a consulta.
+            raise ValueError("A Kick recusou a consulta ao VOD. Se o vídeo abre no navegador, falta o "
+                             "componente curl_cffi, que permite ao app acessar a Kick como um navegador.") from erro
         raise ValueError(f"Não foi possível abrir o link: {texto[:300]}") from erro
 
 

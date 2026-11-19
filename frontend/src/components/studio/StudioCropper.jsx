@@ -106,6 +106,12 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         if (!response.ok) throw new Error('Falha ao consultar o preview.');
         const data = await response.json();
         if (controller.signal.aborted) return;
+        if (data.tipo === 'erro') {
+          // A geração falhou no backend: não adianta continuar esperando.
+          setHasFrameError(true);
+          setError(`Não foi possível gerar o preview. ${data.mensagem || ''}`.trim());
+          return;
+        }
         if (source && data.tipo !== 'video_real') {
           if (tentativa < 120) { timer = setTimeout(consultar, 1500); return; }
           throw new Error('Preview indisponível. Tente atualizar após o processamento.');
