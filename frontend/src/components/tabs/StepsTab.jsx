@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../api';
 
+// Os dois cartões do topo seguem o mesmo molde: título, ações e notas retráteis.
+const CARTAO = 'bg-[#0e0a1a] border border-[#1f1633] p-5 rounded-xl text-sm flex flex-col gap-3';
+const NOTAS = 'text-slate-400 border border-[#1f1633] rounded-lg p-3';
+
 function ModelCard() {
   const [info, setInfo] = useState(null);
   const [escolhido, setEscolhido] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState('');
+  const [atualizando, setAtualizando] = useState(false);
 
   async function carregar() {
+    setAtualizando(true);
     try {
       const dados = await (await apiFetch('/ia')).json();
       setInfo(dados);
       setEscolhido(dados.modelo_id);
     } catch (e) { setMensagem(e.message); }
+    finally { setAtualizando(false); }
   }
   useEffect(() => { const timer = setTimeout(carregar, 0); return () => clearTimeout(timer); }, []);
 
@@ -39,43 +46,52 @@ function ModelCard() {
     m.memoria_gb ? `~${String(m.memoria_gb).replace('.', ',')} GB de vídeo` : `${String(m.tamanho_gb).replace('.', ',')} GB em disco`,
     m.cabe_na_gpu === false ? 'não cabe na sua placa' : '',
   ].filter(Boolean).join(' · ');
+  const semMudanca = escolhido === info?.modelo_id;
   return (
-    <div className="bg-[#0e0a1a] border border-[#1f1633] p-5 rounded-xl text-sm flex flex-col gap-2">
+    <div className={CARTAO}>
       <h3 className="text-base font-bold text-slate-200">Modelo de IA da curadoria</h3>
       {!info && !mensagem && <p className="text-slate-400">Consultando o Ollama...</p>}
-      {info && !info.ollama_online && <p className="text-amber-400">O Ollama não respondeu. Abra o Ollama e clique em Atualizar.</p>}
+      {info && !info.ollama_online && <p className="text-amber-400">O Ollama não respondeu. Abra o Ollama e clique no botão de atualizar.</p>}
       {info && info.ollama_online && !info.modelo_instalado && (
         <p className="text-amber-400">O modelo configurado ({info.modelo}) não está instalado. Escolha outro abaixo.</p>
       )}
-      {instalados.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {instalados.length > 0 && <>
           <select value={escolhido} onChange={e => setEscolhido(e.target.value)}
-            className="bg-[#0e0a1a] border border-[#1f1633] rounded px-3 py-2 text-slate-200">
+            className="h-10 bg-[#0e0a1a] border border-[#1f1633] rounded px-3 text-slate-200">
             {!selecionado && <option value={escolhido}>{escolhido}</option>}
             {instalados.map(m => <option key={m.id} value={m.id}>{rotulo(m)}</option>)}
           </select>
-          <button disabled={salvando || escolhido === info?.modelo_id} onClick={salvar}
-            className="bg-purple-700 rounded px-4 py-2 disabled:opacity-50">{salvando ? 'Salvando...' : 'Usar este modelo'}</button>
-          <button onClick={carregar} className="border border-slate-700 rounded px-3 py-2">Atualizar</button>
-        </div>
-      )}
-      {selecionado && (
-        <p className="text-slate-300">
-          {selecionado.descricao}
-          {selecionado.cabe_na_gpu === false && (
-            <span className="block text-amber-400 mt-1">
-              Este modelo precisa de mais memória de vídeo do que sua placa tem ({String(info.memoria_gpu_gb).replace('.', ',')} GB).
-              Ele vai rodar, mas parte dele usará a CPU e a curadoria ficará bem mais lenta.
-            </span>
-          )}
+          <button disabled={salvando || semMudanca} onClick={salvar}
+            className="h-10 bg-purple-700 rounded px-4 disabled:opacity-50">
+            {salvando ? 'Salvando...' : semMudanca ? 'Selecionado' : 'Selecionar'}
+          </button>
+        </>}
+        <button onClick={carregar} disabled={atualizando} aria-label="Atualizar lista de modelos" title="Atualizar lista de modelos"
+          className="h-10 w-10 flex items-center justify-center border border-slate-700 rounded hover:border-purple-500 disabled:opacity-70">
+          <svg viewBox="0 0 24 24" className={`w-5 h-5 ${atualizando ? 'animate-spin' : ''}`} fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 0 1-15.4 6.4L3 16" /><path d="M3 21v-5h5" />
+            <path d="M3 12a9 9 0 0 1 15.4-6.4L21 8" /><path d="M21 3v5h-5" />
+          </svg>
+        </button>
+      </div>
+      {selecionado?.cabe_na_gpu === false && (
+        <p className="text-amber-400">
+          Este modelo precisa de mais memória de vídeo do que sua placa tem ({String(info.memoria_gpu_gb).replace('.', ',')} GB).
+          Ele vai rodar, mas parte dele usará a CPU e a curadoria ficará bem mais lenta.
         </p>
       )}
-      <p className="text-slate-400">
-        Em uso: <span className="text-slate-200">{atual?.nome || info?.modelo || '—'}</span>
-        {info?.memoria_gpu_gb ? ` · sua placa tem ${String(info.memoria_gpu_gb).replace('.', ',')} GB de memória de vídeo` : ''}.
-        Para instalar outro modelo, use <code>ollama pull nome-do-modelo</code> e clique em Atualizar.
-      </p>
-      <p role="status" className="text-slate-300">{mensagem}</p>
+      <p role="status" className="text-slate-300 empty:hidden">{mensagem}</p>
+      <details className={NOTAS}>
+        <summary className="cursor-pointer font-medium text-slate-300">Notes</summary>
+        {selecionado && <p className="mt-2 text-slate-300">{selecionado.descricao}</p>}
+        <p className="mt-2">
+          Em uso: <span className="text-slate-200">{atual?.nome || info?.modelo || '—'}</span>
+          {info?.memoria_gpu_gb ? ` · sua placa tem ${String(info.memoria_gpu_gb).replace('.', ',')} GB de memória de vídeo` : ''}.
+          Para instalar outro modelo, use <code>ollama pull nome-do-modelo</code> e clique no botão de atualizar.
+        </p>
+      </details>
     </div>
   );
 }
@@ -100,16 +116,19 @@ export function StepsTab() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-6xl mx-auto items-start">
-      <div className="bg-[#0e0a1a] border border-[#1f1633] p-5 rounded-xl text-sm flex flex-col gap-2">
+      <div className={CARTAO}>
         <h3 className="text-base font-bold text-slate-200">Dependências</h3>
-        <button disabled={checking} onClick={check} className="self-start bg-purple-700 rounded px-4 py-2">{checking ? 'Verificando...' : 'Verificar dependências'}</button>
-        <p className="text-slate-400">Na versão 2.0, o instalador prepara os componentes e baixa os modelos automaticamente. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
-        <p role="status">{error}</p>
+        <button disabled={checking} onClick={check} className="self-start h-10 bg-purple-700 rounded px-4">{checking ? 'Verificando...' : 'Verificar dependências'}</button>
+        <p role="status" className="empty:hidden">{error}</p>
         {environment && <div className="mt-3">
           {Object.entries(environment.dependencias).map(([name, status]) => <p key={name}>{name}: {status}</p>)}
           <p className="mt-2 break-all">Seus arquivos: {environment.pasta_dados}</p>
           <p>{environment.observacao}</p>
         </div>}
+        <details className={NOTAS}>
+          <summary className="cursor-pointer font-medium text-slate-300">Notes</summary>
+          <p className="mt-2">Na versão 2.0, o instalador prepara os componentes e baixa os modelos automaticamente. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
+        </details>
       </div>
       <ModelCard />
       </div>
