@@ -11,7 +11,7 @@ function ModelCard() {
     try {
       const dados = await (await apiFetch('/ia')).json();
       setInfo(dados);
-      setEscolhido(dados.modelo);
+      setEscolhido(dados.modelo_id);
     } catch (e) { setMensagem(e.message); }
   }
   useEffect(() => { const timer = setTimeout(carregar, 0); return () => clearTimeout(timer); }, []);
@@ -23,12 +23,22 @@ function ModelCard() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modelo: escolhido }),
       })).json();
       setInfo(dados);
-      setMensagem(`Modelo salvo: ${dados.modelo}. Vale para as próximas execuções.`);
+      setEscolhido(dados.modelo_id);
+      const salvo = dados.instalados.find(m => m.id === dados.modelo_id);
+      setMensagem(`Modelo salvo: ${salvo?.nome || dados.modelo}. Vale para as próximas execuções.`);
     } catch (e) { setMensagem(e.message); }
     finally { setSalvando(false); }
   }
 
   const instalados = info?.instalados || [];
+  const selecionado = instalados.find(m => m.id === escolhido);
+  const atual = instalados.find(m => m.id === info?.modelo_id);
+  const rotulo = m => [
+    m.nome,
+    m.perfil,
+    m.memoria_gb ? `~${String(m.memoria_gb).replace('.', ',')} GB de vídeo` : `${String(m.tamanho_gb).replace('.', ',')} GB em disco`,
+    m.cabe_na_gpu === false ? 'não cabe na sua placa' : '',
+  ].filter(Boolean).join(' · ');
   return (
     <div className="p-4 border border-slate-800 rounded-xl text-sm flex flex-col gap-2">
       <h3 className="text-base font-bold text-slate-200">Modelo de IA da curadoria</h3>
@@ -41,22 +51,29 @@ function ModelCard() {
         <div className="flex flex-wrap items-center gap-2">
           <select value={escolhido} onChange={e => setEscolhido(e.target.value)}
             className="bg-[#0e0a1a] border border-[#1f1633] rounded px-3 py-2 text-slate-200">
-            {!instalados.some(m => m.nome === escolhido) && <option value={escolhido}>{escolhido}</option>}
-            {instalados.map(m => (
-              <option key={m.nome} value={m.nome}>
-                {m.nome} — {m.parametros || '?'} · {m.tamanho_gb} GB
-              </option>
-            ))}
+            {!selecionado && <option value={escolhido}>{escolhido}</option>}
+            {instalados.map(m => <option key={m.id} value={m.id}>{rotulo(m)}</option>)}
           </select>
-          <button disabled={salvando || escolhido === info?.modelo} onClick={salvar}
+          <button disabled={salvando || escolhido === info?.modelo_id} onClick={salvar}
             className="bg-purple-700 rounded px-4 py-2 disabled:opacity-50">{salvando ? 'Salvando...' : 'Usar este modelo'}</button>
           <button onClick={carregar} className="border border-slate-700 rounded px-3 py-2">Atualizar</button>
         </div>
       )}
+      {selecionado && (
+        <p className="text-slate-300">
+          {selecionado.descricao}
+          {selecionado.cabe_na_gpu === false && (
+            <span className="block text-amber-400 mt-1">
+              Este modelo precisa de mais memória de vídeo do que sua placa tem ({String(info.memoria_gpu_gb).replace('.', ',')} GB).
+              Ele vai rodar, mas parte dele usará a CPU e a curadoria ficará bem mais lenta.
+            </span>
+          )}
+        </p>
+      )}
       <p className="text-slate-400">
-        Atual: <span className="text-slate-200">{info?.modelo || '—'}</span> (padrão: {info?.padrao || 'llama3.1'}).
-        Modelos maiores costumam avaliar melhor, mas exigem mais memória de vídeo e tempo. Para instalar outro modelo,
-        use <code>ollama pull nome-do-modelo</code> e clique em Atualizar.
+        Em uso: <span className="text-slate-200">{atual?.nome || info?.modelo || '—'}</span>
+        {info?.memoria_gpu_gb ? ` · sua placa tem ${String(info.memoria_gpu_gb).replace('.', ',')} GB de memória de vídeo` : ''}.
+        Para instalar outro modelo, use <code>ollama pull nome-do-modelo</code> e clique em Atualizar.
       </p>
       <p role="status" className="text-slate-300">{mensagem}</p>
     </div>

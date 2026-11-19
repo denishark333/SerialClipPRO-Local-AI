@@ -57,6 +57,58 @@ def mesmo_modelo(a, b):
     return base(a) == base(b)
 
 
+#: Modelos avaliados na curadoria (VOD real de 15 h, 40 amostras do Híbrido).
+#: memoria_gb é a memória de vídeo medida com contexto de 8192 tokens.
+CATALOGO = {
+    "gemma4:12b": {"nome": "Gemma 4 12B", "perfil": "Recomendado",
+                   "descricao": "Melhor curadoria nos testes: descreve os momentos com precisão e cita falas reais.",
+                   "memoria_gb": 9.2},
+    "llama3.1:latest": {"nome": "Llama 3.1 8B", "perfil": "Leve",
+                        "descricao": "Funciona na maioria das placas. Encontra mais momentos, com descrições menos precisas.",
+                        "memoria_gb": 5.8},
+    "qwen3.5:9b": {"nome": "Qwen 3.5 9B", "perfil": "Intermediário",
+                   "descricao": "Boas descrições, mas pode juntar ou alterar as falas citadas.",
+                   "memoria_gb": 6.6},
+    "qwen3:14b": {"nome": "Qwen 3 14B", "perfil": "Experimental",
+                  "descricao": "Muito seletivo: encontrou poucos momentos nos testes.",
+                  "memoria_gb": 10.3},
+}
+
+
+def _normalizar_nome(nome):
+    return nome if ":" in nome else nome + ":latest"
+
+
+def memoria_gpu_gb(timeout=5):
+    """Memória total da GPU NVIDIA em GB, ou None se não houver ou não der para medir."""
+    import shutil
+    import subprocess
+    if not shutil.which("nvidia-smi"):
+        return None
+    try:
+        saida = subprocess.run(["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+                               capture_output=True, text=True, timeout=timeout,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return round(max(float(linha) for linha in saida.stdout.split() if linha.strip()) / 1024, 1)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def descrever(modelo, memoria_gpu=None):
+    """Acrescenta nome amigável, perfil e se cabe na GPU a um item de modelos_instalados()."""
+    info = CATALOGO.get(_normalizar_nome(modelo["nome"]))
+    if info:
+        item = {**modelo, **info}
+    else:
+        item = {**modelo, "nome": modelo["nome"], "perfil": "", "memoria_gb": None,
+                "descricao": "Modelo não avaliado no ClipPRO; os resultados podem variar."}
+    item["id"] = modelo["nome"]
+    # Margem de ~1 GB para o sistema e o Whisper; sem GPU detectada, não opina.
+    item["cabe_na_gpu"] = (None if memoria_gpu is None or item["memoria_gb"] is None
+                           else item["memoria_gb"] <= memoria_gpu - 1)
+    return item
+
+
 def modelos_instalados(timeout=3):
     """Modelos do Ollama local, com tamanho e parâmetros. Levanta httpx.HTTPError se offline."""
     resposta = httpx.get(f"{URL_OLLAMA}/api/tags", timeout=timeout, trust_env=False)

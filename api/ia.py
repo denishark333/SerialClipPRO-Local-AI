@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from core import ia
 
 router = APIRouter(prefix='/ia')
+ORDEM_PERFIL = {'Recomendado': 0, 'Leve': 1, 'Intermediário': 2, 'Experimental': 3}
 
 
 @router.get('')
@@ -14,8 +15,13 @@ def obter():
         instalados, online = ia.modelos_instalados(), True
     except (httpx.HTTPError, ValueError):
         instalados, online = [], False
-    return {'modelo': atual, 'padrao': ia.PADRAO, 'ollama_online': online, 'instalados': instalados,
-            'modelo_instalado': any(ia.mesmo_modelo(m['nome'], atual) for m in instalados)}
+    memoria = ia.memoria_gpu_gb()
+    correspondente = next((m['nome'] for m in instalados if ia.mesmo_modelo(m['nome'], atual)), None)
+    return {'modelo': atual, 'modelo_id': correspondente or atual, 'padrao': ia.PADRAO, 'ollama_online': online,
+            'memoria_gpu_gb': memoria,
+            'instalados': sorted((ia.descrever(m, memoria) for m in instalados),
+                                 key=lambda m: (ORDEM_PERFIL.get(m['perfil'], len(ORDEM_PERFIL)), m['nome'])),
+            'modelo_instalado': correspondente is not None}
 
 
 @router.put('')
