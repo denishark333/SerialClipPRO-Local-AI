@@ -52,3 +52,7 @@ dist/
 transcricoes/
 social_canais.json
 self-test.json
+
+# Só o aplicativo vai para o repositório: testes e documentos de trabalho ficam locais
+tests/
+docs/

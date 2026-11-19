@@ -16,9 +16,6 @@ try {
     & $pythonPath -m PyInstaller --noconfirm --distpath $outputRoot ClipPro.spec
     if ($LASTEXITCODE -ne 0) { throw 'Falha ao empacotar desktop.' }
     $packageDir = Join-Path $outputRoot 'Serial ClipPRO'
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'install_prereqs.ps1') -Destination $packageDir
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'bootstrap.ps1') -Destination $packageDir
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Instalar dependencias.bat') -Destination $packageDir
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'LEIA-ME.txt') -Destination $packageDir
     Write-Host "Distribua a pasta inteira: $packageDir"
 } finally { Pop-Location }

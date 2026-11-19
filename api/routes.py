@@ -54,7 +54,7 @@ def obter_chave_unica(entrada: str) -> str:
     if not entrada:
         return "default"
     
-    # Tenta extrair o ID numérico de uma VOD da Twitch (ex: twitch.tv/videos/2875327192)
+    # Tenta extrair o ID numérico de uma VOD da Twitch (ex: twitch.tv/videos/123456789)
     twitch_match = re.search(r"videos/(\d+)", entrada)
     if eh_url_twitch(entrada):
         identificador = twitch_match.group(1) if twitch_match else hashlib.md5(entrada.strip().encode('utf-8')).hexdigest()

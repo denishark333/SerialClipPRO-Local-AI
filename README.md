@@ -187,7 +187,7 @@ A distribuição usa um único `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup)
 
 O programa fica em `%LOCALAPPDATA%/Programs/Serial ClipPRO/`, separado dos dados em `%LOCALAPPDATA%/Serial ClipPRO/`. Atualizações e desinstalação preservam vídeos, configurações e modelos. Feche o aplicativo após terminar/cancelar as operações antes de atualizar.
 
-Para compilar, prepare um ambiente Python estável x64 chamado `build-env`, instale `requirements-build.lock.txt`, instale Inno Setup e execute `scripts/build_installer.ps1`. O resultado e seu SHA256 ficam em `dist/installer/`. Veja [compilação, retomada e validação](docs/INSTALADOR_V2.md). O fluxo requer validação em Windows limpo antes de cada distribuição pública.
+Para compilar, prepare um ambiente Python estável x64 chamado `build-env`, instale `requirements-build.lock.txt`, instale Inno Setup e execute `scripts/build_installer.ps1`. O resultado e seu SHA256 ficam em `dist/installer/`. O fluxo requer validação em Windows limpo antes de cada distribuição pública.
 
 O instalador verifica assinaturas dos instaladores Microsoft/Ollama e o SHA256 do FFmpeg e do pacote NVIDIA. Não altera exclusões nem desativa o Defender. Registra diagnóstico em `instalacao.log`, `self-test.json` e `models-setup.json` na pasta de dados.
 
@@ -243,7 +243,7 @@ Na galeria, a exclusão libera os players antes de remover os arquivos. O result
 
 No desktop, **Descarregar** abre o seletor nativo “Salvar como” e copia o corte para o destino escolhido. A exportação em lote continua usando `Cortes_Exportados` e informa essa pasta no modal de resultado. Os botões de apoio Pix e PayPal ficam no cabeçalho e abrem suas páginas no navegador padrão.
 
-No desktop, “Abrir site” da aba Social abre uma janela WebView2 separada do mesmo aplicativo; no navegador, abre outra aba. As sessões ficam no perfil local do WebView2 e essas janelas não recebem a ponte Python da interface principal. Veja [detalhes do fluxo social](docs/REDES_SOCIAIS.md).
+No desktop, “Abrir site” da aba Social abre uma janela WebView2 separada do mesmo aplicativo; no navegador, abre outra aba. As sessões ficam no perfil local do WebView2 e essas janelas não recebem a ponte Python da interface principal.
 
 ## Pastas e API
 
@@ -251,7 +251,6 @@ No desktop, “Abrir site” da aba Social abre uma janela WebView2 separada do 
 - `api/`: rotas, validação, marca e diagnóstico de dependências.
 - `frontend/src/`: interface React.
 - `desktop.py`: janela WebView2; `main.py`: servidor para navegador.
-- `app.py`: Gradio opcional legado; instale Gradio separadamente se precisar.
 - `Cortes_Prontos/`, `Cortes_Exportados/`: vídeos; a exportação copia os MP4.
 - `temp_clip_cache/`: previews e temporários; `transcricoes/`: cache completo.
 - `relatorios_curadoria/`: decisões e tempos; `marca/`: PNG/configuração.
@@ -261,20 +260,9 @@ Rotas principais: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET 
 
 Parâmetros do pipeline: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`, `idioma`, `foco`.
 
-## Validação
-
-```powershell
-venv\Scripts\python.exe -m unittest discover -s tests -v
-cd frontend
-npm run lint
-npm run build
-```
-
-Há testes com mídia sintética e FFmpeg real; as chamadas de IA são simuladas para testes determinísticos. Isso não substitui validação da qualidade editorial, CDN ao vivo, visual da janela e teste em PC limpo. O teste do instalador falha de propósito se o Serial ClipPRO estiver aberto.
+## Diagnóstico
 
 O executável aceita `--self-test`: verifica imports, frontend, runtime WebView2 e o acesso à Kick (curl_cffi) sem abrir janela nem baixar modelos; grava `self-test.json` na pasta de dados. Não valida a renderização da janela nem o pipeline completo.
-
-O andamento das correções está em [Plano de correções](docs/PLANO_DE_CORRECOES.md).
 
 ---
 
