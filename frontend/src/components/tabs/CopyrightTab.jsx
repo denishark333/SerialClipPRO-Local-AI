@@ -2,11 +2,19 @@ import React from 'react';
 import { YouTubeIcon, KickIcon, TwitchIcon, InstagramIcon, TikTokIcon } from '../icons/Icons';
 import { version } from '../../../../version.json';
 
+// Cada projeto com a própria identidade no nome; os projetos Serial dividem a logo do SerialHealer.
+const GRADIENTE = 'text-transparent bg-clip-text bg-gradient-to-r';
+const LOGO_SERIAL = '/serial-healer.png';
 const ECOSSISTEMA = [
-  { nome: 'Serial ClipPRO', url: 'https://serialclip.pro', dominio: 'serialclip.pro', descricao: 'Página oficial e downloads.' },
-  { nome: 'SerialHealer', url: 'https://serialhealer.com.br', dominio: 'serialhealer.com.br', descricao: 'Site do criador e da comunidade.' },
-  { nome: 'Creator Studio', url: 'https://creatorstudio.serialhealer.com.br', dominio: 'creatorstudio.serialhealer.com.br', descricao: 'Métricas e planejamento de conteúdo do canal.' },
-  { nome: 'Chrono Odyssey', url: 'https://chronoodyssey.com.br', dominio: 'chronoodyssey.com.br', descricao: 'Projeto da comunidade.' },
+  { chave: 'clippro', url: 'https://serialclip.pro', logo: LOGO_SERIAL, descricao: 'Página oficial e downloads.',
+    nome: <span className={`${GRADIENTE} from-[#b3ff33] via-[#9333ea] to-[#00ffff]`}>Serial ClipPRO</span> },
+  { chave: 'serialhealer', url: 'https://serialhealer.com.br', logo: LOGO_SERIAL, descricao: 'Site do criador e da comunidade.',
+    nome: <span className={`${GRADIENTE} from-[#b3ff33] to-[#ff5fd2]`}>Serial Healer</span> },
+  { chave: 'creatorstudio', url: 'https://creatorstudio.serialhealer.com.br', logo: LOGO_SERIAL,
+    descricao: 'Métricas e planejamento de conteúdo do canal.',
+    nome: <><span className="text-[#ff1f4f]">Serial</span> <span className="text-[#a78bfa]">Creator</span> <span className="text-[#53fc18]">Studio</span></> },
+  { chave: 'chronoodyssey', url: 'https://chronoodyssey.com.br', logo: '/ecossistema/chronoodyssey.png', descricao: 'Projeto da comunidade.',
+    nome: <span className="text-[#d4af37]">Chrono Odyssey</span> },
 ];
 
 const LINK = 'text-cyan-300 underline decoration-cyan-700 underline-offset-2 hover:text-cyan-200';
@@ -60,11 +68,16 @@ export function CopyrightTab() {
         </article>
         <article className="rounded-xl border border-cyan-500/40 bg-gradient-to-br from-purple-950/40 to-cyan-950/20 p-5 space-y-3 text-sm">
           <h3 className="font-bold text-cyan-200">Ecossistema</h3>
-          <ul className="space-y-2.5">
-            {ECOSSISTEMA.map(({ nome, url, dominio, descricao }) => (
-              <li key={nome}>
-                <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-slate-100 hover:text-cyan-200">{nome}</a>
-                <span className="block text-xs text-slate-400">{descricao} <span className="font-mono text-slate-500">{dominio}</span></span>
+          <ul className="space-y-3">
+            {ECOSSISTEMA.map(({ chave, nome, url, logo, descricao }) => (
+              <li key={chave}>
+                <a href={url} target="_blank" rel="noreferrer" className="group flex items-center gap-3">
+                  <img src={logo} alt="" className="w-9 h-9 shrink-0 rounded-full bg-black object-cover" />
+                  <span>
+                    <span className="block font-bold group-hover:brightness-125 transition">{nome}</span>
+                    <span className="block text-xs text-slate-400">{descricao}</span>
+                  </span>
+                </a>
               </li>
             ))}
           </ul>
