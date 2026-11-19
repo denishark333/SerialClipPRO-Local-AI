@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+yt_dlp
+faster-whisper
+ollama
+pydantic>=2
+torch
+
+Pillow

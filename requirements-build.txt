@@ -1,0 +1,10 @@
+# Ambiente isolado de build Windows x64. Torch não é usado pelo runtime desktop.
+fastapi
+uvicorn
+yt_dlp
+faster-whisper
+ollama
+pydantic>=2
+Pillow
+pywebview>=6,<7
+pyinstaller>=6,<7
