@@ -117,8 +117,7 @@ def criar_janelas(segmentos, duracao=150, sobreposicao=45, limite_chars=12000):
 
 
 def selecionar(candidatos, limite):
-    prioridade = {"recomendado": 2, "revisar": 1, "sugestao": 0}
-    ordenados = sorted(candidatos, key=lambda c: (prioridade[c["avaliacao"]], c["nota"]), reverse=True)
+    ordenados = sorted(candidatos, key=lambda c: (_PRIORIDADE[c["avaliacao"]], c["nota"]), reverse=True)
     selecionados = []
     for candidato in ordenados:
         sobreposto = any(
@@ -130,6 +129,46 @@ def selecionar(candidatos, limite):
         if candidato["selecao"] == "selecionado":
             selecionados.append(candidato)
     return selecionados
+
+
+#: Candidatos da mesma fala separados por até isto viram um só momento.
+FOLGA_FUSAO = 2.0
+_PRIORIDADE = {"recomendado": 2, "revisar": 1, "sugestao": 0}
+
+
+def fundir_vizinhos(candidatos, folga=FOLGA_FUSAO, maximo=DURACAO_MAXIMA):
+    """Junta candidatos sobrepostos ou colados da mesma amostra num só corte.
+
+    O modelo costuma marcar cada par de segmentos de uma conversa como um
+    momento à parte; ampliados, esses pedaços cobrem a mesma cena em vários
+    cortes vizinhos. Aqui eles viram um corte contínuo (até ``maximo``), que
+    herda a avaliação do melhor pedaço. Os pedaços ficam listados em
+    ``fundidos`` para auditoria.
+    """
+    grupos = {}
+    for candidato in candidatos:
+        grupos.setdefault(candidato.get("amostra"), []).append(candidato)
+    resultado = []
+    for grupo in grupos.values():
+        grupo.sort(key=lambda c: (c["inicio"], c["fim"]))
+        atual = [grupo[0]]
+        for candidato in grupo[1:]:
+            inicio, fim = atual[0]["inicio"], max(c["fim"] for c in atual)
+            if candidato["inicio"] <= fim + folga and max(fim, candidato["fim"]) - inicio <= maximo:
+                atual.append(candidato)
+            else:
+                resultado.append(_fundir(atual))
+                atual = [candidato]
+        resultado.append(_fundir(atual))
+    return sorted(resultado, key=lambda c: c["inicio"])
+
+
+def _fundir(pedacos):
+    if len(pedacos) == 1:
+        return pedacos[0]
+    melhor = max(pedacos, key=lambda c: (_PRIORIDADE.get(c["avaliacao"], 0), c["nota"]))
+    return {**melhor, "inicio": min(c["inicio"] for c in pedacos), "fim": max(c["fim"] for c in pedacos),
+            "fundidos": [{k: c.get(k) for k in ("inicio_id", "fim_id", "nota", "motivo")} for c in pedacos]}
 
 
 def ajustar_limites(candidatos, palavras, duracao_total):
@@ -279,6 +318,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
     execucao.verificar()
     if not relatorio["candidatos"]:
         relatorio["candidatos"] = sugestoes
+    relatorio["candidatos"] = fundir_vizinhos(relatorio["candidatos"])
     ajustar_limites(relatorio["candidatos"], transcricao.get("palavras") or [], duracao)
     relatorio["selecionados"] = selecionar(relatorio["candidatos"], max_cortes)
     relatorio["resumo_curadoria"] = resumir_curadoria(relatorio)
