@@ -15,7 +15,7 @@ from core.subtitles import agrupar_palavras, filtro_legenda
 from core.composition import compor_video
 from core.branding import filtro_marca
 from core.execution import executar_comando
-from core.encoders import renderizar, ARGS_AUDIO
+from core.encoders import renderizar, medir_volume, args_audio
 
 ROOT = DATA_DIR / 'cache_revisao'
 
@@ -119,9 +119,11 @@ def aplicar(identificador, legendas, revisao):
             filtro += ';' + filtro_marca(dados['marca'], altura)
             saida = '[v_marca]'
         video = tmp/'corrigido.mp4'
+        audio_final = args_audio(medir_volume(base/'original.mp4', lambda comando: executar_comando(
+            comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)))
         nome_encoder, resultado = renderizar(
             lambda codec: entradas + ['-filter_complex', filtro, '-map', saida, '-map', '0:a'] + codec
-                          + ARGS_AUDIO + [str(video)],
+                          + audio_final + [str(video)],
             lambda comando: executar_comando(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                 monitor=lambda t: print(f'[Revisão] Renderizando {dados["nome"]}: {t:.0f}s', flush=True)),
             '[Revisão]')

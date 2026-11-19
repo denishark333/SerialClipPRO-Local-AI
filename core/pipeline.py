@@ -24,7 +24,7 @@ from core.subtitles import filtro_legenda, escrever_legenda
 from core.composition import compor_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
-from core.encoders import renderizar, ARGS_AUDIO
+from core.encoders import renderizar, medir_volume, args_audio
 from core.boundaries import refinar
 
 from core.execution import (
@@ -431,8 +431,11 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 with estado_lock:
                     estado_pipeline['encoder_tentativa'] = nome
 
+            medida = medir_volume(corte['trecho_path'], lambda comando: executar_comando(
+                comando, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True))
+            audio_final = args_audio(medida)
             nome_encoder, res_render = renderizar(
-                lambda codec: entradas_render + map_args + codec + ARGS_AUDIO + [output_video],
+                lambda codec: entradas_render + map_args + codec + audio_final + [output_video],
                 lambda comando: executar_comando(comando, execucao=execucao, stdout=subprocess.PIPE,
                                                  stderr=subprocess.PIPE, text=True),
                 f'[Render] Corte {idx+1}', ao_tentar=tentativa)

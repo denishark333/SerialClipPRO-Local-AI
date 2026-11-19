@@ -5,6 +5,8 @@ seguinte funciona com o mesmo comando, a falha é atribuída ao encoder e ele é
 pulado nos próximos cortes desta sessão. Se todos falham, o problema está no
 comando (filtros, entrada) e nenhum encoder é marcado.
 """
+import json
+import math
 import threading
 
 ENCODERS = (
@@ -15,7 +17,44 @@ ENCODERS = (
 
 #: -14 LUFS integrado e -1,5 dBTP: o alvo para o qual as plataformas normalizam.
 #: Entregar o corte já nesse nível evita que elas alterem o volume.
-ARGS_AUDIO = ['-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000']
+LOUDNORM = 'loudnorm=I=-14:TP=-1.5:LRA=11'
+
+#: Campos da medição do loudnorm usados na segunda passada.
+_MEDIDAS = (('measured_I', 'input_i'), ('measured_TP', 'input_tp'), ('measured_LRA', 'input_lra'),
+            ('measured_thresh', 'input_thresh'), ('offset', 'target_offset'))
+
+
+def args_audio(medida=None):
+    """Argumentos de áudio da renderização.
+
+    Com a medição da primeira passada, o loudnorm aplica um ganho único
+    (linear) que acerta o alvo. Sem ela, ajusta o volume de forma dinâmica,
+    o que fica só perto do alvo em trechos curtos.
+    """
+    filtro = LOUDNORM
+    if medida:
+        filtro += ''.join(f':{chave}={medida[chave]:.2f}' for chave, _ in _MEDIDAS) + ':linear=true'
+    return ['-af', filtro, '-c:a', 'aac', '-b:a', '192k', '-ar', '48000']
+
+
+ARGS_AUDIO = args_audio()
+
+
+def medir_volume(arquivo, executar):
+    """Primeira passada do loudnorm. Retorna as medidas ou None se não der para medir."""
+    resultado = executar(['ffmpeg', '-hide_banner', '-nostats', '-i', str(arquivo), '-vn',
+                          '-af', LOUDNORM + ':print_format=json', '-f', 'null', '-'])
+    if resultado.returncode != 0:
+        return None
+    texto = _texto(resultado.stderr)
+    inicio, fim = texto.rfind('{'), texto.rfind('}')
+    try:
+        dados = json.loads(texto[inicio:fim + 1])
+        medida = {chave: float(dados[campo]) for chave, campo in _MEDIDAS}
+    except (ValueError, KeyError, TypeError):
+        return None
+    # Silêncio total mede -inf: não há ganho a calcular.
+    return medida if all(math.isfinite(v) for v in medida.values()) else None
 
 _lock = threading.Lock()
 _indisponiveis = set()
