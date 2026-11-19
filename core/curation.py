@@ -1,5 +1,6 @@
 """Curadoria textual com contexto sobreposto e decisões auditáveis."""
 import json
+import re
 from typing import Literal
 
 import ollama
@@ -225,12 +226,67 @@ def ajustar_limites(candidatos, palavras, duracao_total):
                          inicio=novo[0], fim=min(novo[1], duracao_total))
 
 
-def sugestao_revisao(janela, janela_id, duracao_total):
+def _pistas_do_criador(termos, foco):
+    """Palavras que o criador informou: termos (lista) e foco (texto livre)."""
+    lista = {t for t in (_normalizar(x) for x in re.split(r"[,;\n]", termos)) if len(t) >= 3}
+    palavras_foco = {p for p in _normalizar(foco).split() if len(p) >= 5}
+    return lista, palavras_foco
+
+
+def _sinais(seg, ritmo_tipico, termos, palavras_foco):
+    """Sinais de momento marcante que não dependem de gênero nem de idioma.
+
+    Pesa o que o criador pediu (termos e foco), entonação marcada pela
+    transcrição (! e ?), repetições ("não não", "kkkk", "nooo") e fala mais
+    rápida que o normal do bloco. Retorna a nota e os nomes dos sinais achados.
+    """
+    texto = seg["text"]
+    normal = _normalizar(texto)
+    palavras = normal.split()
+    encontrados, nota = [], 0.0
+    if any(t in f" {normal} " for t in (f" {t} " for t in termos)):
+        nota += 3
+        encontrados.append("termos")
+    if palavras_foco & set(palavras):
+        nota += 1.5
+        encontrados.append("foco")
+    if "!" in texto:
+        nota += min(texto.count("!"), 3)
+        encontrados.append("exclamacao")
+    if "?" in texto:
+        nota += 0.5 * min(texto.count("?"), 2)
+        encontrados.append("pergunta")
+    if any(a == b for a, b in zip(palavras, palavras[1:])) or any(
+            len(p) >= 4 and any(p[i] == p[i+1] == p[i+2] for i in range(len(p) - 2)) for p in palavras):
+        nota += 1
+        encontrados.append("repeticao")
+    duracao = seg["end"] - seg["start"]
+    if ritmo_tipico and duracao > 0 and len(palavras) >= 4 and len(palavras) / duracao > 1.3 * ritmo_tipico:
+        nota += 1
+        encontrados.append("fala_rapida")
+    return nota, encontrados
+
+
+_NOMES_SINAIS = {"termos": "termos que você informou", "foco": "palavras do campo \"O que procurar\"",
+                 "exclamacao": "exclamação", "pergunta": "pergunta", "repeticao": "repetição de palavras ou sons",
+                 "fala_rapida": "fala mais rápida que o normal"}
+
+
+def _motivo_sugestao(sinais):
+    base = "Sugestão automática para revisão; não aprovada pela IA."
+    if not sinais:
+        return base + " Nenhum sinal forte no bloco: trecho mantido para revisão manual."
+    return base + " Sinais: " + ", ".join(_NOMES_SINAIS[s] for s in sinais) + "."
+
+
+def sugestao_revisao(janela, janela_id, duracao_total, termos="", foco=""):
     # Evidências servem apenas para priorizar revisão humana, nunca como aprovação da IA.
-    pistas = ("chat", "ler", "apaga", "subs", "skill", "stun", "duelo", "matei", "morri", "cura", "olha", "não acredito")
-    def sinais(seg):
-        return sum(p in seg["text"].lower() for p in pistas)
-    centro = max(range(len(janela)), key=lambda i: sinais(janela[i]))
+    lista, palavras_foco = _pistas_do_criador(termos, foco)
+    ritmos = sorted(len(_normalizar(s["text"]).split()) / (s["end"] - s["start"])
+                    for s in janela if s["end"] > s["start"])
+    ritmo_tipico = ritmos[len(ritmos) // 2] if ritmos else 0
+    avaliados = [_sinais(s, ritmo_tipico, lista, palavras_foco) for s in janela]
+    centro = max(range(len(janela)), key=lambda i: avaliados[i][0])
     primeiro = centro
     while primeiro > 0 and janela[centro]["start"] - janela[primeiro-1]["start"] <= 20:
         primeiro -= 1
@@ -241,8 +297,9 @@ def sugestao_revisao(janela, janela_id, duracao_total):
     if not 5 <= fim-inicio <= 90:
         return None
     return {"inicio": inicio, "fim": fim, "inicio_id": janela[primeiro]["id"], "fim_id": janela[ultimo]["id"],
-            "categoria": "outro", "avaliacao": "sugestao", "nota": sinais(janela[centro]),
-            "motivo": "Sugestão automática para revisão; não aprovada pela IA.", "janela": janela_id,
+            "categoria": "outro", "avaliacao": "sugestao", "nota": avaliados[centro][0],
+            "sinais": avaliados[centro][1],
+            "motivo": _motivo_sugestao(avaliados[centro][1]), "janela": janela_id,
             "amostra": janela[primeiro].get("amostra")}
 
 
@@ -275,10 +332,10 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
     falhas_consecutivas = 0
     for indice, janela in enumerate(janelas):
         execucao.verificar()
-        atualizar_estado(f"Analisando contexto: bloco {indice+1}/{len(janelas)} (chat, combate e reações)...", 2, 35+int(13*indice/max(1, len(janelas))))
+        atualizar_estado(f"Analisando contexto: bloco {indice+1}/{len(janelas)}...", 2, 35+int(13*indice/max(1, len(janelas))))
         registro = {"indice": indice, "inicio_id": janela[0]["id"], "fim_id": janela[-1]["id"], "decisoes": []}
         relatorio["janelas"].append(registro)
-        sugestao = sugestao_revisao(janela, indice, duracao)
+        sugestao = sugestao_revisao(janela, indice, duracao, termos, foco)
         if sugestao:
             sugestoes.append(sugestao)
         try:
