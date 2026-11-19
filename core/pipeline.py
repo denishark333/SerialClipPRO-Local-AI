@@ -332,7 +332,9 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                             {'role': 'system', 'content': system_prompt},
                             {'role': 'user', 'content': f"Transcript: {texto_trecho if texto_trecho.strip() else 'Momento de gameplay ou reação.'}"}
                         ],
-                        options={'temperature': 0.1, 'num_predict': 64}
+                        options={'temperature': 0.1, 'num_predict': 64},
+                        # Modelos com raciocínio (Qwen 3) responderiam bem mais devagar.
+                        think=False,
                     )
                     conteudo_ia = resp['message']['content'].strip()
                     if "```json" in conteudo_ia:

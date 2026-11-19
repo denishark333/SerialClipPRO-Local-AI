@@ -11,6 +11,8 @@ from core.boundaries import refinar
 from core import ia, transcription
 
 OPCOES_LLM = {"temperature": 0.1, "num_predict": 2048, "num_ctx": 8192}
+# As chamadas usam think=False: modelos com modo de raciocínio (Qwen 3) ficariam bem mais
+# lentos e podem atrapalhar o JSON; nos demais modelos o parâmetro não muda nada.
 
 
 class Momento(BaseModel):
@@ -293,7 +295,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
                 resposta = cliente.chat(model=modelo_llm, format=Resposta.model_json_schema(),
                                         messages=[{"role": "system", "content": PROMPT},
                                                   {"role": "user", "content": mensagem}],
-                                        options=OPCOES_LLM)
+                                        options=OPCOES_LLM, think=False)
                 execucao.verificar()
                 conteudo = resposta["message"]["content"]
             avaliacao = Resposta.model_validate_json(conteudo)
