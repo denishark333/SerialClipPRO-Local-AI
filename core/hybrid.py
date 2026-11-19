@@ -5,7 +5,8 @@ import subprocess
 import time
 import wave
 
-from core.whisper import carregar_modelo, dispositivo
+from core import transcription
+from core.whisper import MODELO, carregar_modelo, dispositivo
 from core.audio import detectar_segmentos_narrativos
 from core.config import atualizar_estado
 from core.execution import executar_comando
@@ -42,7 +43,48 @@ def planejar_janelas(picos, duracao, limite=40, ignorar_inicio=0):
     return sorted(janelas, key=lambda j: j['inicio'])
 
 
-def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar):
+def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempos):
+    """Transcreve uma amostra. Tempos relativos ao início da amostra."""
+    t = time.monotonic()
+    res = executar_comando([
+        'ffmpeg', '-y', '-ss', str(janela['inicio']), '-i', fonte,
+        '-t', str(janela['fim']-janela['inicio']), '-vn', '-map', '0:a:0',
+        '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(arquivo),
+    ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    tempos['extracao_audio_trechos'] += time.monotonic()-t
+    if res.returncode:
+        raise RuntimeError('Falha ao extrair amostra: '+res.stderr.decode(errors='replace')[-1500:])
+    try:
+        with wave.open(str(arquivo), 'rb') as wav:
+            duracao = wav.getnframes()/wav.getframerate()
+        t = time.monotonic()
+        iterator, _ = modelo.transcribe(str(arquivo), language='pt', word_timestamps=True,
+                                        beam_size=5, vad_filter=True, hotwords=termos or None)
+        segmentos = []
+        for seg in iterator:
+            execucao.verificar()
+            a, b = max(0., float(seg.start)), min(duracao, float(seg.end))
+            if not math.isfinite(a) or not math.isfinite(b) or b <= a or not seg.text.strip():
+                continue
+            palavras = []
+            for w in seg.words or []:
+                st, et = max(a, float(w.start)), min(b, float(w.end))
+                if math.isfinite(st) and math.isfinite(et) and et > st and w.word.strip():
+                    palavras.append({'start': st, 'end': et, 'word': w.word.strip()})
+            segmentos.append({'start': a, 'end': b, 'text': seg.text.strip(), 'palavras': palavras})
+        tempos['transcricao_trechos'] += time.monotonic()-t
+    finally:
+        arquivo.unlink(missing_ok=True)
+    return {'versao': 1, 'duracao': duracao, 'segmentos': segmentos}
+
+
+def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar, entrada=None):
+    """Amostra e transcreve a fonte.
+
+    Com ``entrada``, cada amostra transcrita fica em cache: uma nova execução
+    da mesma VOD (por exemplo, depois de uma queda do Ollama) só transcreve as
+    amostras que faltam. A chave inclui a entrada, o intervalo e os termos.
+    """
     tempos = {}
     atualizar_estado("Híbrido: mapeando áudio para escolher amostras...", 2, 15)
     t = time.monotonic()
@@ -54,49 +96,41 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     registrar({'amostragem': plano, 'orcamento_trechos': limite,
                'segundos_audio_planejados': sum(j['fim']-j['inicio'] for j in plano), 'tempos_hibrido': tempos})
     execucao.verificar()
-    t = time.monotonic()
-    modelo = carregar_modelo()
-    tempos['carregamento_whisper'] = time.monotonic()-t
-    tempos.update(extracao_audio_trechos=0., transcricao_trechos=0.)
+    tempos.update(extracao_audio_trechos=0., transcricao_trechos=0., amostras_do_cache=0)
+    modelo = None
     segmentos, palavras, grupos = [], [], []
     for indice, janela in enumerate(plano):
         execucao.verificar()
         atualizar_estado(f"Híbrido: transcrevendo amostra {indice+1}/{len(plano)} ({dispositivo()})...", 2, 16+int(18*indice/len(plano)))
-        arquivo = Path(pasta_temp) / f"amostra_{indice}.wav"
-        t = time.monotonic()
-        res = executar_comando([
-            'ffmpeg', '-y', '-ss', str(janela['inicio']), '-i', fonte,
-            '-t', str(janela['fim']-janela['inicio']), '-vn', '-map', '0:a:0',
-            '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(arquivo),
-        ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tempos['extracao_audio_trechos'] += time.monotonic()-t
-        if res.returncode:
-            raise RuntimeError('Falha ao extrair amostra: '+res.stderr.decode(errors='replace')[-1500:])
-        with wave.open(str(arquivo), 'rb') as wav:
-            duracao = wav.getnframes()/wav.getframerate()
-        t = time.monotonic()
-        iterator, _ = modelo.transcribe(str(arquivo), language='pt', word_timestamps=True,
-                                       beam_size=5, vad_filter=True, hotwords=termos or None)
-        grupo = []
-        for seg in iterator:
+        cache = None
+        if entrada is not None:
+            cache = transcription.CACHE_DIR / 'amostras' / (transcription.chave(
+                'amostra_hibrido', 1, transcription.identidade_entrada(entrada), round(janela['inicio'], 3),
+                round(janela['fim'], 3), MODELO, 'pt', termos) + '.json')
+        dados = transcription.ler_json(cache) if cache else None
+        if dados and dados.get('versao') == 1 and isinstance(dados.get('segmentos'), list):
+            tempos['amostras_do_cache'] += 1
+        else:
+            if modelo is None:
+                t = time.monotonic()
+                modelo = carregar_modelo()
+                tempos['carregamento_whisper'] = time.monotonic()-t
+            dados = _transcrever_amostra(modelo, fonte, janela, Path(pasta_temp) / f"amostra_{indice}.wav",
+                                         execucao, termos, tempos)
             execucao.verificar()
-            a, b = max(0., float(seg.start)), min(duracao, float(seg.end))
-            if not math.isfinite(a) or not math.isfinite(b) or b <= a or not seg.text.strip():
-                continue
-            offset = janela['inicio']
-            item = {'id': f's{len(segmentos)+1:06d}', 'start': offset+a, 'end': offset+b, 'text': seg.text.strip()}
+            if cache:
+                transcription.salvar_json(cache, dados)
+        offset = janela['inicio']
+        grupo = []
+        for seg in dados['segmentos']:
+            # Índice da amostra acompanha cada segmento, para legendas sem duplicação.
+            item = {'id': f's{len(segmentos)+1:06d}', 'start': offset+seg['start'], 'end': offset+seg['end'],
+                    'text': seg['text'], 'amostra': indice}
             segmentos.append(item)
             grupo.append(item)
-            for w in seg.words or []:
-                st, et = max(a, float(w.start)), min(b, float(w.end))
-                if math.isfinite(st) and math.isfinite(et) and et > st and w.word.strip():
-                    palavras.append({'start': offset+st, 'end': offset+et, 'word': w.word.strip(), 'amostra': indice})
-        tempos['transcricao_trechos'] += time.monotonic()-t
-        # Índice da amostra acompanha cada segmento, para legendas sem duplicação.
-        for item in grupo:
-            item['amostra'] = indice
+            palavras.extend({'start': offset+p['start'], 'end': offset+p['end'], 'word': p['word'], 'amostra': indice}
+                            for p in seg['palavras'])
         grupos.append(grupo)
-        arquivo.unlink()
         registrar({'tempos_hibrido': tempos, 'amostras_transcritas': indice+1})
     execucao.verificar()
     return {'duracao': mapa['duracao'], 'segmentos': segmentos, 'palavras': palavras,

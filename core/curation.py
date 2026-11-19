@@ -8,6 +8,10 @@ from core.config import atualizar_estado
 from core.execution import PipelineCancelado
 from core.curation_status import resumir_curadoria, tipo_falha
 from core.boundaries import refinar
+from core import transcription
+
+MODELO_LLM = "llama3.1"
+OPCOES_LLM = {"temperature": 0.1, "num_predict": 2048, "num_ctx": 8192}
 
 
 class Momento(BaseModel):
@@ -120,7 +124,15 @@ def sugestao_revisao(janela, janela_id, duracao_total):
             "amostra": janela[primeiro].get("amostra")}
 
 
-def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termos="", salvar_progresso=None):
+def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termos="", salvar_progresso=None,
+                      usar_cache=False):
+    """Avalia cada bloco da transcrição com o Ollama.
+
+    Com ``usar_cache``, cada bloco avaliado com sucesso fica guardado. Uma nova
+    execução da mesma VOD reaproveita os blocos já avaliados e só envia ao
+    Ollama os que faltam. A chave inclui modelo, prompt, opções, termos e o
+    texto exato do bloco: qualquer mudança gera uma nova avaliação.
+    """
     duracao = transcricao["duracao"]
     limite_inicio = ignorar_inicio if duracao > ignorar_inicio else 0
     segmentos = [s for s in transcricao["segmentos"] if s["start"] >= limite_inicio]
@@ -144,18 +156,32 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
         if sugestao:
             sugestoes.append(sugestao)
         try:
-            if falhas_consecutivas >= 3:
-                registro.update(estado="nao_avaliado", tipo_erro="analise_suspensa",
-                                erro="Análise suspensa após três falhas consecutivas; bloco não enviado ao Ollama.")
-                if salvar_progresso:
-                    salvar_progresso(relatorio)
-                continue
-            resposta = cliente.chat(model="llama3.1", format=Resposta.model_json_schema(),
-                                    messages=[{"role": "system", "content": PROMPT},
-                                              {"role": "user", "content": json.dumps({"termos_do_jogo": termos, "segmentos": janela}, ensure_ascii=False)}],
-                                    options={"temperature": 0.1, "num_predict": 2048, "num_ctx": 8192})
-            execucao.verificar()
-            avaliacao = Resposta.model_validate_json(resposta["message"]["content"])
+            mensagem = json.dumps({"termos_do_jogo": termos, "segmentos": janela}, ensure_ascii=False)
+            cache, conteudo = None, None
+            if usar_cache:
+                cache = transcription.CACHE_DIR / "curadoria" / (
+                    transcription.chave("curadoria", MODELO_LLM, PROMPT, OPCOES_LLM, mensagem) + ".json")
+                salvo = transcription.ler_json(cache)
+                if isinstance(salvo, dict) and isinstance(salvo.get("conteudo"), str):
+                    conteudo = salvo["conteudo"]
+                    registro["do_cache"] = True
+            if conteudo is None:
+                if falhas_consecutivas >= 3:
+                    registro.update(estado="nao_avaliado", tipo_erro="analise_suspensa",
+                                    erro="Análise suspensa após três falhas consecutivas; bloco não enviado ao Ollama.")
+                    if salvar_progresso:
+                        salvar_progresso(relatorio)
+                    continue
+                resposta = cliente.chat(model=MODELO_LLM, format=Resposta.model_json_schema(),
+                                        messages=[{"role": "system", "content": PROMPT},
+                                                  {"role": "user", "content": mensagem}],
+                                        options=OPCOES_LLM)
+                execucao.verificar()
+                conteudo = resposta["message"]["content"]
+            avaliacao = Resposta.model_validate_json(conteudo)
+            # Só respostas válidas viram checkpoint; falhas são tentadas de novo.
+            if cache and not registro.get("do_cache"):
+                transcription.salvar_json(cache, {"conteudo": conteudo})
             falhas_consecutivas = 0
             por_id = {s["id"]: s for s in janela}
             for momento in avaliacao.momentos:

@@ -28,14 +28,16 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
     registrar({})
     try:
         if modo == "hibrido":
-            transcricao, _ = transcrever_hibrido(fonte_audio, pasta_temp, execucao, termos, ignorar_inicio, limite_amostras, registrar)
+            transcricao, _ = transcrever_hibrido(fonte_audio, pasta_temp, execucao, termos, ignorar_inicio,
+                                                 limite_amostras, registrar, entrada=entrada)
             cache = str(REPORT_DIR / (report_id[:-5] + "_amostras.json"))
             salvar_json(cache, transcricao)
         else:
             transcricao, cache = transcrever_completo(fonte_audio, entrada, pasta_temp, execucao, termos)
         registrar({"transcricao": cache, "termos_jogo": termos, "estado": "analisando"})
         inicio_curadoria = time.monotonic()
-        resultado = analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio, termos, registrar)
+        resultado = analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio, termos, registrar,
+                                      usar_cache=True)
         resumo = resultado.get('resumo_curadoria') or resumir_curadoria(resultado)
         with estado_lock:
             estado_pipeline['resumo_curadoria'] = resumo

@@ -1,4 +1,4 @@
-"""Transcrição completa em blocos de áudio, na CPU, com cache reutilizável."""
+"""Transcrição completa em blocos de áudio, com cache reutilizável."""
 import hashlib
 import json
 import math
@@ -16,13 +16,32 @@ CACHE_DIR = DATA_DIR / "transcricoes"
 VERSAO = 1
 
 
-def chave_transcricao(entrada, termos):
+def identidade_entrada(entrada):
+    """URL como digitada; arquivo local por caminho, tamanho e data de modificação."""
     identidade = entrada.strip()
     if os.path.isfile(identidade):
         stat = os.stat(identidade)
         identidade = [os.path.abspath(identidade), stat.st_size, stat.st_mtime_ns]
-    dados = [VERSAO, identidade, "small", "cpu", "int8", "pt", termos]
-    return hashlib.sha256(json.dumps(dados, ensure_ascii=False).encode()).hexdigest()
+    return identidade
+
+
+def chave(*partes):
+    """Identificador de cache derivado de tudo que influencia o resultado."""
+    return hashlib.sha256(json.dumps(list(partes), ensure_ascii=False).encode()).hexdigest()
+
+
+def ler_json(caminho):
+    """Conteúdo de um cache, ou None se ausente ou corrompido."""
+    try:
+        return json.loads(Path(caminho).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def chave_transcricao(entrada, termos):
+    # "cpu"/"int8" é o rótulo histórico desta configuração; mantido para não
+    # invalidar caches existentes. O texto não depende do dispositivo usado.
+    return chave(VERSAO, identidade_entrada(entrada), "small", "cpu", "int8", "pt", termos)
 
 
 def salvar_json(caminho, dados):
