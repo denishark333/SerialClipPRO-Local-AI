@@ -10,6 +10,9 @@ const IDIOMAS = [
   ['auto', 'Detectar automaticamente'],
 ];
 
+const IDIOMA_CURTO = { en: 'Inglês', es: 'Espanhol', fr: 'Francês', de: 'Alemão', it: 'Italiano', ja: 'Japonês',
+  ko: 'Coreano', auto: 'idioma automático' };
+
 // Pontos de partida editáveis. A IA recebe o texto como prioridade, não como molde.
 const PRESETS = {
   nenhum: { rotulo: 'Sem preferência', texto: '' },
@@ -35,6 +38,12 @@ export function PipelineTab({
 }) {
   const { notify } = useDialog();
   const presetAtual = Object.keys(PRESETS).find(chave => PRESETS[chave].texto === foco) ?? 'personalizado';
+  const resumoAvancado = [
+    idioma !== 'pt' && IDIOMA_CURTO[idioma],
+    foco.trim() && (presetAtual === 'personalizado' ? 'foco personalizado' : `foco ${PRESETS[presetAtual].rotulo}`),
+    termosJogo.trim() && 'termos',
+    Number(ignorarInicio) > 0 && `abertura ${Number(ignorarInicio)}s`,
+  ].filter(Boolean).join(' · ');
   const [carregandoPreview, setCarregandoPreview] = React.useState(false);
   const [previewPronto, setPreviewPronto] = React.useState(0);
   const [selecionandoArquivo, setSelecionandoArquivo] = React.useState(false);
@@ -213,6 +222,13 @@ export function PipelineTab({
               <span>Até {Number(limiteAmostras) * 1.5} minutos de áudio para transcrição. Regiões fora das amostras podem passar despercebidas.</span>
             </label>
           </details>}
+          {/* Idioma e foco ficam salvos entre execuções: o título lembra o que está fora do padrão. */}
+          <details className="text-sm text-slate-400 mb-3 border border-[#1f1633] rounded-lg p-3">
+            <summary className="cursor-pointer font-medium text-slate-300">
+              Configurações avançadas
+              {resumoAvancado && <span className="ml-2 text-xs font-normal text-cyan-300/80">· {resumoAvancado}</span>}
+            </summary>
+            <div className="mt-3 flex flex-col">
           <label className="text-sm text-slate-400 mb-3 flex flex-col gap-1">
             Idioma falado na live
             <select value={idioma} onChange={e => setIdioma(e.target.value)} disabled={carregando}
@@ -247,6 +263,8 @@ export function PipelineTab({
               className="bg-[#0e0a1a] border border-[#1f1633] rounded p-2" />
             <span>Vídeos menores que esse intervalo são analisados desde o início.</span>
           </label>
+            </div>
+          </details>
 
           {/* BOTÕES DE CONTROLE: INICIAR E PARAR */}
           <div className="flex flex-col gap-2.5 mt-2">
