@@ -6,7 +6,6 @@ import tempfile
 import uuid
 import math
 from urllib.parse import urlsplit
-from faster_whisper import WhisperModel
 import ollama
 import yt_dlp
 
@@ -26,6 +25,7 @@ from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
 from core.boundaries import refinar
+from core.whisper import carregar_modelo, dispositivo
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
@@ -249,8 +249,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
             if not candidatos_picos:
                 raise ValueError("Nenhum candidato encontrado na análise de áudio.")
             inicio_subetapa = time.monotonic()
-            print('[Whisper] Carregando Small (CPU/int8). O primeiro uso pode baixar o modelo.', flush=True)
-            modelo_whisper = WhisperModel("small", device="cpu", compute_type="int8")
+            modelo_whisper = carregar_modelo()
         
             detalhes["carregamento_whisper"] = time.monotonic() - inicio_subetapa
             cortes_validados = []
@@ -278,7 +277,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                     continue
 
                 palavras_analise = []
-                atualizar_estado(f"Picos: transcrevendo candidato {i+1}/{len(candidatos_picos)} (CPU)...", 2, 35)
+                atualizar_estado(f"Picos: transcrevendo candidato {i+1}/{len(candidatos_picos)} ({dispositivo()})...", 2, 35)
                 inicio_subetapa = time.monotonic()
                 try:
                     segmentos_iter, _ = modelo_whisper.transcribe(audio_path, word_timestamps=True, language="pt")

@@ -8,7 +8,7 @@ import subprocess
 import uuid
 import wave
 
-from faster_whisper import WhisperModel
+from core.whisper import carregar_modelo, dispositivo
 from core.config import DATA_DIR, atualizar_estado
 from core.execution import executar_comando
 
@@ -64,15 +64,14 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos=""):
         raise ValueError("Nenhum áudio disponível para transcrição.")
 
     execucao.verificar()
-    print('[Whisper] Carregando Small (CPU/int8). O primeiro uso pode baixar o modelo.', flush=True)
-    modelo = WhisperModel("small", device="cpu", compute_type="int8")
+    modelo = carregar_modelo()
     segmentos, palavras = [], []
     offset = 0.0
     for indice, bloco in enumerate(blocos):
         execucao.verificar()
         with wave.open(str(bloco), "rb") as wav:
             duracao = wav.getnframes() / wav.getframerate()
-        atualizar_estado(f"Transcrevendo a VOD: bloco {indice+1}/{len(blocos)} (CPU)...", 2, 16 + int(18 * indice / len(blocos)))
+        atualizar_estado(f"Transcrevendo a VOD: bloco {indice+1}/{len(blocos)} ({dispositivo()})...", 2, 16 + int(18 * indice / len(blocos)))
         iterator, _ = modelo.transcribe(
             str(bloco), language="pt", word_timestamps=True, beam_size=5,
             vad_filter=True, hotwords=termos or None,

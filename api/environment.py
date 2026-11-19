@@ -31,4 +31,5 @@ def ambiente():
         checks['ollama'] = 'Servidor não respondeu'
         checks['llama3.1'] = 'Não verificado'
     return {'versao': APP_VERSION, 'dependencias': checks, 'pasta_dados': str(DATA_DIR),
-            'observacao': 'Whisper Small (CPU/int8). O primeiro uso pode baixar o modelo. Requer mais memória e processamento que Base.'}
+            'observacao': 'Whisper Small: usa a GPU NVIDIA quando ela funciona e, senão, a CPU (int8). '
+                          'O primeiro uso pode baixar o modelo.'}

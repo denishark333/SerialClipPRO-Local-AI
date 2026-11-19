@@ -5,7 +5,7 @@ import subprocess
 import time
 import wave
 
-from faster_whisper import WhisperModel
+from core.whisper import carregar_modelo, dispositivo
 from core.audio import detectar_segmentos_narrativos
 from core.config import atualizar_estado
 from core.execution import executar_comando
@@ -55,14 +55,13 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
                'segundos_audio_planejados': sum(j['fim']-j['inicio'] for j in plano), 'tempos_hibrido': tempos})
     execucao.verificar()
     t = time.monotonic()
-    print('[Whisper] Carregando Small (CPU/int8). O primeiro uso pode baixar o modelo.', flush=True)
-    modelo = WhisperModel("small", device="cpu", compute_type="int8")
+    modelo = carregar_modelo()
     tempos['carregamento_whisper'] = time.monotonic()-t
     tempos.update(extracao_audio_trechos=0., transcricao_trechos=0.)
     segmentos, palavras, grupos = [], [], []
     for indice, janela in enumerate(plano):
         execucao.verificar()
-        atualizar_estado(f"Híbrido: transcrevendo amostra {indice+1}/{len(plano)} (CPU)...", 2, 16+int(18*indice/len(plano)))
+        atualizar_estado(f"Híbrido: transcrevendo amostra {indice+1}/{len(plano)} ({dispositivo()})...", 2, 16+int(18*indice/len(plano)))
         arquivo = Path(pasta_temp) / f"amostra_{indice}.wav"
         t = time.monotonic()
         res = executar_comando([

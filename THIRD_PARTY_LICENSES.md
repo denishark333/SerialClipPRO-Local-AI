@@ -5,7 +5,7 @@ O Serial ClipPRO incorpora ou adapta código dos projetos abaixo. Cada um contin
 ## AutoClip
 
 - Projeto: https://github.com/artbyjazi/autoclip
-- Partes adaptadas: `core/boundaries.py` (ajuste dos limites dos cortes, a partir de `pipeline/boundaries.py`).
+- Partes adaptadas: `core/boundaries.py` (ajuste dos limites dos cortes, a partir de `pipeline/boundaries.py`) e `core/whisper.py` (registro das DLLs CUDA e escolha da precisão, a partir de `cuda.py` e `system.py`).
 - Ideias também aproveitadas: lembrar encoders indisponíveis e normalização de áudio a -14 LUFS (`core/encoders.py`).
 
 ```
