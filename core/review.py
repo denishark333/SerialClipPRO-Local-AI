@@ -15,6 +15,7 @@ from core.subtitles import agrupar_palavras, filtro_legenda
 from core.composition import compor_video
 from core.branding import filtro_marca
 from core.execution import executar_comando
+from core.encoders import renderizar, ARGS_AUDIO
 
 ROOT = DATA_DIR / 'cache_revisao'
 
@@ -118,17 +119,13 @@ def aplicar(identificador, legendas, revisao):
             filtro += ';' + filtro_marca(dados['marca'], altura)
             saida = '[v_marca]'
         video = tmp/'corrigido.mp4'
-        from core.encoders import codecs_renderizacao
-        for nome_encoder, codec in codecs_renderizacao():
-            print(f'[Revisão] Tentando {nome_encoder}...', flush=True)
-            resultado = executar_comando(entradas + ['-filter_complex', filtro, '-map', saida, '-map', '0:a'] + codec +
-                ['-c:a','aac','-b:a','192k',str(video)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                monitor=lambda t: print(f'[Revisão] Renderizando {dados["nome"]}: {t:.0f}s', flush=True))
-            if resultado.returncode == 0:
-                print(f'[Revisão] Corte codificado com {nome_encoder}.', flush=True)
-                break
-            print(f'[Revisão] {nome_encoder} falhou: {resultado.stderr[-500:]}', flush=True)
-        if resultado.returncode:
+        nome_encoder, resultado = renderizar(
+            lambda codec: entradas + ['-filter_complex', filtro, '-map', saida, '-map', '0:a'] + codec
+                          + ARGS_AUDIO + [str(video)],
+            lambda comando: executar_comando(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                monitor=lambda t: print(f'[Revisão] Renderizando {dados["nome"]}: {t:.0f}s', flush=True)),
+            '[Revisão]')
+        if nome_encoder is None:
             raise RuntimeError(resultado.stderr[-2000:])
         validar_video(str(video))
         # Exportações anteriores nunca são sobrescritas.

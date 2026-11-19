@@ -24,6 +24,7 @@ from core.subtitles import filtro_legenda, escrever_legenda
 from core.composition import compor_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
+from core.encoders import renderizar, ARGS_AUDIO
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
@@ -405,23 +406,20 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 filtro += ';' + filtro_marca(marca, altura_webcam)
                 map_args = ["-filter_complex", filtro, "-map", "[v_marca]", "-map", "0:a"]
 
-            from core.encoders import codecs_renderizacao
-            for nome_encoder, codec in codecs_renderizacao():
+            def tentativa(nome):
                 with estado_lock:
-                    estado_pipeline['encoder_tentativa'] = nome_encoder
-                print(f'[Render] Corte {idx+1}: tentando {nome_encoder}...', flush=True)
-                comando = entradas_render + map_args + codec + ['-c:a', 'aac', '-b:a', '192k', output_video]
-                res_render = executar_comando(comando, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                if res_render.returncode == 0:
-                    with estado_lock:
-                        estado_pipeline.update(encoder=nome_encoder, encoder_tentativa=None)
-                    print(f'[Render] Corte {idx+1} codificado com {nome_encoder}.', flush=True)
-                    break
-                print(f'[Render] {nome_encoder} falhou: {res_render.stderr[-500:]}', flush=True)
-                
-            if res_render.returncode != 0:
-                with estado_lock:
-                    estado_pipeline['encoder_tentativa'] = None
+                    estado_pipeline['encoder_tentativa'] = nome
+
+            nome_encoder, res_render = renderizar(
+                lambda codec: entradas_render + map_args + codec + ARGS_AUDIO + [output_video],
+                lambda comando: executar_comando(comando, execucao=execucao, stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE, text=True),
+                f'[Render] Corte {idx+1}', ao_tentar=tentativa)
+            with estado_lock:
+                estado_pipeline['encoder_tentativa'] = None
+                if nome_encoder:
+                    estado_pipeline['encoder'] = nome_encoder
+            if nome_encoder is None:
                 raise RuntimeError(f"Falha ao renderizar corte {idx+1}: {res_render.stderr[-2000:]}")
             validar_video(output_video, execucao)
             execucao.verificar()
