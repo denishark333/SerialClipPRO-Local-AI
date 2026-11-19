@@ -15,7 +15,7 @@ from core.config import (
     carregar_config_estudio, formatar_tempo
 )
 from core.branding import snapshot as snapshot_marca, filtro_marca
-from core.downloader import obter_url_direta_cdn
+from core.downloader import obter_url_direta_cdn, obter_fontes_cdn
 from core.audio import detectar_segmentos_narrativos
 from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR
 from core.transcription import salvar_json
@@ -198,9 +198,9 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                     audio_analise_path, video_corte_fonte = preparar_origem_youtube(entrada, pasta_temp, execucao)
                 print("✅ Fontes de áudio e vídeo do YouTube preparadas.")
             else:
-                video_corte_fonte = obter_url_direta_cdn(entrada)
-                audio_analise_path = video_corte_fonte
-                print("✅ Link CDN da Twitch/Kick obtido com sucesso.")
+                audio_analise_path, video_corte_fonte = obter_fontes_cdn(entrada)
+                print("✅ Link CDN da Twitch/Kick obtido com sucesso."
+                      + (" Análise usará só o áudio." if audio_analise_path != video_corte_fonte else ""))
         else:
             caminho_alvo = entrada
             if not os.path.exists(caminho_alvo):
@@ -231,7 +231,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 if "youtube.com" in entrada or "youtu.be" in entrada:
                     resolver_video = lambda: obter_stream_youtube(limpar_url_youtube(entrada), incluir_audio=modo_curadoria == "hibrido")
                 else:
-                    resolver_video = lambda: obter_url_direta_cdn(entrada)
+                    resolver_video = lambda: obter_fontes_cdn(entrada)
             cortes_validados = preparar_cortes_contextuais(
                 entrada, audio_analise_path, video_corte_fonte, pasta_temp,
                 max_cortes, execucao, ignorar_inicio_segundos, termos_jogo, resolver_video=resolver_video,
