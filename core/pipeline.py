@@ -13,7 +13,7 @@ from core.config import (
     estado_pipeline, estado_lock, atualizar_estado,
     carregar_config_estudio, formatar_tempo
 )
-from core.branding import snapshot as snapshot_marca, filtro_marca
+from core.branding import snapshot as snapshot_marca, filtro_marca, estilo_legenda
 from core.downloader import obter_url_direta_cdn, obter_fontes_cdn, extrair_info, recusar_live
 from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR, AMOSTRADOS
 from core.transcription import salvar_json
@@ -167,6 +167,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         temporarios = tempfile.TemporaryDirectory(prefix="pipeline_", dir=PASTA_TEMP)
         pasta_temp = temporarios.name
         marca = snapshot_marca(pasta_temp)
+        estilo = estilo_legenda()  # fixado no início: mudar a aba Marca no meio não mistura estilos
         config_estudio = carregar_config_estudio()
         print('[Marca] ' + ('Ativa nesta execução.' if marca else 'Desativada ou sem imagem nesta execução.'))
         entrada = entrada.strip().strip('"').strip("'")
@@ -262,9 +263,9 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
             srt_param = ""
             srt_path = None
             if corte['palavras'] and len(corte['palavras']) > 0:
-                srt_path = os.path.abspath(os.path.join(pasta_temp, f"legenda_corte_{idx+1}.srt"))
+                srt_path = os.path.abspath(os.path.join(pasta_temp, f"legenda_corte_{idx+1}.ass"))
                 try:
-                    escrever_legenda(srt_path, corte['palavras'])
+                    escrever_legenda(srt_path, corte['palavras'], estilo)
 
                     srt_param = filtro_legenda(srt_path)
                 except Exception as e:

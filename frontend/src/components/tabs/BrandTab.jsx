@@ -2,6 +2,12 @@ import { useDialog } from '../layout/useDialog';
 import React, { useEffect, useState } from 'react';
 import { apiFetch, API_BASE_URL } from '../../api';
 
+const ESTILOS_LEGENDA = [
+  { id: 'destaque', nome: 'Destaque', descricao: 'A frase inteira aparece e a palavra que está sendo falada fica maior.',
+    exemplo: <>Mano eu <span className="inline-block text-[1.35em] leading-none align-[-0.1em]">vou</span> morrer</> },
+  { id: 'classico', nome: 'Clássico', descricao: 'A frase inteira aparece de uma vez, sem animação.', exemplo: 'Mano eu vou morrer' },
+];
+
 export function BrandTab() {
   const { ask } = useDialog();
   const [config, setConfig] = useState(null);
@@ -19,6 +25,18 @@ export function BrandTab() {
     setBusy(true); setMessage('');
     try { setConfig(await (await callback()).json()); setRevision(Date.now()); setMessage(success); }
     catch (e) { setMessage(e.message); }
+    finally { setBusy(false); }
+  }
+  // Salva só o estilo, sem gravar ajustes de posição da marca que ainda não foram salvos.
+  async function salvarEstilo(estilo) {
+    setBusy(true); setMessage('');
+    try {
+      const atual = await (await apiFetch('/marca')).json();
+      const salvo = await (await apiFetch('/marca', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...atual, estilo_legenda: estilo }) })).json();
+      setConfig(prev => ({ ...prev, estilo_legenda: salvo.estilo_legenda }));
+      setMessage('Estilo da legenda salvo para novas execuções e revisões.');
+    } catch (e) { setMessage(e.message); }
     finally { setBusy(false); }
   }
   const width = config ? config.largura_pct : 35;
@@ -66,5 +84,22 @@ export function BrandTab() {
         <p className="rounded-lg border border-purple-600/40 bg-purple-950/40 p-3">As mudanças valem para novas execuções. Vídeos já gerados e a marca guardada nas bases de revisão permanecem como estavam.</p>
       </aside>
     </div>}
+    {config && <fieldset disabled={busy} className="mt-8 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
+      <legend className="px-2 text-lg font-bold">Estilo da legenda</legend>
+      <p className="text-sm text-slate-400 mb-4">A fonte, a cor amarela e o contorno são os mesmos nos dois estilos. Vale para novas execuções e para a Revisão de legendas.</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {ESTILOS_LEGENDA.map(({ id, nome, descricao, exemplo }) =>
+          <label key={id} className={`cursor-pointer rounded-xl border p-4 flex flex-col gap-3 ${config.estilo_legenda === id ? 'border-cyan-400 bg-cyan-950/30' : 'border-purple-700/60 bg-[#151024] hover:border-purple-500'}`}>
+            <span className="flex items-center gap-2 font-semibold">
+              <input type="radio" name="estilo_legenda" value={id} checked={config.estilo_legenda === id}
+                onChange={() => salvarEstilo(id)} />
+              {nome}
+            </span>
+            <span className="text-sm text-slate-400">{descricao}</span>
+            <span aria-hidden="true" className="rounded-lg bg-slate-800 py-4 text-center text-xl font-black uppercase tracking-wide text-[#ffff00]"
+              style={{ WebkitTextStroke: '1px #000', textShadow: '2px 2px 0 #000' }}>{exemplo}</span>
+          </label>)}
+      </div>
+    </fieldset>}
   </section>;
 }

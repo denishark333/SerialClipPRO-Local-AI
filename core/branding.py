@@ -7,6 +7,8 @@ import uuid
 from pathlib import Path
 
 from PIL import Image
+from typing import Literal
+
 from pydantic import BaseModel, Field
 from core.config import DATA_DIR
 
@@ -20,6 +22,8 @@ class MarcaConfig(BaseModel):
     x_pct: float = Field(default=50, ge=0, le=100, allow_inf_nan=False)
     y_pct: float = Field(default=8, ge=0, le=100, allow_inf_nan=False)
     posicao: str = Field(default='divisao', pattern='^(divisao|manual)$')
+    # Fica com a marca porque também é identidade visual; vale mesmo com a logo desativada.
+    estilo_legenda: Literal['destaque', 'classico'] = 'destaque'
 
 
 def carregar():
@@ -27,6 +31,10 @@ def carregar():
         arquivo = BRAND_DIR / 'config.json'
         config = MarcaConfig.model_validate_json(arquivo.read_text(encoding='utf-8')) if arquivo.exists() else MarcaConfig()
         return {**config.model_dump(), 'tem_imagem': (BRAND_DIR / 'logo.png').is_file()}
+
+
+def estilo_legenda():
+    return carregar()['estilo_legenda']
 
 
 def salvar(config):

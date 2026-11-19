@@ -1,7 +1,34 @@
-"""Fonte de legenda distribuída com o aplicativo; não depende das fontes do Windows."""
+"""Legendas queimadas no corte, com a fonte Bangers distribuída com o aplicativo.
+
+As legendas são gravadas em ASS. No estilo "destaque", a frase inteira aparece
+e a palavra que está sendo falada fica maior; no "clássico", a frase aparece
+inteira, como nas versões anteriores. Fonte, cor e contorno são os mesmos nos
+dois estilos (definidos em ``filtro_legenda``).
+"""
 from core.config import BASE_DIR
 import math
 from pathlib import Path
+
+ESTILOS = ("destaque", "classico")
+PADRAO = "destaque"
+#: Tamanho da palavra falada no estilo destaque, em % do tamanho normal.
+ESCALA_DESTAQUE = 122
+
+# Mesma área de referência que o FFmpeg usa ao converter SRT: o tamanho da fonte
+# e do contorno continua idêntico ao das legendas antigas.
+CABECALHO = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 288
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,10,0
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
 
 
 def agrupar_palavras(palavras):
@@ -36,15 +63,80 @@ def agrupar_palavras(palavras):
     return grupos
 
 
-def escrever_legenda(caminho, palavras):
-    def tempo(valor):
-        ms = max(0, round(valor * 1000))
-        return f'{ms//3600000:02d}:{ms//60000%60:02d}:{ms//1000%60:02d},{ms%1000:03d}'
-    eventos = []
-    for indice, grupo in enumerate(agrupar_palavras(palavras), 1):
-        texto = ' '.join(p['word'] for p in grupo)
-        eventos.append(f'{indice}\n{tempo(grupo[0]["start"])} --> {tempo(max(p["end"] for p in grupo))}\n{texto}\n')
-    Path(caminho).write_text('\n'.join(eventos), encoding='utf-8')
+def grupos_para_revisao(palavras):
+    """Frases editáveis na revisão, guardando o tempo de cada palavra."""
+    return [{'start': g[0]['start'], 'end': max(p['end'] for p in g),
+             'text': ' '.join(p['word'] for p in g), 'palavras': g} for g in agrupar_palavras(palavras)]
+
+
+def palavras_estimadas(grupo):
+    """Tempos de cada palavra de uma frase sem marcação por palavra.
+
+    Divide a duração da frase proporcionalmente ao tamanho de cada palavra:
+    acontece em bases antigas e quando o texto é editado na revisão.
+    """
+    termos = grupo['text'].split()
+    if not termos:
+        return []
+    inicio, fim = float(grupo['start']), float(grupo['end'])
+    pesos = [len(t) + 1 for t in termos]
+    total, acumulado, palavras = sum(pesos), 0, []
+    for termo, peso in zip(termos, pesos):
+        a = inicio + (fim - inicio) * acumulado / total
+        acumulado += peso
+        palavras.append({'start': a, 'end': inicio + (fim - inicio) * acumulado / total, 'word': termo})
+    return palavras
+
+
+def palavras_da_frase(grupo, anteriores=()):
+    """Palavras com tempo real quando a frase não mudou; estimadas quando mudou."""
+    for antigo in anteriores:
+        palavras = antigo.get('palavras')
+        if (palavras and antigo['text'].split() == grupo['text'].split()
+                and abs(antigo['start'] - grupo['start']) < .01 and abs(antigo['end'] - grupo['end']) < .01):
+            return palavras
+    return palavras_estimadas(grupo)
+
+
+def _tempo(valor):
+    cs = max(0, round(valor * 100))
+    return f'{cs // 360000}:{cs // 6000 % 60:02d}:{cs // 100 % 60:02d}.{cs % 100:02d}'
+
+
+def _limpar(texto):
+    # Chaves e barra invertida são comandos no ASS; uma fala nunca deve virar formatação.
+    return texto.replace('\\', '/').replace('{', '(').replace('}', ')')
+
+
+def eventos(grupo, estilo):
+    """(início, fim, texto ASS) de uma frase."""
+    palavras = [_limpar(p['word']) for p in grupo]
+    fim_frase = max(p['end'] for p in grupo)
+    if estilo == 'classico':
+        return [(grupo[0]['start'], fim_frase, ' '.join(palavras))]
+    saida = []
+    for i, palavra in enumerate(grupo):
+        # Cada palavra fica destacada até a próxima começar: sem buracos na frase.
+        inicio = palavra['start'] if i else grupo[0]['start']
+        fim = grupo[i + 1]['start'] if i + 1 < len(grupo) else fim_frase
+        if fim <= inicio:
+            continue
+        texto = ' '.join(
+            f'{{\\fscx{ESCALA_DESTAQUE}\\fscy{ESCALA_DESTAQUE}}}{p}{{\\fscx100\\fscy100}}' if n == i else p
+            for n, p in enumerate(palavras))
+        saida.append((inicio, fim, texto))
+    return saida
+
+
+def escrever_ass(caminho, grupos, estilo=PADRAO):
+    estilo = estilo if estilo in ESTILOS else PADRAO
+    linhas = [f'Dialogue: 0,{_tempo(a)},{_tempo(b)},Default,,0,0,0,,{texto}\n'
+              for grupo in grupos if grupo for a, b, texto in eventos(grupo, estilo)]
+    Path(caminho).write_text(CABECALHO + ''.join(linhas), encoding='utf-8')
+
+
+def escrever_legenda(caminho, palavras, estilo=PADRAO):
+    escrever_ass(caminho, agrupar_palavras(palavras), estilo)
 
 
 def filtro_legenda(caminho):

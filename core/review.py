@@ -11,9 +11,9 @@ from pathlib import Path
 from core.config import DATA_DIR, PASTA_DESTINO, PASTA_EXPORTADOS
 from core.clip_order import chave_corte
 from core.transcription import salvar_json
-from core.subtitles import agrupar_palavras, filtro_legenda
+from core.subtitles import grupos_para_revisao, palavras_da_frase, escrever_ass, filtro_legenda
 from core.composition import compor_video
-from core.branding import filtro_marca
+from core.branding import filtro_marca, estilo_legenda
 from core.execution import executar_comando
 from core.encoders import renderizar, medir_volume, args_audio
 
@@ -42,8 +42,8 @@ def guardar(corte, nome, config, marca, largura, altura, sessao):
         if marca:
             shutil.copyfile(marca['arquivo'], base / 'marca.png')
             marca_salva.pop('arquivo', None)
-        grupos = [{'start': g[0]['start'], 'end': max(p['end'] for p in g),
-                   'text': ' '.join(p['word'] for p in g)} for g in agrupar_palavras(corte['palavras'])]
+        # O tempo de cada palavra fica guardado para a legenda animada na revisão.
+        grupos = grupos_para_revisao(corte['palavras'])
         salvar_json(base / 'dados.json', dict(id=identificador, sessao=sessao, nome=nome,
             duracao=corte['duracao'], config=config, marca=marca_salva, largura=largura,
             altura=altura, legendas=grupos, revisao=0))
@@ -105,13 +105,11 @@ def aplicar(identificador, legendas, revisao):
     base = pasta(identificador)
     with tempfile.TemporaryDirectory(prefix='render_', dir=base) as temporario:
         tmp = Path(temporario)
-        def tempo(t):
-            ms = round(t*1000)
-            return f'{ms//3600000:02d}:{ms//60000%60:02d}:{ms//1000%60:02d},{ms%1000:03d}'
-        srt = tmp / 'legenda.srt'
-        srt.write_text('\n\n'.join(f'{i+1}\n{tempo(g["start"])} --> {tempo(g["end"])}\n{g["text"]}'
-                                   for i,g in enumerate(legendas)), encoding='utf-8')
-        filtro, altura = compor_video(dados['config'], dados['largura'], dados['altura'], filtro_legenda(srt) if legendas else '')
+        # Frases sem alteração mantêm o tempo real de cada palavra; as editadas são estimadas.
+        legendas = [{**g, 'palavras': palavras_da_frase(g, dados['legendas'])} for g in legendas]
+        legenda = tmp / 'legenda.ass'
+        escrever_ass(legenda, [g['palavras'] for g in legendas], estilo_legenda())
+        filtro, altura = compor_video(dados['config'], dados['largura'], dados['altura'], filtro_legenda(legenda) if legendas else '')
         entradas = ['ffmpeg', '-y', '-i', str(base/'original.mp4')]
         saida = '[v_final]'
         if dados['marca']:
