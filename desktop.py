@@ -111,16 +111,21 @@ def self_test():
 
 
 def prepare_models():
-    """Baixa/carrega o mesmo modelo CPU usado no pipeline, durante o setup."""
+    """Baixa e carrega o Whisper como o pipeline fará: GPU testada quando disponível, senão CPU.
+
+    Com a aceleração NVIDIA instalada, confirma já na instalação que ela funciona.
+    """
     from core.config import DATA_DIR
     log = DATA_DIR / 'models-setup.log'
     with log.open('a', encoding='utf-8', buffering=1) as output:
         previous = sys.stdout, sys.stderr
         sys.stdout = sys.stderr = output
         try:
-            from faster_whisper import WhisperModel
-            WhisperModel('small', device='cpu', compute_type='int8')
-            resultado = {'ok': True, 'modelo': 'small', 'device': 'cpu'}
+            from core import whisper
+            whisper.carregar_modelo()
+            device, precisao = whisper.escolha()
+            resultado = {'ok': True, 'modelo': whisper.MODELO, 'device': device, 'precisao': precisao,
+                         'cuda_instalada': (whisper.pasta_cuda_instalada() / 'cublas64_12.dll').is_file()}
         except Exception as error:
             import traceback
             resultado = {'ok': False, 'erro': str(error), 'traceback': traceback.format_exc()}

@@ -51,6 +51,11 @@ def carregar_modelo():
     return WhisperModel(MODELO, device=device, compute_type=precisao)
 
 
+def escolha():
+    """(dispositivo, precisão) da primeira carga, ou None antes dela."""
+    return _escolha
+
+
 def redefinir():
     """Esquece a escolha feita. Usado pelos testes."""
     global _escolha
