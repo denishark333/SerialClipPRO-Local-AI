@@ -27,6 +27,7 @@ relatorios_curadoria/*.json
 
 # Local config and generated state
 config_layout.json
+config_ia.json
 
 # Caches de modelos e segredos locais
 .cache/

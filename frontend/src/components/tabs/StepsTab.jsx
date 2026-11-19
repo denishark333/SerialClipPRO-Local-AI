@@ -1,5 +1,67 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../api';
+
+function ModelCard() {
+  const [info, setInfo] = useState(null);
+  const [escolhido, setEscolhido] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+
+  async function carregar() {
+    try {
+      const dados = await (await apiFetch('/ia')).json();
+      setInfo(dados);
+      setEscolhido(dados.modelo);
+    } catch (e) { setMensagem(e.message); }
+  }
+  useEffect(() => { const timer = setTimeout(carregar, 0); return () => clearTimeout(timer); }, []);
+
+  async function salvar() {
+    setSalvando(true); setMensagem('');
+    try {
+      const dados = await (await apiFetch('/ia', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modelo: escolhido }),
+      })).json();
+      setInfo(dados);
+      setMensagem(`Modelo salvo: ${dados.modelo}. Vale para as próximas execuções.`);
+    } catch (e) { setMensagem(e.message); }
+    finally { setSalvando(false); }
+  }
+
+  const instalados = info?.instalados || [];
+  return (
+    <div className="p-4 border border-slate-800 rounded-xl text-sm flex flex-col gap-2">
+      <h3 className="text-base font-bold text-slate-200">Modelo de IA da curadoria</h3>
+      {!info && !mensagem && <p className="text-slate-400">Consultando o Ollama...</p>}
+      {info && !info.ollama_online && <p className="text-amber-400">O Ollama não respondeu. Abra o Ollama e clique em Atualizar.</p>}
+      {info && info.ollama_online && !info.modelo_instalado && (
+        <p className="text-amber-400">O modelo configurado ({info.modelo}) não está instalado. Escolha outro abaixo.</p>
+      )}
+      {instalados.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={escolhido} onChange={e => setEscolhido(e.target.value)}
+            className="bg-[#0e0a1a] border border-[#1f1633] rounded px-3 py-2 text-slate-200">
+            {!instalados.some(m => m.nome === escolhido) && <option value={escolhido}>{escolhido}</option>}
+            {instalados.map(m => (
+              <option key={m.nome} value={m.nome}>
+                {m.nome} — {m.parametros || '?'} · {m.tamanho_gb} GB
+              </option>
+            ))}
+          </select>
+          <button disabled={salvando || escolhido === info?.modelo} onClick={salvar}
+            className="bg-purple-700 rounded px-4 py-2 disabled:opacity-50">{salvando ? 'Salvando...' : 'Usar este modelo'}</button>
+          <button onClick={carregar} className="border border-slate-700 rounded px-3 py-2">Atualizar</button>
+        </div>
+      )}
+      <p className="text-slate-400">
+        Atual: <span className="text-slate-200">{info?.modelo || '—'}</span> (padrão: {info?.padrao || 'llama3.1'}).
+        Modelos maiores costumam avaliar melhor, mas exigem mais memória de vídeo e tempo. Para instalar outro modelo,
+        use <code>ollama pull nome-do-modelo</code> e clique em Atualizar.
+      </p>
+      <p role="status" className="text-slate-300">{mensagem}</p>
+    </div>
+  );
+}
 
 export function StepsTab() {
   const [environment, setEnvironment] = useState(null);
@@ -32,6 +94,7 @@ export function StepsTab() {
           <p>{environment.observacao}</p>
         </div>}
       </div>
+      <ModelCard />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[#0e0a1a] border border-[#1f1633] p-4 rounded-xl flex flex-col gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#9333ea]/20 text-[#9333ea] font-mono font-bold flex items-center justify-center text-sm">01</div>
@@ -69,7 +132,7 @@ export function StepsTab() {
           <ul className="space-y-2 text-sm text-slate-400 list-disc list-inside">
             <li>FFmpeg instalado e no PATH</li>
             <li>Ollama em execução</li>
-            <li>Modelo Llama 3.1 disponível</li>
+            <li>Modelo de IA escolhido instalado no Ollama</li>
             <li>Entrada válida e modo de curadoria selecionado</li>
             <li>Preview gerado antes do pipeline principal</li>
           </ul>

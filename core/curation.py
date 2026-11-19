@@ -8,9 +8,8 @@ from core.config import atualizar_estado
 from core.execution import PipelineCancelado
 from core.curation_status import resumir_curadoria, tipo_falha
 from core.boundaries import refinar
-from core import transcription
+from core import ia, transcription
 
-MODELO_LLM = "llama3.1"
 OPCOES_LLM = {"temperature": 0.1, "num_predict": 2048, "num_ctx": 8192}
 
 
@@ -260,7 +259,8 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
         janelas = list(criar_janelas(segmentos))
     # Para ampliar momentos curtos: onde cada segmento está no seu trecho contínuo de fala.
     posicao = {s["id"]: (n, k) for n, grupo in enumerate(trechos) for k, s in enumerate(grupo)}
-    relatorio = {"modo": "contexto", "modelo": "llama3.1", "prompt_versao": PROMPT_VERSAO,
+    modelo_llm = ia.modelo()
+    relatorio = {"modo": "contexto", "modelo": modelo_llm, "prompt_versao": PROMPT_VERSAO,
                  "abertura_ignorada": limite_inicio, "duracao": duracao, "janelas": [], "candidatos": [], "selecionados": []}
     sugestoes = []
     cliente = ollama.Client(timeout=180)
@@ -278,7 +278,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
             cache, conteudo = None, None
             if usar_cache:
                 cache = transcription.CACHE_DIR / "curadoria" / (
-                    transcription.chave("curadoria", MODELO_LLM, PROMPT, OPCOES_LLM, mensagem) + ".json")
+                    transcription.chave("curadoria", modelo_llm, PROMPT, OPCOES_LLM, mensagem) + ".json")
                 salvo = transcription.ler_json(cache)
                 if isinstance(salvo, dict) and isinstance(salvo.get("conteudo"), str):
                     conteudo = salvo["conteudo"]
@@ -290,7 +290,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
                     if salvar_progresso:
                         salvar_progresso(relatorio)
                     continue
-                resposta = cliente.chat(model=MODELO_LLM, format=Resposta.model_json_schema(),
+                resposta = cliente.chat(model=modelo_llm, format=Resposta.model_json_schema(),
                                         messages=[{"role": "system", "content": PROMPT},
                                                   {"role": "user", "content": mensagem}],
                                         options=OPCOES_LLM)

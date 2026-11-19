@@ -26,6 +26,7 @@ from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
 from core.boundaries import refinar
 from core.whisper import carregar_modelo, dispositivo
+from core.ia import modelo as modelo_ia
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
@@ -178,9 +179,10 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         entrada = entrada.strip().strip('"').strip("'")
         if not entrada or not 1 <= max_cortes <= 50:
             raise ValueError("Informe uma entrada e um limite de 1 a 50 cortes.")
-        atualizar_estado('Verificando Ollama e modelo llama3.1...', 1, 1)
-        verificar_ollama(execucao)
-        print('[Curadoria] Ollama respondeu e llama3.1 está instalado. Iniciando preparação da mídia.')
+        modelo_llm = modelo_ia()
+        atualizar_estado(f'Verificando Ollama e modelo {modelo_llm}...', 1, 1)
+        verificar_ollama(execucao, modelo_llm)
+        print(f'[Curadoria] Ollama respondeu e {modelo_llm} está instalado. Iniciando preparação da mídia.')
         # Rascunhos existentes permanecem disponíveis até exclusão explícita.
         # -------------------------------------------------------------
         # PASSO 1: Obtenção inteligente (Áudio leve para YT / CDN / Local)
@@ -325,7 +327,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 valido_ia = True
                 try:
                     resp = ollama.chat(
-                        model='llama3.1',
+                        model=modelo_llm,
                         messages=[
                             {'role': 'system', 'content': system_prompt},
                             {'role': 'user', 'content': f"Transcript: {texto_trecho if texto_trecho.strip() else 'Momento de gameplay ou reação.'}"}

@@ -3,16 +3,19 @@ import httpx
 import ollama
 
 
-def verificar_ollama(execucao):
+def verificar_ollama(execucao, modelo=None):
     """Consulta servidor/modelo sem baixar nem carregar pesos para inferência."""
+    from core.ia import modelo as modelo_configurado
+    modelo = modelo or modelo_configurado()
     execucao.verificar()
     try:
         with ollama.Client(timeout=5, trust_env=False) as cliente:
-            cliente.show('llama3.1')
+            cliente.show(modelo)
     except ollama.ResponseError as erro:
         execucao.verificar()
         if erro.status_code == 404:
-            raise RuntimeError('Modelo llama3.1 não encontrado no Ollama. Prepare as dependências antes de iniciar.') from erro
+            raise RuntimeError(f'Modelo {modelo} não encontrado no Ollama. Instale-o ou escolha outro '
+                               'modelo em Primeiros Passos antes de iniciar.') from erro
         raise RuntimeError(f'Ollama recusou a verificação do modelo: {erro}') from erro
     except (ConnectionError, httpx.HTTPError) as erro:
         execucao.verificar()

@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from core.config import DATA_DIR
 from core.version import APP_VERSION
 from core.execution import executar_comando
+from core import ia
 
 router = APIRouter()
 
@@ -21,15 +22,15 @@ def ambiente():
             checks[command] = 'Disponível' if result.returncode == 0 else 'Falha ao executar'
         except (OSError, subprocess.TimeoutExpired):
             checks[command] = 'Falha ao executar'
+    modelo = ia.modelo()
     try:
-        response = httpx.get('http://127.0.0.1:11434/api/tags', timeout=3, trust_env=False)
-        response.raise_for_status()
-        models = response.json().get('models', [])
+        instalados = ia.modelos_instalados()
         checks['ollama'] = 'Disponível'
-        checks['llama3.1'] = 'Disponível' if any(m.get('name') in ('llama3.1', 'llama3.1:latest') for m in models) else 'Modelo não instalado'
+        checks[f'modelo de IA ({modelo})'] = ('Disponível' if any(ia.mesmo_modelo(m['nome'], modelo) for m in instalados)
+                                              else 'Modelo não instalado')
     except (httpx.HTTPError, ValueError):
         checks['ollama'] = 'Servidor não respondeu'
-        checks['llama3.1'] = 'Não verificado'
+        checks[f'modelo de IA ({modelo})'] = 'Não verificado'
     return {'versao': APP_VERSION, 'dependencias': checks, 'pasta_dados': str(DATA_DIR),
             'observacao': 'Whisper Small: usa a GPU NVIDIA quando ela funciona e, senão, a CPU (int8). '
                           'O primeiro uso pode baixar o modelo.'}
