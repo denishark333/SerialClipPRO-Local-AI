@@ -33,6 +33,7 @@ UninstallDisplayIcon={app}\Serial ClipPRO.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+; A coluna de tamanhos é preenchida pelo código com valores curtos (o Inno mostra casas demais).
 ShowComponentSizes=no
 DisableProgramGroupPage=yes
 CloseApplications=no
@@ -57,11 +58,11 @@ Name: "base\webview"; Description: "WebView2 — exibe a interface do aplicativo
 Name: "base\curl"; Description: "curl_cffi — necessário para o fluxo com a Kick"; Types: personalizada; Flags: fixed
 ; Modelos da curadoria: o usuário escolhe; sem escolha, o mais leve. Dá para trocar depois no app.
 Name: "modelos"; Description: "Modelos de IA da curadoria (troque depois em Primeiros Passos)"
-Name: "modelos\gemma"; Description: "Gemma 4 12B — Recomendado · 8 GB · requer ~10 GB de memória de vídeo"; ExtraDiskSpaceRequired: 8000000000; Flags: dontinheritcheck
-Name: "modelos\llama"; Description: "Llama 3.1 8B — Leve · 4,9 GB · padrão se nenhum for marcado"; ExtraDiskSpaceRequired: 4900000000; Flags: dontinheritcheck
-Name: "modelos\qwen35"; Description: "Qwen 3.5 9B — Intermediário · 6,6 GB"; ExtraDiskSpaceRequired: 6600000000; Flags: dontinheritcheck
-Name: "modelos\qwen3"; Description: "Qwen 3 14B — Experimental · 9,3 GB"; ExtraDiskSpaceRequired: 9300000000; Flags: dontinheritcheck
-Name: "gpu"; Description: "Aceleração NVIDIA (CUDA) — transcrição ~4x mais rápida · 528 MB"; ExtraDiskSpaceRequired: 772000000
+Name: "modelos\gemma"; Description: "Gemma 4 12B — Recomendado · requer ~10 GB de memória de vídeo"; ExtraDiskSpaceRequired: 8000000000; Flags: dontinheritcheck
+Name: "modelos\llama"; Description: "Llama 3.1 8B — Leve · padrão se nenhum for marcado"; ExtraDiskSpaceRequired: 4900000000; Flags: dontinheritcheck
+Name: "modelos\qwen35"; Description: "Qwen 3.5 9B — Intermediário"; ExtraDiskSpaceRequired: 6600000000; Flags: dontinheritcheck
+Name: "modelos\qwen3"; Description: "Qwen 3 14B — Experimental"; ExtraDiskSpaceRequired: 9300000000; Flags: dontinheritcheck
+Name: "gpu"; Description: "Aceleração NVIDIA (CUDA) — transcrição ~4x mais rápida"; ExtraDiskSpaceRequired: 772000000
 
 [Tasks]
 Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; Flags: checkedonce
@@ -226,8 +227,31 @@ begin
   until Retry <> IDRETRY;
 end;
 
+{ Tamanho curto à direita de cada item, associado pelo início do nome. }
+procedure MostrarTamanhos;
+var
+  I: Integer;
+  Nome, Tamanho: String;
+begin
+  for I := 0 to WizardForm.ComponentsList.Items.Count - 1 do begin
+    Nome := WizardForm.ComponentsList.ItemCaption[I];
+    Tamanho := '';
+    if Pos('FFmpeg', Nome) = 1 then Tamanho := '191 MB'
+    else if Pos('Ollama', Nome) = 1 then Tamanho := '1,4 GB'
+    else if Pos('Whisper', Nome) = 1 then Tamanho := '477 MB'
+    else if Pos('Gemma 4', Nome) = 1 then Tamanho := '8 GB'
+    else if Pos('Llama 3.1', Nome) = 1 then Tamanho := '4,9 GB'
+    else if Pos('Qwen 3.5', Nome) = 1 then Tamanho := '6,6 GB'
+    else if Pos('Qwen 3 14B', Nome) = 1 then Tamanho := '9,3 GB'
+    else if Pos('Aceleração NVIDIA', Nome) = 1 then Tamanho := '528 MB';
+    WizardForm.ComponentsList.ItemSubItem[I] := Tamanho;
+  end;
+end;
+
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  if CurPageID = wpSelectComponents then
+    MostrarTamanhos;
   if (CurPageID = wpFinished) and not Ready then
     WizardForm.FinishedLabel.Caption := 'Os arquivos foram instalados, mas a preparação ainda está pendente.' + #13#10 +
       'Se houver reinicialização pendente, reinicie o Windows. Depois use "Preparar ou reparar Serial ClipPRO" no menu Iniciar para concluir.';
