@@ -84,8 +84,28 @@ def _precisao_gpu():
     return next((p for p in _PRECISOES_GPU if p in suportadas), None)
 
 
+def pasta_cuda_instalada():
+    """Onde o instalador coloca o cuBLAS quando a aceleração NVIDIA é escolhida.
+
+    O pacote do CTranslate2 já traz o cuDNN; do CUDA, o Whisper só precisa de
+    cublas64_12.dll e cublasLt64_12.dll, que não vão no app para manter o
+    instalador leve.
+    """
+    from core.config import DATA_DIR
+    return DATA_DIR / "tools" / "cuda"
+
+
+def _registrar_pasta(pasta):
+    try:
+        _diretorios_dll.append(os.add_dll_directory(str(pasta)))
+    except OSError:
+        return
+    if str(pasta) not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = str(pasta) + os.pathsep + os.environ.get("PATH", "")
+
+
 def _registrar_dlls_cuda():
-    """Torna carregáveis as DLLs da NVIDIA instaladas por pip (Windows)."""
+    """Torna carregáveis as DLLs da NVIDIA (pip no desenvolvimento, pasta de dados no app instalado)."""
     global _dlls_registradas
     if _dlls_registradas or sys.platform != "win32":
         return
@@ -97,10 +117,8 @@ def _registrar_dlls_cuda():
         if not raiz.is_dir():
             continue
         for pasta in sorted(raiz.glob("*/bin")):
-            try:
-                _diretorios_dll.append(os.add_dll_directory(str(pasta)))
-            except OSError:
-                continue
-            if str(pasta) not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = str(pasta) + os.pathsep + os.environ.get("PATH", "")
+            _registrar_pasta(pasta)
         break
+    instalada = pasta_cuda_instalada()
+    if (instalada / "cublas64_12.dll").is_file():
+        _registrar_pasta(instalada)

@@ -1,7 +1,28 @@
-param([switch]$LibraryOnly, [switch]$SkipLaunch)
+param([switch]$LibraryOnly, [switch]$SkipLaunch, [string]$Modelos = '', [switch]$Gpu)
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Modelos oferecidos no instalador, na ordem de preferencia do app (Recomendado, Leve,
+# Intermediario, Experimental). O primeiro escolhido vira o modelo da curadoria.
+$script:CatalogoModelos = [ordered]@{
+    'gemma4:12b' = 'Gemma 4 12B'
+    'llama3.1'   = 'Llama 3.1 8B'
+    'qwen3.5:9b' = 'Qwen 3.5 9B'
+    'qwen3:14b'  = 'Qwen 3 14B'
+}
+$script:ModeloPadrao = 'llama3.1'
+# Aceleracao NVIDIA: o CTranslate2 ja traz o cuDNN; o Whisper so precisa destes dois
+# arquivos do cuBLAS, extraidos do pacote oficial da NVIDIA no PyPI (hash fixo).
+$script:CublasUrl = 'https://files.pythonhosted.org/packages/20/e2/fc9a0e985249d873150276d5afb02e39a66817fedbf1a385724393e505ed/nvidia_cublas_cu12-12.9.2.10-py3-none-win_amd64.whl'
+$script:CublasSha256 = '623F43027D40D44CEADF0043F002BD25CF353E8F13CE90B9A87057019F560661'
+$script:CublasArquivos = @('cublas64_12.dll', 'cublasLt64_12.dll')
+
+function Write-Progresso($Percent, $Message) {
+    # Linha lida pelo instalador para mover a barra; no console, so a mensagem aparece em destaque.
+    Write-Host $Message -ForegroundColor Cyan
+    [Console]::Out.WriteLine("@@PROGRESSO|$([int]$Percent)|$Message")
+    [Console]::Out.Flush()
+}
 function Get-DataDir {
     if ($env:CLIPPRO_DATA_DIR) { return [IO.Path]::GetFullPath($env:CLIPPRO_DATA_DIR) }
     return Join-Path $env:LOCALAPPDATA 'Serial ClipPRO'
@@ -106,7 +127,152 @@ function Install-FFmpeg($Cache, $DataDir) {
     }
     Refresh-Path
 }
+function Resolve-Modelos($Lista, $DataDir) {
+    $escolhidos = @($Lista -split '[,;\s]+' | Where-Object { $_ -match '^[A-Za-z0-9._:/-]+$' } | Select-Object -Unique)
+    if ($escolhidos.Count) { return ,$escolhidos }
+    # Reparo sem escolha: mantem o modelo ja configurado no app ou usa o mais leve.
+    $config = Join-Path $DataDir 'config_ia.json'
+    try {
+        $atual = (Get-Content -LiteralPath $config -Raw -ErrorAction Stop | ConvertFrom-Json).modelo
+        if ($atual -match '^[A-Za-z0-9._:/-]+$') { return ,@($atual) }
+    } catch {}
+    return ,@($script:ModeloPadrao)
+}
+function Select-ModeloPrincipal($Escolhidos) {
+    foreach ($nome in $script:CatalogoModelos.Keys) { if ($Escolhidos -contains $nome) { return $nome } }
+    return $Escolhidos[0]
+}
+function Save-ConfigIa($DataDir, $Modelo) {
+    New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
+    # Sem BOM: o app le o arquivo como JSON UTF-8 puro.
+    [IO.File]::WriteAllText((Join-Path $DataDir 'config_ia.json'), (@{ modelo = $Modelo } | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding($false)))
+}
+function Get-NomeModelo($Nome) {
+    if ($script:CatalogoModelos.Contains($Nome)) { return $script:CatalogoModelos[$Nome] }
+    return $Nome
+}
+function Test-ModeloInstalado($Tags, $Nome) {
+    $base = if ($Nome -like '*:*') { $Nome } else { "${Nome}:latest" }
+    return [bool]($Tags.models | Where-Object { $_.name -eq $base })
+}
+function Invoke-OllamaPull($Nome, $Inicio, $Fim) {
+    # A API do Ollama informa bytes recebidos: a barra do instalador mostra o avanco real.
+    $rotulo = Get-NomeModelo $Nome
+    $request = [Net.HttpWebRequest]::Create('http://127.0.0.1:11434/api/pull')
+    $request.Method = 'POST'
+    $request.ContentType = 'application/json'
+    $request.Timeout = 60000
+    $request.ReadWriteTimeout = 600000
+    $corpo = [Text.Encoding]::UTF8.GetBytes((@{ model = $Nome; stream = $true } | ConvertTo-Json -Compress))
+    $stream = $request.GetRequestStream(); $stream.Write($corpo, 0, $corpo.Length); $stream.Close()
+    try { $response = $request.GetResponse() }
+    catch [Net.WebException] {
+        $detalhe = ''
+        if ($_.Exception.Response) { $detalhe = (New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())).ReadToEnd() }
+        throw "Download de $rotulo recusado pelo Ollama: $detalhe"
+    }
+    $reader = New-Object IO.StreamReader($response.GetResponseStream())
+    $ultimo = -1
+    try {
+        while (-not $reader.EndOfStream) {
+            $linha = $reader.ReadLine()
+            if (-not $linha) { continue }
+            $evento = $linha | ConvertFrom-Json
+            if ($evento.error) { throw "Download de ${rotulo}: $($evento.error)" }
+            if ($evento.total -and $evento.completed) {
+                $pct = [int]($Inicio + ($Fim - $Inicio) * $evento.completed / $evento.total)
+                if ($pct -ne $ultimo) {
+                    $ultimo = $pct
+                    $feito = '{0:N1}' -f ($evento.completed / 1GB); $total = '{0:N1}' -f ($evento.total / 1GB)
+                    Write-Progresso $pct "Baixando $rotulo ($feito de $total GB)..."
+                }
+            }
+        }
+    } finally { $reader.Close(); $response.Close() }
+}
+function Install-Ollama($Cache) {
+    $installer = Join-Path $Cache 'OllamaSetup.exe'
+    Get-Download 'https://ollama.com/download/OllamaSetup.exe' $installer
+    Assert-SignedInstaller $installer 'Ollama'
+    Invoke-Installer $installer '/SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+    Refresh-Path
+    if (-not (Test-Command ollama)) { throw 'Ollama nao foi encontrado apos instalar.' }
+}
+function Wait-Ollama($DataDir) {
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
+        try { return Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 2 }
+        catch {
+            if ($attempt -eq 0) {
+                Start-Process -FilePath (Get-Command ollama).Source -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput (Join-Path $DataDir 'ollama-setup.log') -RedirectStandardError (Join-Path $DataDir 'ollama-setup-error.log')
+            }
+            Start-Sleep -Seconds 1
+        }
+    }
+    throw 'Ollama nao respondeu. Execute o instalador novamente para tentar retomar.'
+}
+function Install-Modelo($Nome, $Inicio, $Fim, $Cache, $DataDir) {
+    try { Invoke-OllamaPull $Nome $Inicio $Fim }
+    catch {
+        # Modelos novos (como o Gemma 4) exigem um Ollama recente: atualiza e tenta de novo.
+        if ($_.Exception.Message -notmatch '(?i)newer version|update ollama|upgrade') { throw }
+        Write-Progresso $Inicio "Atualizando o Ollama para baixar $(Get-NomeModelo $Nome)..."
+        Get-Process ollama* -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        Install-Ollama $Cache
+        Wait-Ollama $DataDir | Out-Null
+        Invoke-OllamaPull $Nome $Inicio $Fim
+    }
+    & ollama show $Nome | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Modelo $(Get-NomeModelo $Nome) nao passou na verificacao." }
+}
+function Get-DownloadProgresso($Url, $Destination, $Inicio, $Fim, $Rotulo) {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            $response = [Net.HttpWebRequest]::Create($Url).GetResponse()
+            $total = $response.ContentLength
+            $entrada = $response.GetResponseStream()
+            $saida = [IO.File]::Create("$Destination.partial")
+            try {
+                $buffer = New-Object byte[] (1MB); $lidos = 0L; $ultimo = -1
+                while (($n = $entrada.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $saida.Write($buffer, 0, $n); $lidos += $n
+                    if ($total -gt 0) {
+                        $pct = [int]($Inicio + ($Fim - $Inicio) * $lidos / $total)
+                        if ($pct -ne $ultimo) { $ultimo = $pct; Write-Progresso $pct ("$Rotulo ({0:N0} de {1:N0} MB)..." -f ($lidos / 1MB), ($total / 1MB)) }
+                    }
+                }
+            } finally { $saida.Close(); $entrada.Close(); $response.Close() }
+            Move-Item -LiteralPath "$Destination.partial" -Destination $Destination -Force
+            return
+        } catch {
+            if ($attempt -eq 3) { throw }
+            Start-Sleep -Seconds 2
+        }
+    }
+}
+function Install-Cuda($Cache, $DataDir, $Inicio, $Fim) {
+    $destino = Join-Path $DataDir 'tools\cuda'
+    $faltando = @($script:CublasArquivos | Where-Object { -not (Test-Path -LiteralPath (Join-Path $destino $_)) })
+    if (-not $faltando.Count) { return }
+    $wheel = Join-Path $Cache 'nvidia-cublas.whl'
+    Get-DownloadProgresso $script:CublasUrl $wheel $Inicio $Fim 'Baixando aceleracao NVIDIA'
+    if ((Get-FileHash -LiteralPath $wheel -Algorithm SHA256).Hash -ne $script:CublasSha256) {
+        Remove-Item -LiteralPath $wheel -Force
+        throw 'Download da aceleracao NVIDIA falhou na verificacao SHA256. Execute novamente.'
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    New-Item -ItemType Directory -Path $destino -Force | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($wheel)
+    try {
+        foreach ($arquivo in $script:CublasArquivos) {
+            $entrada = $zip.Entries | Where-Object { $_.FullName.Replace([char]92, [char]47) -eq "nvidia/cublas/bin/$arquivo" } | Select-Object -First 1
+            if (-not $entrada) { throw "Pacote NVIDIA nao contem $arquivo." }
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($entrada, (Join-Path $destino $arquivo), $true)
+        }
+    } finally { $zip.Dispose() }
+    Remove-Item -LiteralPath $wheel -Force
+}
 function Install-ClipPro {
+    param([string]$Modelos = '', [switch]$Gpu)
     if (-not [Environment]::Is64BitOperatingSystem -or $env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { throw 'Este pacote requer Windows x64.' }
     $package = $PSScriptRoot
     if (-not (Test-Path -LiteralPath (Join-Path $package 'Serial ClipPRO.exe'))) {
@@ -119,10 +285,10 @@ function Install-ClipPro {
     Start-Transcript -LiteralPath (Join-Path $data 'instalacao.log') -Append | Out-Null
     $script:RestartRequired = $false
     try {
-        Write-Host '[1/7] Preparando arquivos do aplicativo...' -ForegroundColor Cyan
+        Write-Progresso 1 'Preparando arquivos do aplicativo...'
         Unblock-Package $package
         Refresh-Path
-        Write-Host '[2/7] Verificando .NET Framework e Visual C++...' -ForegroundColor Cyan
+        Write-Progresso 3 'Verificando .NET Framework e Visual C++...'
         if (-not (Test-NetFramework)) {
             $installer = Join-Path $cache 'dotnet48.exe'
             Get-Download 'https://go.microsoft.com/fwlink/?linkid=2088631' $installer
@@ -137,12 +303,12 @@ function Install-ClipPro {
             Invoke-Installer $installer '/install /quiet /norestart' -Elevate
             if (-not (Test-VCRuntime) -and -not $script:RestartRequired) { throw 'Visual C++ nao foi detectado apos instalar.' }
         }
-        Write-Host '[3/7] Preparando FFmpeg e ffprobe...' -ForegroundColor Cyan
+        Write-Progresso 8 'Preparando FFmpeg...'
         Install-FFmpeg $cache $data
         foreach ($command in @('ffmpeg', 'ffprobe')) {
             Test-MediaRuntime $command
         }
-        Write-Host '[4/7] Verificando WebView2...' -ForegroundColor Cyan
+        Write-Progresso 13 'Verificando WebView2...'
         if (-not (Test-WebView)) {
             $installer = Join-Path $cache 'WebView2Setup.exe'
             Get-Download 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' $installer
@@ -150,51 +316,44 @@ function Install-ClipPro {
             Invoke-Installer $installer '/silent /install'
             if (-not (Test-WebView)) { throw 'WebView2 nao foi detectado apos instalar.' }
         }
-        Write-Host '[5/7] Preparando Ollama...' -ForegroundColor Cyan
+        Write-Progresso 16 'Preparando Ollama...'
         Write-Host 'Se aparecer a janela inicial do Ollama, prossiga e escolha o uso local. Nao e necessario usar modelos cloud para o ClipPRO.'
-        if (-not (Test-Command ollama)) {
-            $installer = Join-Path $cache 'OllamaSetup.exe'
-            Get-Download 'https://ollama.com/download/OllamaSetup.exe' $installer
-            Assert-SignedInstaller $installer 'Ollama'
-            Invoke-Installer $installer '/SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
-            Refresh-Path
-            if (-not (Test-Command ollama)) { throw 'Ollama nao foi encontrado apos instalar.' }
+        if (-not (Test-Command ollama)) { Install-Ollama $cache }
+        $tags = Wait-Ollama $data
+        if ($Gpu) {
+            Write-Progresso 22 'Preparando aceleracao NVIDIA...'
+            Install-Cuda $cache $data 22 34
         }
-        $ready = $false
-        for ($attempt = 0; $attempt -lt 60; $attempt++) {
-            try {
-                $tags = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 2
-                $ready = $true
-                break
-            } catch {
-                if ($attempt -eq 0) {
-                    Start-Process -FilePath (Get-Command ollama).Source -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput (Join-Path $data 'ollama-setup.log') -RedirectStandardError (Join-Path $data 'ollama-setup-error.log')
-                }
-                Start-Sleep -Seconds 1
+        $escolhidos = Resolve-Modelos $Modelos $data
+        $faixa = 54 / $escolhidos.Count
+        for ($i = 0; $i -lt $escolhidos.Count; $i++) {
+            $nome = $escolhidos[$i]
+            $inicio = 35 + $faixa * $i
+            Write-Progresso $inicio "Verificando $(Get-NomeModelo $nome)..."
+            if (Test-ModeloInstalado $tags $nome) {
+                & ollama show $nome | Out-Null
+                if ($LASTEXITCODE -eq 0) { continue }
             }
+            Install-Modelo $nome $inicio ($inicio + $faixa) $cache $data
         }
-        if (-not $ready) { throw 'Ollama nao respondeu. Execute o instalador novamente para tentar retomar.' }
-        Write-Host '[6/7] Baixando/verificando Llama 3.1 (varios GB)...' -ForegroundColor Cyan
-        if (-not ($tags.models | Where-Object { $_.name -eq 'llama3.1:latest' })) {
-            & ollama pull llama3.1 | Out-Host
-            if ($LASTEXITCODE -ne 0) { throw 'Download do Llama interrompido. Execute novamente para retomar.' }
+        # A escolha feita no instalador define o modelo da curadoria; o reparo preserva a do app.
+        if ($Modelos -or -not (Test-Path -LiteralPath (Join-Path $data 'config_ia.json'))) {
+            Save-ConfigIa $data (Select-ModeloPrincipal $escolhidos)
         }
-        & ollama show llama3.1 | Out-Host
-        if ($LASTEXITCODE -ne 0) { throw 'Modelo Llama nao passou na verificacao.' }
         if ($script:RestartRequired) {
             Write-Host 'O Windows solicitou reinicializacao. Reinicie e use Preparar ou reparar Serial ClipPRO no menu Iniciar para concluir.' -ForegroundColor Yellow
             return 3010
         }
-        Write-Host '[7/7] Testando runtime e preparando Whisper small...' -ForegroundColor Cyan
+        Write-Progresso 90 'Testando o aplicativo...'
         $app = Join-Path $package 'Serial ClipPRO.exe'
         $env:CLIPPRO_DATA_DIR = $data
         $process = Wait-AppSetup $app '--self-test' 'Verificando o aplicativo'
         if ($process.ExitCode -ne 0) { throw "Teste do aplicativo falhou. Diagnostico: $(Join-Path $data 'self-test.json')" }
-        Write-Host 'Preparando Whisper: pode baixar arquivos na primeira vez. O tempo depende da conexao.'
+        Write-Progresso 94 'Preparando o Whisper (transcricao das falas)...'
         Write-Host "Detalhes: $(Join-Path $data 'models-setup.log')"
         $process = Wait-AppSetup $app '--prepare-models' 'Preparando Whisper'
         if ($process.ExitCode -ne 0) { throw "Preparacao do Whisper falhou. Diagnostico: $(Join-Path $data 'models-setup.json'). Execute novamente para retomar." }
-        Write-Host 'Preparacao concluida. Todos os testes passaram.' -ForegroundColor Green
+        Write-Progresso 100 'Preparacao concluida. Todos os testes passaram.'
         if (-not $SkipLaunch) { Start-Process -FilePath $app -WindowStyle Hidden }
         return 0
     } finally { Stop-Transcript | Out-Null }
@@ -210,7 +369,7 @@ function Wait-AppSetup($AppPath, $Argument, $Label) {
 }
 
 if (-not $LibraryOnly) {
-    try { exit (Install-ClipPro) }
+    try { exit (Install-ClipPro -Modelos $Modelos -Gpu:$Gpu) }
     catch {
         $failureLog = Join-Path (Get-DataDir) 'instalacao.log'
         if (Test-Path -LiteralPath (Split-Path $failureLog -Parent)) {
