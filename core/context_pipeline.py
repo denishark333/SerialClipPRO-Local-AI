@@ -10,6 +10,7 @@ from core.transcription import transcrever_completo, salvar_json
 from core.curation import analisar_contexto
 from core.hybrid import transcrever_hibrido
 from core.curation_status import resumir_curadoria
+from core.erros import ErroFFmpeg
 
 REPORT_DIR = DATA_DIR / "relatorios_curadoria"
 #: Modos que transcrevem amostras da fonte em vez da fonte inteira.
@@ -104,7 +105,7 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
                 progresso.unlink(missing_ok=True)
             if res.returncode:
                 print(f"{identificacao} FFmpeg terminou com erro {res.returncode} após {time.monotonic()-marco_corte:.1f}s.", flush=True)
-                raise RuntimeError("Falha ao extrair corte contextual: " + res.stderr.decode(errors="replace")[-2000:])
+                raise ErroFFmpeg("Falha ao extrair o trecho do corte", res.stderr)
             print(f"{identificacao} Extração concluída em {time.monotonic()-marco_corte:.1f}s.", flush=True)
             palavras = [
                 {"word": p["word"], "start": max(0, p["start"]-inicio), "end": min(fim, p["end"])-inicio}
@@ -122,5 +123,5 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
         registrar({"estado": "cancelado"})
         raise
     except Exception as erro:
-        registrar({"estado": "erro", "erro": str(erro)})
+        registrar({"estado": "erro", "erro": str(erro), **({"erro_detalhe": erro.detalhe} if isinstance(erro, ErroFFmpeg) else {})})
         raise

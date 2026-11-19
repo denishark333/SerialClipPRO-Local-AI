@@ -14,7 +14,7 @@ from core.config import (
     carregar_config_estudio, formatar_tempo
 )
 from core.branding import snapshot as snapshot_marca, filtro_marca
-from core.downloader import obter_url_direta_cdn, obter_fontes_cdn
+from core.downloader import obter_url_direta_cdn, obter_fontes_cdn, extrair_info, recusar_live
 from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR, AMOSTRADOS
 from core.transcription import salvar_json
 from core.subtitles import filtro_legenda, escrever_legenda
@@ -23,6 +23,7 @@ from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
 from core.ia import modelo as modelo_ia
+from core.erros import ErroFFmpeg
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
@@ -52,21 +53,21 @@ def obter_stream_youtube(url_limpa, incluir_audio=False):
         'skip_download': True,
     }
     
-    with yt_dlp.YoutubeDL(ydl_opts_url) as ydl:
-        info = ydl.extract_info(url_limpa, download=False)
-        if 'entries' in info:
-            info = info['entries'][0]
-        
-        # Pega a URL de streaming dinamicamente de forma segura
-        video_streaming_url = info.get('url')
-        if not video_streaming_url and 'formats' in info:
-            # Fallback para o melhor formato URL disponível na lista
-            formats = info['formats']
-            for f in reversed(formats):
-                if f.get('url') and f.get('vcodec') != 'none':
-                    video_streaming_url = f['url']
-                    break
-        
+    info = extrair_info(ydl_opts_url, url_limpa)
+    if 'entries' in info:
+        info = info['entries'][0]
+    recusar_live(info)
+
+    # Pega a URL de streaming dinamicamente de forma segura
+    video_streaming_url = info.get('url')
+    if not video_streaming_url and 'formats' in info:
+        # Fallback para o melhor formato URL disponível na lista
+        formats = info['formats']
+        for f in reversed(formats):
+            if f.get('url') and f.get('vcodec') != 'none':
+                video_streaming_url = f['url']
+                break
+
     if not video_streaming_url:
         raise Exception("Não foi possível obter a URL de streaming do vídeo.")
     if incluir_audio:
@@ -109,12 +110,13 @@ def preparar_origem_youtube(entrada: str, pasta_temp: str, execucao=None):
         ydl_opts_audio['postprocessor_hooks'] = [execucao.progresso_download]
 
     try:
+        # Antes do download: recusa lives, que nunca terminariam de baixar.
+        video_streaming_url = obter_stream_youtube(url_limpa)
         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
             ydl.download([url_limpa])
-            
+
         if execucao:
             execucao.verificar()
-        video_streaming_url = obter_stream_youtube(url_limpa)
 
         # Garante que o arquivo m4a existe com extensão correta
         if not os.path.exists(caminho_audio_local):
@@ -156,6 +158,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
     if execucao is None:
         raise RuntimeError("Já existe uma execução em andamento.")
     temporarios = None
+    detalhe_erro = None
     marco_etapa = time.monotonic()
     etapa_medida = "preparacao_origem"
     tempos = {}
@@ -293,7 +296,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 if nome_encoder:
                     estado_pipeline['encoder'] = nome_encoder
             if nome_encoder is None:
-                raise RuntimeError(f"Falha ao renderizar corte {idx+1}: {res_render.stderr[-2000:]}")
+                raise ErroFFmpeg(f"Falha ao renderizar o corte {idx+1}", res_render.stderr)
             validar_video(output_video, execucao)
             execucao.verificar()
             guardar_base_revisao(corte, os.path.basename(output_video), config_estudio, marca, orig_w, orig_h, timestamp_sessao)
@@ -316,6 +319,8 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         estado_pipeline["tempo_total"] = formatar_tempo(tempo_total_seg)
         print(f"❌ Erro crítico no pipeline: {str(e)}")
         atualizar_estado(f"Erro: {str(e)}", -1, estado_pipeline["progresso_pct"])
+        if isinstance(e, ErroFFmpeg):
+            detalhe_erro = e.detalhe
 
 
     finally:
@@ -328,6 +333,8 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 dados = json.loads(caminho_relatorio.read_text(encoding="utf-8"))
                 dados.update(tempos_etapas=estado_pipeline["tempos_etapas"], videos=estado_pipeline["videos"],
                              resultado_pipeline="cancelado" if execucao.cancelamento.is_set() else estado_pipeline["status"])
+                if detalhe_erro:
+                    dados.setdefault("erro_detalhe", detalhe_erro)
                 salvar_json(caminho_relatorio, dados)
             except (OSError, ValueError) as erro_relatorio:
                 print(f"Não foi possível atualizar os tempos do relatório: {erro_relatorio}")

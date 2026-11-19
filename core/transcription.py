@@ -13,6 +13,7 @@ from core.whisper import carregar_modelo, dispositivo
 from core.idiomas import para_whisper
 from core.config import DATA_DIR, atualizar_estado
 from core.execution import executar_comando
+from core.erros import ErroFFmpeg
 
 CACHE_DIR = DATA_DIR / "transcricoes"
 VERSAO = 1
@@ -98,7 +99,7 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos="", idioma
         str(pasta_audio / "bloco_%05d.wav"),
     ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if resultado.returncode:
-        raise RuntimeError("Falha ao preparar áudio: " + resultado.stderr.decode(errors="replace")[-2000:])
+        raise ErroFFmpeg("Falha ao preparar o áudio", resultado.stderr)
     blocos = sorted(pasta_audio.glob("bloco_*.wav"))
     if not blocos:
         raise ValueError("Nenhum áudio disponível para transcrição.")

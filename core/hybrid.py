@@ -11,6 +11,7 @@ from core.idiomas import para_whisper
 from core.audio import detectar_segmentos_narrativos, medir_duracao
 from core.config import atualizar_estado
 from core.execution import executar_comando
+from core.erros import ErroFFmpeg
 
 
 def planejar_janelas(picos, duracao, limite=40, ignorar_inicio=0):
@@ -76,7 +77,7 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
     ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     tempos['extracao_audio_trechos'] += time.monotonic()-t
     if res.returncode:
-        raise RuntimeError('Falha ao extrair amostra: '+res.stderr.decode(errors='replace')[-1500:])
+        raise ErroFFmpeg('Falha ao extrair amostra de áudio', res.stderr)
     try:
         with wave.open(str(arquivo), 'rb') as wav:
             duracao = wav.getnframes()/wav.getframerate()

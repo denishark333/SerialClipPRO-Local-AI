@@ -1,4 +1,31 @@
+import re
+
 import yt_dlp
+
+
+MENSAGEM_LIVE = ("Esse link é de uma live em andamento (ou do canal). O Serial ClipPRO trabalha com "
+                 "vídeos completos: use o link do VOD, por exemplo twitch.tv/videos/… ou "
+                 "kick.com/canal/videos/…, depois que a live terminar.")
+
+
+def recusar_live(info: dict) -> None:
+    """Lives não têm começo fixo nem links duráveis: a varredura só ouviria os minutos
+    seguintes e os trechos sumiriam da janela da transmissão antes do corte."""
+    if info.get('is_live') or info.get('live_status') in ('is_live', 'is_upcoming'):
+        raise ValueError(MENSAGEM_LIVE)
+
+
+def extrair_info(opcoes: dict, url: str) -> dict:
+    """``extract_info`` com mensagem legível quando o link não abre."""
+    try:
+        with yt_dlp.YoutubeDL(opcoes) as ydl:
+            return ydl.extract_info(url, download=False)
+    except yt_dlp.utils.DownloadError as erro:
+        texto = re.sub(r"\[[0-9;]*m", "", str(erro)).replace("ERROR: ", "").strip()
+        if re.search(r"is (currently )?offline|not (currently )?live", texto, re.I):
+            raise ValueError("O canal está offline e o link não aponta para um VOD. "
+                             "Use o link do VOD (twitch.tv/videos/… ou kick.com/canal/videos/…).") from erro
+        raise ValueError(f"Não foi possível abrir o link: {texto[:300]}") from erro
 
 
 def _extrair(url_vod: str) -> dict:
@@ -13,8 +40,9 @@ def _extrair(url_vod: str) -> dict:
     else:
         ydl_opts['format'] = 'best'
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(url_vod, download=False)
+    info = extrair_info(ydl_opts, url_vod)
+    recusar_live(info)
+    return info
 
 
 def _url_video(info: dict) -> str:

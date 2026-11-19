@@ -1,6 +1,7 @@
 import re
 import subprocess
 from core.execution import executar_comando
+from core.erros import ErroFFmpeg
 
 
 def medir_duracao(fonte, execucao=None):
@@ -33,7 +34,7 @@ def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execuc
 
     resultado = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if resultado.returncode != 0:
-        raise RuntimeError("Falha ao analisar áudio: " + resultado.stderr[-2000:])
+        raise ErroFFmpeg("Falha ao analisar o áudio", resultado.stderr)
     linhas = resultado.stderr.split("\n")
 
     mapeamento_blocos = []
