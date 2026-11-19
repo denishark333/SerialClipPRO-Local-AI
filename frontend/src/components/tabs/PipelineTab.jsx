@@ -292,7 +292,9 @@ export function PipelineTab({
               className="text-xs text-cyan-400 underline" target="_blank" rel="noreferrer">
               Baixar relatório de curadoria
             </a>}
-            {statusInfo.resumo_curadoria?.mensagem && <p className="text-xs text-amber-400 mt-2" role="status">
+            {statusInfo.resumo_curadoria?.mensagem && <p role="status" className={`text-xs mt-2 ${
+              statusInfo.resumo_curadoria.situacao === 'completa' && !statusInfo.resumo_curadoria.sugestoes
+                ? 'text-slate-300' : 'text-amber-400'}`}>
               {statusInfo.resumo_curadoria.mensagem}
             </p>}
             {Number.isInteger(statusInfo.resumo_curadoria?.analisadas) && <p className="text-xs text-slate-400 mt-2">
@@ -301,7 +303,7 @@ export function PipelineTab({
               {' '}Suspensos: {statusInfo.resumo_curadoria.suspensas}.
             </p>}
             {statusInfo.resumo_curadoria?.decisoes_invalidas > 0 && statusInfo.resumo_curadoria?.descartes &&
-              <ul className="text-xs text-amber-200 mt-2 space-y-1" aria-label="Motivos dos descartes">
+              <ul className="text-xs text-slate-400 mt-2 space-y-1" aria-label="Motivos dos descartes">
                 {Object.entries({ abaixo_minimo: 'Abaixo de 15 segundos', acima_maximo: 'Acima de 90 segundos',
                   ids_inexistentes: 'IDs ausentes na janela', ordem_invalida: 'Início após o fim',
                   nao_detalhado: 'Motivo não detalhado' }).map(([key, label]) =>

@@ -8,7 +8,7 @@ import wave
 from core import transcription
 from core.whisper import MODELO, carregar_modelo, dispositivo
 from core.idiomas import para_whisper
-from core.audio import detectar_segmentos_narrativos
+from core.audio import detectar_segmentos_narrativos, medir_duracao
 from core.config import atualizar_estado
 from core.execution import executar_comando
 
@@ -101,6 +101,31 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
     return {'versao': 1, 'duracao': duracao, 'segmentos': segmentos}
 
 
+def mapear_audio(fonte, entrada, ignorar_inicio, execucao):
+    """Picos de áudio da fonte, com cache por VOD.
+
+    A chave inclui a duração atual da fonte: o VOD de uma live em andamento
+    cresce, e um mapa antigo deixaria o final de fora. Sem duração conhecida,
+    a varredura é refeita.
+    """
+    cache = None
+    if entrada is not None:
+        duracao = medir_duracao(fonte, execucao)
+        if duracao:
+            cache = transcription.CACHE_DIR / 'mapas' / (transcription.chave(
+                'mapa_audio', 1, transcription.identidade_entrada(entrada), round(duracao), ignorar_inicio) + '.json')
+            salvo = transcription.ler_json(cache)
+            if isinstance(salvo, dict) and isinstance(salvo.get('picos'), list) and salvo.get('duracao', 0) > 0:
+                atualizar_estado("Mapa de áudio recuperado do cache.", 2, 15)
+                return {**salvo, 'do_cache': True}
+    mapa = detectar_segmentos_narrativos(fonte, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio,
+                                         retornar_detalhes=True)
+    execucao.verificar()
+    if cache and mapa['duracao'] > 0:
+        transcription.salvar_json(cache, mapa)
+    return mapa
+
+
 def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar, entrada=None,
                         modo='hibrido', idioma='pt'):
     """Amostra e transcreve a fonte.
@@ -114,8 +139,9 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     tempos = {}
     atualizar_estado(f"{rotulo}: mapeando áudio para escolher amostras...", 2, 15)
     t = time.monotonic()
-    mapa = detectar_segmentos_narrativos(fonte, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio, retornar_detalhes=True)
+    mapa = mapear_audio(fonte, entrada, ignorar_inicio, execucao)
     tempos['varredura_audio'] = time.monotonic()-t
+    tempos['mapa_do_cache'] = bool(mapa.get('do_cache'))
     if modo == 'picos':
         plano = planejar_picos(mapa['picos'], mapa['duracao'], ignorar_inicio)
         limite = len(plano)

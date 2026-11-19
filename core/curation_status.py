@@ -47,15 +47,14 @@ def resumir_curadoria(relatorio):
                 descartes[causa if causa in descartes else 'nao_detalhado'] += 1
     selecionados = relatorio.get('selecionados', [])
     sugestoes = sum(c.get('avaliacao') == 'sugestao' for c in selecionados)
+    # Só blocos sem avaliação tornam a curadoria parcial. Um momento descartado
+    # (curto demais, IDs errados) é a validação funcionando, não uma falha.
     situacao = ('sem_fala' if not janelas else 'nao_avaliada' if not analisadas
-                else 'parcial' if falhas or decisoes_invalidas else 'completa')
+                else 'parcial' if falhas else 'completa')
     if situacao == 'nao_avaliada':
         mensagem = 'Curadoria não concluída: nenhum bloco recebeu avaliação válida da IA. Consulte o relatório.'
     elif situacao == 'parcial':
-        mensagem = (f'Curadoria parcial: {falhas} de {len(janelas)} blocos não foram avaliados.' if falhas
-                    else f'Blocos avaliados: {analisadas}/{len(janelas)}. Sem falhas de chamada.')
-        if decisoes_invalidas:
-            mensagem += f' Decisões descartadas por intervalos inválidos: {decisoes_invalidas}.'
+        mensagem = f'Curadoria parcial: {falhas} de {len(janelas)} blocos não foram avaliados.'
     elif situacao == 'sem_fala':
         mensagem = 'Nenhum segmento de fala disponível para curadoria.'
     elif sugestoes:
@@ -64,6 +63,9 @@ def resumir_curadoria(relatorio):
         mensagem = 'Curadoria concluída. Revise os cortes selecionados antes de publicar.'
     if sugestoes and situacao in ('parcial', 'nao_avaliada'):
         mensagem += ' Os cortes são sugestões automáticas, sem aprovação da IA.'
+    if decisoes_invalidas:
+        mensagem += (' 1 momento indicado pela IA foi descartado' if decisoes_invalidas == 1 else
+                     f' {decisoes_invalidas} momentos indicados pela IA foram descartados') +                     ' por duração ou IDs inválidos.'
     return dict(situacao=situacao, mensagem=mensagem, janelas=len(janelas),
                 analisadas=analisadas, falhas_analise=falhas, suspensas=suspensas,
                 falhas_tentadas=falhas-suspensas, respostas_invalidas=invalidas,
@@ -72,9 +74,7 @@ def resumir_curadoria(relatorio):
 
 
 def mensagem_conclusao(resumo, tempo):
-    if resumo and not resumo.get('falhas_analise', 0) and resumo.get('decisoes_invalidas', 0):
-        return f'Processamento concluído; intervalos inválidos descartados. ({tempo})'
-    if resumo and (resumo.get('falhas_analise', 0) or resumo.get('decisoes_invalidas', 0)):
+    if resumo and resumo.get('falhas_analise', 0):
         return f'Processamento concluído com limitações na curadoria. ({tempo})'
     if resumo and resumo.get('sugestoes', 0):
         return f'Processamento concluído com sugestões para revisão. ({tempo})'

@@ -3,6 +3,19 @@ import subprocess
 from core.execution import executar_comando
 
 
+def medir_duracao(fonte, execucao=None):
+    """Duração da fonte em segundos pelo ffprobe (só lê o cabeçalho/playlist), ou None."""
+    try:
+        resultado = executar_comando(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                      "-of", "default=noprint_wrappers=1:nokey=1", fonte],
+                                     execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                     text=True, timeout=60)
+        duracao = float(resultado.stdout.strip().splitlines()[0])
+    except (ValueError, IndexError, OSError, subprocess.SubprocessError):
+        return None
+    return duracao if duracao > 0 else None
+
+
 def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execucao=None, ignorar_inicio_segundos=600, retornar_detalhes=False):
     print("🎧 Mapeando blocos narrativos e de interação...")
 
