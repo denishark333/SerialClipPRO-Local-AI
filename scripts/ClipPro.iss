@@ -33,6 +33,7 @@ UninstallDisplayIcon={app}\Serial ClipPRO.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+ShowComponentSizes=no
 DisableProgramGroupPage=yes
 CloseApplications=no
 RestartApplications=no
@@ -56,11 +57,11 @@ Name: "base\webview"; Description: "WebView2 — exibe a interface do aplicativo
 Name: "base\curl"; Description: "curl_cffi — necessário para o fluxo com a Kick"; Types: personalizada; Flags: fixed
 ; Modelos da curadoria: o usuário escolhe; sem escolha, o mais leve. Dá para trocar depois no app.
 Name: "modelos"; Description: "Modelos de IA da curadoria (troque depois em Primeiros Passos)"
-Name: "modelos\gemma"; Description: "Gemma 4 12B — Recomendado · precisa de ~10 GB de memória de vídeo"; ExtraDiskSpaceRequired: 8000000000; Flags: dontinheritcheck
-Name: "modelos\llama"; Description: "Llama 3.1 8B — Leve · padrão se nenhum for marcado"; ExtraDiskSpaceRequired: 4900000000; Flags: dontinheritcheck
-Name: "modelos\qwen35"; Description: "Qwen 3.5 9B — Intermediário"; ExtraDiskSpaceRequired: 6600000000; Flags: dontinheritcheck
-Name: "modelos\qwen3"; Description: "Qwen 3 14B — Experimental"; ExtraDiskSpaceRequired: 9300000000; Flags: dontinheritcheck
-Name: "gpu"; Description: "Aceleração NVIDIA (CUDA) — transcrição ~4x mais rápida em placas NVIDIA · download de 528 MB"; ExtraDiskSpaceRequired: 772000000
+Name: "modelos\gemma"; Description: "Gemma 4 12B — Recomendado · 8 GB · requer ~10 GB de memória de vídeo"; ExtraDiskSpaceRequired: 8000000000; Flags: dontinheritcheck
+Name: "modelos\llama"; Description: "Llama 3.1 8B — Leve · 4,9 GB · padrão se nenhum for marcado"; ExtraDiskSpaceRequired: 4900000000; Flags: dontinheritcheck
+Name: "modelos\qwen35"; Description: "Qwen 3.5 9B — Intermediário · 6,6 GB"; ExtraDiskSpaceRequired: 6600000000; Flags: dontinheritcheck
+Name: "modelos\qwen3"; Description: "Qwen 3 14B — Experimental · 9,3 GB"; ExtraDiskSpaceRequired: 9300000000; Flags: dontinheritcheck
+Name: "gpu"; Description: "Aceleração NVIDIA (CUDA) — transcrição ~4x mais rápida · 528 MB"; ExtraDiskSpaceRequired: 772000000
 
 [Tasks]
 Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; Flags: checkedonce
@@ -116,15 +117,15 @@ var
 begin
   if TemPlacaNvidia then
     WizardSelectComponents('gpu');
-  { Licença de Terceiros: abaixo da lista de componentes. }
+  { Licenças de terceiros: abaixo da lista de componentes. }
   Rotulo := TNewStaticText.Create(WizardForm);
   Rotulo.Parent := WizardForm.SelectComponentsPage;
-  Rotulo.Caption := 'Licença de Terceiros:';
+  Rotulo.Caption := 'Licenças:';
   Rotulo.Left := WizardForm.ComponentsList.Left;
   Rotulo.Top := WizardForm.ComponentsList.Top + WizardForm.ComponentsList.Height + ScaleY(8);
   Link := TNewStaticText.Create(WizardForm);
   Link.Parent := WizardForm.SelectComponentsPage;
-  Link.Caption := 'THIRD_PARTY_LICENSES.md';
+  Link.Caption := 'Third Party Licenses';
   Link.Left := Rotulo.Left + Rotulo.Width + ScaleX(6);
   Link.Top := Rotulo.Top;
   Link.Font.Color := clBlue;
@@ -149,8 +150,10 @@ begin
     if WizardSilent then
       WizardSelectComponents('modelos\llama')
     else if MsgBox('Nenhum modelo de IA foi marcado.' + #13#10 + #13#10 +
-        'O Llama 3.1 8B, o mais leve (4,9 GB), será instalado como padrão.' + #13#10 +
-        'Você pode baixar outros modelos depois, em Primeiros Passos.' + #13#10 + #13#10 +
+        'Será instalado o Llama 3.1 8B,' + #13#10 +
+        'o mais leve (4,9 GB).' + #13#10 + #13#10 +
+        'Outros modelos podem ser baixados' + #13#10 +
+        'depois, em Primeiros Passos.' + #13#10 + #13#10 +
         'Continuar com o Llama 3.1?', mbConfirmation, MB_YESNO) = IDYES then
       WizardSelectComponents('modelos\llama')
     else
