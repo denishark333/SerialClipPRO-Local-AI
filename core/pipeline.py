@@ -25,10 +25,15 @@ from core.composition import compor_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, ARGS_AUDIO
+from core.boundaries import refinar
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
 )
+
+#: Segundos de áudio transcritos em volta de cada pico (30 s antes, 60 s depois).
+JANELA_ANALISE_PICOS = 90.0
+
 
 def limpar_url_youtube(url: str) -> str:
     """Remove parâmetros de playlist/rádio da URL do YouTube, mantendo apenas o ID do vídeo."""
@@ -255,60 +260,58 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 if len(cortes_validados) >= max_cortes:
                     break
                 
-                inicio_janela = max(0.0, centro - 20.0)
-                duracao_janela = 60.0
-            
-                trecho_path = os.path.join(pasta_temp, f"trecho_pico_{i+1}.mp4")
-            
-                atualizar_estado(f"Picos: extraindo candidato {i+1}/{len(candidatos_picos)}...", 2, 25)
+                # Só o áudio de uma janela com folga em volta do pico: transcrever
+                # não exige vídeo, e a folga deixa o ajuste encontrar frases inteiras.
+                inicio_analise = max(0.0, centro - 30.0)
+                audio_path = os.path.join(pasta_temp, f"audio_pico_{i+1}.wav")
+                atualizar_estado(f"Picos: extraindo áudio do candidato {i+1}/{len(candidatos_picos)}...", 2, 25)
                 inicio_subetapa = time.monotonic()
-                cmd_download_trecho = [
-                    "ffmpeg", "-y", "-ss", str(inicio_janela), "-i", video_corte_fonte,
-                    "-t", str(duracao_janela), "-c:v", "libx264", "-preset", "ultrafast",
-                    "-c:a", "aac", "-b:a", "192k", trecho_path
-                ]
-                
-                if audio_analise_path != video_corte_fonte:
-                    cmd_download_trecho[6:6] = [
-                        "-ss", str(inicio_janela), "-i", audio_analise_path,
-                        "-map", "0:v:0", "-map", "1:a:0",
-                    ]
-                resultado_trecho = executar_comando(cmd_download_trecho, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                detalhes["extracao_trechos"] = detalhes.get("extracao_trechos", 0) + time.monotonic() - inicio_subetapa
-                if resultado_trecho.returncode != 0:
-                    raise RuntimeError("Falha ao extrair trecho: " + resultado_trecho.stderr.decode(errors="replace")[-2000:])
-            
-                if not os.path.exists(trecho_path) or os.path.getsize(trecho_path) < 10000:
+                resultado_audio = executar_comando([
+                    "ffmpeg", "-y", "-ss", str(inicio_analise), "-i", audio_analise_path,
+                    "-t", str(JANELA_ANALISE_PICOS), "-vn", "-map", "0:a:0",
+                    "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", audio_path,
+                ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                detalhes["extracao_audio"] = detalhes.get("extracao_audio", 0) + time.monotonic() - inicio_subetapa
+                if resultado_audio.returncode != 0:
+                    raise RuntimeError("Falha ao extrair áudio do trecho: " + resultado_audio.stderr.decode(errors="replace")[-2000:])
+                if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
                     continue
 
-                palavras_trecho = []
-                texto_trecho = ""
-            
+                palavras_analise = []
                 atualizar_estado(f"Picos: transcrevendo candidato {i+1}/{len(candidatos_picos)} (CPU)...", 2, 35)
                 inicio_subetapa = time.monotonic()
                 try:
-                    segmentos_iter, _ = modelo_whisper.transcribe(trecho_path, word_timestamps=True, language="pt")
+                    segmentos_iter, _ = modelo_whisper.transcribe(audio_path, word_timestamps=True, language="pt")
                     for seg in segmentos_iter:
                         execucao.verificar()
-                        if hasattr(seg, 'text') and seg.text:
-                            if seg.text.strip():
-                                texto_trecho += f"{seg.text.strip()} "
-                        if hasattr(seg, 'words') and seg.words:
-                            for w in seg.words:
-                                if w:
-                                    w_text = w.word.strip() if hasattr(w, 'word') else str(w).strip()
-                                    w_start = w.start if hasattr(w, 'start') else 0.0
-                                    w_end = w.end if hasattr(w, 'end') else 0.0
-                                    palavras_trecho.append({
-                                        "word": w_text,
-                                        "start": w_start,
-                                        "end": w_end
-                                    })
+                        for w in getattr(seg, 'words', None) or []:
+                            texto = (getattr(w, 'word', '') or '').strip()
+                            if texto:
+                                palavras_analise.append({"word": texto, "start": inicio_analise + float(w.start),
+                                                         "end": inicio_analise + float(w.end)})
+                except PipelineCancelado:
+                    raise
                 except Exception as e:
                     execucao.verificar()
                     print(f"⚠️ Aviso na transcrição do trecho {i+1}: {e}")
-
+                finally:
+                    if os.path.exists(audio_path):
+                        os.unlink(audio_path)
                 detalhes["transcricao"] = detalhes.get("transcricao", 0) + time.monotonic() - inicio_subetapa
+
+                # Sugestão original (20 s antes e 40 s depois do pico), ajustada
+                # a frases completas e pausas. Sem fala aproveitável, fica a original.
+                inicio_sugerido = max(0.0, centro - 20.0)
+                ajuste = refinar(palavras_analise, inicio_sugerido, inicio_sugerido + 60.0, minimo=15.0, maximo=90.0)
+                inicio_janela, fim_janela = ajuste or (inicio_sugerido, inicio_sugerido + 60.0)
+                duracao_janela = fim_janela - inicio_janela
+                detalhes["limites_ajustados"] = detalhes.get("limites_ajustados", 0) + bool(ajuste)
+                palavras_trecho = [
+                    {"word": p["word"], "start": max(0.0, p["start"] - inicio_janela),
+                     "end": min(p["end"], fim_janela) - inicio_janela}
+                    for p in palavras_analise if p["end"] > inicio_janela and p["start"] < fim_janela
+                ]
+                texto_trecho = " ".join(p["word"] for p in palavras_trecho)
                 system_prompt = (
                     "You are an AI video clipping assistant. Your job is to analyze stream/video transcripts. "
                     "Be extremely lenient and generous. If the snippet contains commentary, streamer reactions, "
@@ -347,13 +350,31 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
 
                 execucao.verificar()
                 detalhes["ollama"] = detalhes.get("ollama", 0) + time.monotonic() - inicio_subetapa
-                if valido_ia:
-                    cortes_validados.append({
-                        "inicio": inicio_janela,
-                        "duracao": duracao_janela,
-                        "palavras": palavras_trecho,
-                        "trecho_path": trecho_path
-                    })
+                if not valido_ia:
+                    continue
+
+                # O vídeo só é extraído para candidatos aprovados, já no intervalo final.
+                trecho_path = os.path.join(pasta_temp, f"trecho_pico_{i+1}.mp4")
+                atualizar_estado(f"Picos: extraindo vídeo do candidato {i+1}/{len(candidatos_picos)}...", 2, 45)
+                inicio_subetapa = time.monotonic()
+                cmd_trecho = ["ffmpeg", "-y", "-ss", str(inicio_janela), "-i", video_corte_fonte]
+                if audio_analise_path != video_corte_fonte:
+                    cmd_trecho += ["-ss", str(inicio_janela), "-i", audio_analise_path, "-map", "0:v:0", "-map", "1:a:0"]
+                cmd_trecho += ["-t", str(duracao_janela), "-c:v", "libx264", "-preset", "ultrafast",
+                               "-c:a", "aac", "-b:a", "192k", trecho_path]
+                resultado_trecho = executar_comando(cmd_trecho, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                detalhes["extracao_trechos"] = detalhes.get("extracao_trechos", 0) + time.monotonic() - inicio_subetapa
+                if resultado_trecho.returncode != 0:
+                    raise RuntimeError("Falha ao extrair trecho: " + resultado_trecho.stderr.decode(errors="replace")[-2000:])
+                if not os.path.exists(trecho_path) or os.path.getsize(trecho_path) < 10000:
+                    continue
+
+                cortes_validados.append({
+                    "inicio": inicio_janela,
+                    "duracao": duracao_janela,
+                    "palavras": palavras_trecho,
+                    "trecho_path": trecho_path
+                })
 
         else:
             raise ValueError("Modo de curadoria inválido.")
