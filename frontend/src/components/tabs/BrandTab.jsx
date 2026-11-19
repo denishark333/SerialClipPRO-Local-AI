@@ -4,7 +4,7 @@ import { apiFetch, API_BASE_URL } from '../../api';
 
 const ESTILOS_LEGENDA = [
   { id: 'destaque', nome: 'Destaque', descricao: 'A frase inteira aparece e a palavra que está sendo falada fica maior.',
-    exemplo: <>Mano eu <span className="inline-block text-[1.35em] leading-none align-[-0.1em]">vou</span> morrer</> },
+    exemplo: <>Mano eu <span className="inline-block text-[1.3em] leading-none">vou</span> morrer</> },
   { id: 'classico', nome: 'Clássico', descricao: 'A frase inteira aparece de uma vez, sem animação.', exemplo: 'Mano eu vou morrer' },
 ];
 
@@ -88,14 +88,14 @@ export function BrandTab() {
         <p className="text-xs text-slate-400 mb-4">Mesma fonte, cor e contorno nos dois estilos. Vale para novas execuções e para a Revisão de legendas.</p>
         <div className="grid grid-cols-2 gap-3">
           {ESTILOS_LEGENDA.map(({ id, nome, descricao, exemplo }) =>
-            <label key={id} className={`cursor-pointer rounded-lg border p-3 flex flex-col gap-2 ${config.estilo_legenda === id ? 'border-cyan-400 bg-cyan-950/30' : 'border-purple-700/60 bg-[#151024] hover:border-purple-500'}`}>
+            <label key={id} className={`cursor-pointer rounded-lg border p-4 flex flex-col gap-3 ${config.estilo_legenda === id ? 'border-cyan-400 bg-cyan-950/30' : 'border-purple-700/60 bg-[#151024] hover:border-purple-500'}`}>
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <input type="radio" name="estilo_legenda" value={id} checked={config.estilo_legenda === id}
                   onChange={() => salvarEstilo(id)} />
                 {nome}
               </span>
-              <span aria-hidden="true" className="rounded-md bg-slate-800 px-1 py-3 text-center text-sm leading-tight font-black uppercase tracking-wide text-[#ffff00]"
-                style={{ WebkitTextStroke: '0.6px #000', textShadow: '1.5px 1.5px 0 #000' }}>{exemplo}</span>
+              <span aria-hidden="true" className="block rounded-md bg-slate-800 px-2 py-5 text-center text-xl leading-normal font-black uppercase tracking-wide text-[#ffff00]"
+                style={{ WebkitTextStroke: '0.8px #000', textShadow: '2px 2px 0 #000' }}>{exemplo}</span>
               <span className="text-xs text-slate-400 leading-snug">{descricao}</span>
             </label>)}
         </div>
