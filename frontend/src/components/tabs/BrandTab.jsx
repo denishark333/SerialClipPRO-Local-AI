@@ -48,7 +48,7 @@ export function BrandTab() {
     <h2 className="text-lg font-bold">Marca do canal</h2>
     <p className="text-sm text-slate-400 my-3">Envie sua logo ou um PNG transparente com o endereço do canal. A configuração salva vale para novas execuções.</p>
     <p role="status" className="text-sm text-cyan-300">{message}</p>
-    {config && <div className="grid lg:grid-cols-[minmax(280px,1fr)_minmax(220px,0.7fr)_minmax(260px,1fr)] gap-8 mt-6 items-start">
+    {config && <div className="grid gap-6 mt-6 items-start lg:grid-cols-2 xl:grid-cols-[minmax(250px,0.9fr)_minmax(190px,0.6fr)_minmax(230px,0.85fr)_minmax(250px,0.9fr)]">
       <fieldset disabled={busy} className="min-w-0 flex flex-col gap-5 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
         <label>Imagem PNG (até 5 MB e 4096 × 4096 pixels)
           <input aria-label="Selecionar imagem PNG para a marca do canal" type="file" accept="image/png" className="block w-full mt-3 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border file:border-cyan-400/50 file:bg-purple-700 file:px-4 file:py-3 file:font-bold file:text-white hover:file:bg-purple-600 cursor-pointer" onChange={event => {
@@ -76,30 +76,30 @@ export function BrandTab() {
         </div>
         <p className="text-xs text-slate-400 max-w-56 mt-2">Simulação com webcam 16:9. No corte, a divisão acompanha a altura real do seu enquadramento. Sem webcam, vale a posição vertical configurada.</p>
       </div>
-      <aside className="rounded-xl border border-cyan-800/50 bg-gradient-to-br from-purple-950/40 to-cyan-950/20 p-6 space-y-4 text-sm text-slate-300 leading-relaxed">
+      <aside className="rounded-xl border border-cyan-800/50 bg-gradient-to-br from-purple-950/40 to-cyan-950/20 p-5 space-y-4 text-sm text-slate-300 leading-relaxed">
         <h3 className="text-lg font-bold text-cyan-200">Sua identidade nos cortes</h3>
         <p>Use uma logo, assinatura ou endereço do canal em PNG. Um fundo transparente permite sobrepor a imagem sem um retângulo opaco.</p>
         <ol className="list-decimal pl-5 space-y-3"><li>Clique em <strong>Escolher arquivo</strong> e selecione o PNG no computador.</li><li>O envio salva a imagem e ativa a marca. Ajuste largura e posição na simulação.</li><li>Clique em <strong>Salvar marca</strong> para confirmar os ajustes.</li></ol>
         <p>Na posição automática, a marca acompanha a divisão entre webcam e conteúdo. Sem webcam, é usada a posição vertical configurada.</p>
         <p className="rounded-lg border border-purple-600/40 bg-purple-950/40 p-3">As mudanças valem para novas execuções. Vídeos já gerados e a marca guardada nas bases de revisão permanecem como estavam.</p>
       </aside>
+      <fieldset disabled={busy} className="min-w-0 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
+        <legend className="px-2 text-lg font-bold">Estilo da legenda</legend>
+        <p className="text-xs text-slate-400 mb-4">Mesma fonte, cor e contorno nos dois estilos. Vale para novas execuções e para a Revisão de legendas.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {ESTILOS_LEGENDA.map(({ id, nome, descricao, exemplo }) =>
+            <label key={id} className={`cursor-pointer rounded-lg border p-3 flex flex-col gap-2 ${config.estilo_legenda === id ? 'border-cyan-400 bg-cyan-950/30' : 'border-purple-700/60 bg-[#151024] hover:border-purple-500'}`}>
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <input type="radio" name="estilo_legenda" value={id} checked={config.estilo_legenda === id}
+                  onChange={() => salvarEstilo(id)} />
+                {nome}
+              </span>
+              <span aria-hidden="true" className="rounded-md bg-slate-800 px-1 py-3 text-center text-sm leading-tight font-black uppercase tracking-wide text-[#ffff00]"
+                style={{ WebkitTextStroke: '0.6px #000', textShadow: '1.5px 1.5px 0 #000' }}>{exemplo}</span>
+              <span className="text-xs text-slate-400 leading-snug">{descricao}</span>
+            </label>)}
+        </div>
+      </fieldset>
     </div>}
-    {config && <fieldset disabled={busy} className="mt-8 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
-      <legend className="px-2 text-lg font-bold">Estilo da legenda</legend>
-      <p className="text-sm text-slate-400 mb-4">A fonte, a cor amarela e o contorno são os mesmos nos dois estilos. Vale para novas execuções e para a Revisão de legendas.</p>
-      <div className="grid sm:grid-cols-2 gap-4">
-        {ESTILOS_LEGENDA.map(({ id, nome, descricao, exemplo }) =>
-          <label key={id} className={`cursor-pointer rounded-xl border p-4 flex flex-col gap-3 ${config.estilo_legenda === id ? 'border-cyan-400 bg-cyan-950/30' : 'border-purple-700/60 bg-[#151024] hover:border-purple-500'}`}>
-            <span className="flex items-center gap-2 font-semibold">
-              <input type="radio" name="estilo_legenda" value={id} checked={config.estilo_legenda === id}
-                onChange={() => salvarEstilo(id)} />
-              {nome}
-            </span>
-            <span className="text-sm text-slate-400">{descricao}</span>
-            <span aria-hidden="true" className="rounded-lg bg-slate-800 py-4 text-center text-xl font-black uppercase tracking-wide text-[#ffff00]"
-              style={{ WebkitTextStroke: '1px #000', textShadow: '2px 2px 0 #000' }}>{exemplo}</span>
-          </label>)}
-      </div>
-    </fieldset>}
   </section>;
 }
