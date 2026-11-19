@@ -12,6 +12,8 @@ from core.hybrid import transcrever_hibrido
 from core.curation_status import resumir_curadoria
 
 REPORT_DIR = DATA_DIR / "relatorios_curadoria"
+#: Modos que transcrevem amostras da fonte em vez da fonte inteira.
+AMOSTRADOS = ("hibrido", "picos")
 
 
 def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, max_cortes, execucao, ignorar_inicio, termos, resolver_video=None, modo="contexto", limite_amostras=40):
@@ -27,9 +29,9 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
 
     registrar({})
     try:
-        if modo == "hibrido":
+        if modo in AMOSTRADOS:
             transcricao, _ = transcrever_hibrido(fonte_audio, pasta_temp, execucao, termos, ignorar_inicio,
-                                                 limite_amostras, registrar, entrada=entrada)
+                                                 limite_amostras, registrar, entrada=entrada, modo=modo)
             cache = str(REPORT_DIR / (report_id[:-5] + "_amostras.json"))
             salvar_json(cache, transcricao)
         else:
@@ -107,7 +109,7 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
             palavras = [
                 {"word": p["word"], "start": max(0, p["start"]-inicio), "end": min(fim, p["end"])-inicio}
                 for p in transcricao["palavras"] if p["end"] > inicio and p["start"] < fim
-                and (modo != "hibrido" or p.get("amostra") == candidato.get("amostra"))
+                and (modo not in AMOSTRADOS or p.get("amostra") == candidato.get("amostra"))
             ]
             cortes.append({"inicio": inicio, "duracao": fim-inicio, "palavras": palavras,
                            "trecho_path": trecho, "curadoria": {**candidato, "relatorio": report_id}})

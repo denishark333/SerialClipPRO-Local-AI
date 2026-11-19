@@ -43,6 +43,28 @@ def planejar_janelas(picos, duracao, limite=40, ignorar_inicio=0):
     return sorted(janelas, key=lambda j: j['inicio'])
 
 
+def planejar_picos(picos, duracao, ignorar_inicio=0, tamanho=90.):
+    """Uma amostra por pico de áudio (30 s antes, 60 s depois), sem cobertura temporal.
+
+    É o modo Picos: todas as amostras são avaliadas e os cortes saem pela nota,
+    não pela ordem em que os picos aparecem na VOD.
+    """
+    inicio = ignorar_inicio if duracao > ignorar_inicio else 0
+    if not math.isfinite(duracao) or duracao <= inicio:
+        return []
+    tamanho = min(tamanho, duracao - inicio)
+    janelas = []
+    for centro in sorted(picos):
+        if not inicio <= centro < duracao:
+            continue
+        a = max(inicio, min(centro - 30, duracao - tamanho))
+        b = min(duracao, a + tamanho)
+        if any(max(0, min(b, j['fim']) - max(a, j['inicio'])) > tamanho * .25 for j in janelas):
+            continue
+        janelas.append({'inicio': a, 'fim': b, 'origem': 'pico_audio'})
+    return janelas
+
+
 def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempos):
     """Transcreve uma amostra. Tempos relativos ao início da amostra."""
     t = time.monotonic()
@@ -78,19 +100,26 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
     return {'versao': 1, 'duracao': duracao, 'segmentos': segmentos}
 
 
-def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar, entrada=None):
+def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, limite, registrar, entrada=None,
+                        modo='hibrido'):
     """Amostra e transcreve a fonte.
 
-    Com ``entrada``, cada amostra transcrita fica em cache: uma nova execução
-    da mesma VOD (por exemplo, depois de uma queda do Ollama) só transcreve as
-    amostras que faltam. A chave inclui a entrada, o intervalo e os termos.
+    No Híbrido, as amostras combinam picos de áudio e cobertura temporal; no
+    Picos, há uma amostra por pico. Com ``entrada``, cada amostra transcrita
+    fica em cache: uma nova execução da mesma VOD (por exemplo, depois de uma
+    queda do Ollama) só transcreve as amostras que faltam.
     """
+    rotulo = 'Picos' if modo == 'picos' else 'Híbrido'
     tempos = {}
-    atualizar_estado("Híbrido: mapeando áudio para escolher amostras...", 2, 15)
+    atualizar_estado(f"{rotulo}: mapeando áudio para escolher amostras...", 2, 15)
     t = time.monotonic()
     mapa = detectar_segmentos_narrativos(fonte, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio, retornar_detalhes=True)
     tempos['varredura_audio'] = time.monotonic()-t
-    plano = planejar_janelas(mapa['picos'], mapa['duracao'], limite, ignorar_inicio)
+    if modo == 'picos':
+        plano = planejar_picos(mapa['picos'], mapa['duracao'], ignorar_inicio)
+        limite = len(plano)
+    else:
+        plano = planejar_janelas(mapa['picos'], mapa['duracao'], limite, ignorar_inicio)
     if not plano:
         raise ValueError("Não foi possível determinar trechos para amostragem.")
     registrar({'amostragem': plano, 'orcamento_trechos': limite,
@@ -101,7 +130,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     segmentos, palavras, grupos = [], [], []
     for indice, janela in enumerate(plano):
         execucao.verificar()
-        atualizar_estado(f"Híbrido: transcrevendo amostra {indice+1}/{len(plano)} ({dispositivo()})...", 2, 16+int(18*indice/len(plano)))
+        atualizar_estado(f"{rotulo}: transcrevendo amostra {indice+1}/{len(plano)} ({dispositivo()})...", 2, 16+int(18*indice/len(plano)))
         cache = None
         if entrada is not None:
             cache = transcription.CACHE_DIR / 'amostras' / (transcription.chave(

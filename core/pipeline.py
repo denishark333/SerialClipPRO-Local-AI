@@ -6,7 +6,6 @@ import tempfile
 import uuid
 import math
 from urllib.parse import urlsplit
-import ollama
 import yt_dlp
 
 from core.config import (
@@ -16,25 +15,18 @@ from core.config import (
 )
 from core.branding import snapshot as snapshot_marca, filtro_marca
 from core.downloader import obter_url_direta_cdn, obter_fontes_cdn
-from core.audio import detectar_segmentos_narrativos
-from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR
+from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR, AMOSTRADOS
 from core.transcription import salvar_json
 from core.subtitles import filtro_legenda, escrever_legenda
 from core.composition import compor_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
-from core.boundaries import refinar
-from core.whisper import carregar_modelo, dispositivo
 from core.ia import modelo as modelo_ia
 
 from core.execution import (
     executar_comando, reservar_execucao, finalizar_execucao, PipelineCancelado,
 )
-
-#: Segundos de áudio transcritos em volta de cada pico (30 s antes, 60 s depois).
-JANELA_ANALISE_PICOS = 90.0
-
 
 def limpar_url_youtube(url: str) -> str:
     """Remove parâmetros de playlist/rádio da URL do YouTube, mantendo apenas o ID do vídeo."""
@@ -167,8 +159,6 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
     marco_etapa = time.monotonic()
     etapa_medida = "preparacao_origem"
     tempos = {}
-    detalhes = {}
-    relatorio_picos = None
     try:
         execucao.verificar()
         temporarios = tempfile.TemporaryDirectory(prefix="pipeline_", dir=PASTA_TEMP)
@@ -194,7 +184,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
 
         if entrada.startswith("http://") or entrada.startswith("https://"):
             if "youtube.com" in entrada or "youtu.be" in entrada:
-                if modo_curadoria == "hibrido":
+                if modo_curadoria in AMOSTRADOS:
                     audio_analise_path, video_corte_fonte = obter_stream_youtube(limpar_url_youtube(entrada), incluir_audio=True)
                 else:
                     audio_analise_path, video_corte_fonte = preparar_origem_youtube(entrada, pasta_temp, execucao)
@@ -227,168 +217,24 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         tempos[etapa_medida] = time.monotonic() - marco_etapa
         marco_etapa = time.monotonic()
         etapa_medida = "analise_e_extracao"
-        if modo_curadoria in ("contexto", "hibrido"):
-            resolver_video = None
-            if entrada.startswith(("http://", "https://")):
-                if "youtube.com" in entrada or "youtu.be" in entrada:
-                    resolver_video = lambda: obter_stream_youtube(limpar_url_youtube(entrada), incluir_audio=modo_curadoria == "hibrido")
-                else:
-                    resolver_video = lambda: obter_fontes_cdn(entrada)
-            cortes_validados = preparar_cortes_contextuais(
-                entrada, audio_analise_path, video_corte_fonte, pasta_temp,
-                max_cortes, execucao, ignorar_inicio_segundos, termos_jogo, resolver_video=resolver_video,
-                modo=modo_curadoria, limite_amostras=limite_amostras,
-            )
-        elif modo_curadoria == "picos":
-            relatorio_picos = REPORT_DIR / (uuid.uuid4().hex + ".json")
-            estado_pipeline["relatorio_curadoria"] = f"/api/relatorios-curadoria/{relatorio_picos.name}"
-            atualizar_estado("Picos: varrendo áudio da fonte...", 2, 15)
-            inicio_subetapa = time.monotonic()
-            candidatos_picos = detectar_segmentos_narrativos(audio_analise_path, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio_segundos)
-            detalhes["varredura_audio"] = time.monotonic() - inicio_subetapa
-            detalhes["candidatos"] = len(candidatos_picos)
-            execucao.verificar()
-            if not candidatos_picos:
-                raise ValueError("Nenhum candidato encontrado na análise de áudio.")
-            inicio_subetapa = time.monotonic()
-            modelo_whisper = carregar_modelo()
-        
-            detalhes["carregamento_whisper"] = time.monotonic() - inicio_subetapa
-            cortes_validados = []
-        
-            for i, centro in enumerate(candidatos_picos):
-                execucao.verificar()
-                if len(cortes_validados) >= max_cortes:
-                    break
-                
-                # Só o áudio de uma janela com folga em volta do pico: transcrever
-                # não exige vídeo, e a folga deixa o ajuste encontrar frases inteiras.
-                inicio_analise = max(0.0, centro - 30.0)
-                audio_path = os.path.join(pasta_temp, f"audio_pico_{i+1}.wav")
-                atualizar_estado(f"Picos: extraindo áudio do candidato {i+1}/{len(candidatos_picos)}...", 2, 25)
-                inicio_subetapa = time.monotonic()
-                resultado_audio = executar_comando([
-                    "ffmpeg", "-y", "-ss", str(inicio_analise), "-i", audio_analise_path,
-                    "-t", str(JANELA_ANALISE_PICOS), "-vn", "-map", "0:a:0",
-                    "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", audio_path,
-                ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                detalhes["extracao_audio"] = detalhes.get("extracao_audio", 0) + time.monotonic() - inicio_subetapa
-                if resultado_audio.returncode != 0:
-                    raise RuntimeError("Falha ao extrair áudio do trecho: " + resultado_audio.stderr.decode(errors="replace")[-2000:])
-                if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
-                    continue
-
-                palavras_analise = []
-                atualizar_estado(f"Picos: transcrevendo candidato {i+1}/{len(candidatos_picos)} ({dispositivo()})...", 2, 35)
-                inicio_subetapa = time.monotonic()
-                try:
-                    segmentos_iter, _ = modelo_whisper.transcribe(audio_path, word_timestamps=True, language="pt")
-                    for seg in segmentos_iter:
-                        execucao.verificar()
-                        for w in getattr(seg, 'words', None) or []:
-                            texto = (getattr(w, 'word', '') or '').strip()
-                            if texto:
-                                palavras_analise.append({"word": texto, "start": inicio_analise + float(w.start),
-                                                         "end": inicio_analise + float(w.end)})
-                except PipelineCancelado:
-                    raise
-                except Exception as e:
-                    execucao.verificar()
-                    print(f"⚠️ Aviso na transcrição do trecho {i+1}: {e}")
-                finally:
-                    if os.path.exists(audio_path):
-                        os.unlink(audio_path)
-                detalhes["transcricao"] = detalhes.get("transcricao", 0) + time.monotonic() - inicio_subetapa
-
-                # Sugestão original (20 s antes e 40 s depois do pico), ajustada
-                # a frases completas e pausas. Sem fala aproveitável, fica a original.
-                inicio_sugerido = max(0.0, centro - 20.0)
-                ajuste = refinar(palavras_analise, inicio_sugerido, inicio_sugerido + 60.0, minimo=15.0, maximo=90.0)
-                inicio_janela, fim_janela = ajuste or (inicio_sugerido, inicio_sugerido + 60.0)
-                duracao_janela = fim_janela - inicio_janela
-                detalhes["limites_ajustados"] = detalhes.get("limites_ajustados", 0) + bool(ajuste)
-                palavras_trecho = [
-                    {"word": p["word"], "start": max(0.0, p["start"] - inicio_janela),
-                     "end": min(p["end"], fim_janela) - inicio_janela}
-                    for p in palavras_analise if p["end"] > inicio_janela and p["start"] < fim_janela
-                ]
-                texto_trecho = " ".join(p["word"] for p in palavras_trecho)
-                system_prompt = (
-                    "You are an AI video clipping assistant. Your job is to analyze stream/video transcripts. "
-                    "Be extremely lenient and generous. If the snippet contains commentary, streamer reactions, "
-                    "conversations, laughs, or chat interactions, mark it as valid. Only reject if it is absolute dead silence, "
-                    "loading screens, or completely empty noise. "
-                    "Output ONLY raw JSON: {\"valido\": true} or {\"valido\": false}."
-                )
-            
-                execucao.verificar()
-                atualizar_estado(f"Picos: avaliando candidato {i+1}/{len(candidatos_picos)}...", 2, 45)
-                inicio_subetapa = time.monotonic()
-                valido_ia = True
-                try:
-                    resp = ollama.chat(
-                        model=modelo_llm,
-                        messages=[
-                            {'role': 'system', 'content': system_prompt},
-                            {'role': 'user', 'content': f"Transcript: {texto_trecho if texto_trecho.strip() else 'Momento de gameplay ou reação.'}"}
-                        ],
-                        options={'temperature': 0.1, 'num_predict': 64},
-                        # Modelos com raciocínio (Qwen 3) responderiam bem mais devagar.
-                        think=False,
-                    )
-                    conteudo_ia = resp['message']['content'].strip()
-                    if "```json" in conteudo_ia:
-                        conteudo_ia = conteudo_ia.split("```json")[1].split("```")[0].strip()
-                    elif "```" in conteudo_ia:
-                        conteudo_ia = conteudo_ia.split("```")[1].split("```")[0].strip()
-                
-                    res_json = json.loads(conteudo_ia)
-                    if res_json.get("valido") is False:
-                        if len(texto_trecho.strip()) < 3 and len(palavras_trecho) == 0:
-                            valido_ia = False
-                except Exception as e:
-                    execucao.verificar()
-                    print(f"⚠️ Aviso no Llama para o trecho {i+1}: {e}")
-                    detalhes['falhas_ollama'] = detalhes.get('falhas_ollama', 0) + 1
-
-                execucao.verificar()
-                detalhes["ollama"] = detalhes.get("ollama", 0) + time.monotonic() - inicio_subetapa
-                if not valido_ia:
-                    continue
-
-                # O vídeo só é extraído para candidatos aprovados, já no intervalo final.
-                trecho_path = os.path.join(pasta_temp, f"trecho_pico_{i+1}.mp4")
-                atualizar_estado(f"Picos: extraindo vídeo do candidato {i+1}/{len(candidatos_picos)}...", 2, 45)
-                inicio_subetapa = time.monotonic()
-                cmd_trecho = ["ffmpeg", "-y", "-ss", str(inicio_janela), "-i", video_corte_fonte]
-                if audio_analise_path != video_corte_fonte:
-                    cmd_trecho += ["-ss", str(inicio_janela), "-i", audio_analise_path, "-map", "0:v:0", "-map", "1:a:0"]
-                cmd_trecho += ["-t", str(duracao_janela), "-c:v", "libx264", "-preset", "ultrafast",
-                               "-c:a", "aac", "-b:a", "192k", trecho_path]
-                resultado_trecho = executar_comando(cmd_trecho, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                detalhes["extracao_trechos"] = detalhes.get("extracao_trechos", 0) + time.monotonic() - inicio_subetapa
-                if resultado_trecho.returncode != 0:
-                    raise RuntimeError("Falha ao extrair trecho: " + resultado_trecho.stderr.decode(errors="replace")[-2000:])
-                if not os.path.exists(trecho_path) or os.path.getsize(trecho_path) < 10000:
-                    continue
-
-                cortes_validados.append({
-                    "inicio": inicio_janela,
-                    "duracao": duracao_janela,
-                    "palavras": palavras_trecho,
-                    "trecho_path": trecho_path
-                })
-
-        else:
+        if modo_curadoria not in ("contexto", "hibrido", "picos"):
             raise ValueError("Modo de curadoria inválido.")
+        # Os três modos usam a mesma curadoria: transcrevem (a fonte inteira ou
+        # amostras), avaliam todos os trechos e escolhem os melhores pela nota.
+        resolver_video = None
+        if entrada.startswith(("http://", "https://")):
+            if "youtube.com" in entrada or "youtu.be" in entrada:
+                resolver_video = lambda: obter_stream_youtube(limpar_url_youtube(entrada),
+                                                              incluir_audio=modo_curadoria in AMOSTRADOS)
+            else:
+                resolver_video = lambda: obter_fontes_cdn(entrada)
+        cortes_validados = preparar_cortes_contextuais(
+            entrada, audio_analise_path, video_corte_fonte, pasta_temp,
+            max_cortes, execucao, ignorar_inicio_segundos, termos_jogo, resolver_video=resolver_video,
+            modo=modo_curadoria, limite_amostras=limite_amostras,
+        )
 
         total_validos = len(cortes_validados)
-        if modo_curadoria == 'picos' and detalhes.get('falhas_ollama'):
-            with estado_lock:
-                estado_pipeline['resumo_curadoria'] = {
-                    'situacao': 'parcial', 'falhas_analise': detalhes['falhas_ollama'],
-                    'mensagem': 'Houve falhas na avaliação pelo Ollama. Os cortes de Picos precisam de revisão; consulte o relatório.',
-                }
         print(f"🎯 Total de ganchos liberados para curadoria: {total_validos}")
 
         if total_validos == 0:
@@ -475,11 +321,6 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
     finally:
         tempos[etapa_medida] = time.monotonic() - marco_etapa
         estado_pipeline["tempos_etapas"] = {k: round(v, 2) for k, v in tempos.items()}
-        if relatorio_picos:
-            try:
-                salvar_json(relatorio_picos, {"modo": "picos", "entrada": entrada, "tempos_picos": detalhes})
-            except OSError as erro:
-                print(f"Falha ao salvar diagnóstico de Picos: {erro}")
         relatorio_url = estado_pipeline.get("relatorio_curadoria")
         if relatorio_url:
             caminho_relatorio = REPORT_DIR / os.path.basename(relatorio_url)
