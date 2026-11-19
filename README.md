@@ -8,15 +8,16 @@ Este repositório reúne o código-fonte, os pacotes de instalação e as versõ
 
 ## Download
 
-Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão desejada (`Serial-ClipPRO-2.0.0-Setup-x64.exe` na versão 2.0).
+Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão desejada (`Serial-ClipPRO-3.0.0-Setup-x64.exe` na versão 3.0).
 
 > Baixe o instalador **Serial ClipPRO**. Os arquivos automáticos “Source code (zip)” e “Source code (tar.gz)” contêm o código-fonte, não o aplicativo pronto.
 
 ## O que o aplicativo faz
 
 - Processa VODs de Twitch, YouTube e Kick, além de vídeos locais.
-- Seleciona momentos por picos de áudio, contexto ou modo híbrido.
-- Gera cortes verticais em formato 9:16 com legendas.
+- Encontra os melhores momentos da VOD inteira com IA local, citando a fala que justifica cada corte.
+- Funciona com lives em vários idiomas e com qualquer gênero; o campo **O que procurar** indica os momentos que você quer priorizar.
+- Gera cortes verticais em formato 9:16 com legendas animadas: a palavra falada fica em destaque.
 - Permite ajustar o enquadramento da webcam e incluir a marca do seu canal em PNG.
 - Oferece uma galeria para revisar, baixar, exportar e excluir cortes.
 - Permite revisar e corrigir as legendas de cada corte.
@@ -24,15 +25,28 @@ Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão
 
 A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
 
+## Novidades da versão 3.0
+
+- **Curadoria refeita:** cortes que começam e terminam em frases completas, momentos curtos ampliados com o contexto ao redor e a fala-chave de cada corte conferida na transcrição.
+- **Modelo de IA à sua escolha:** Gemma 4 12B (recomendado), Llama 3.1 8B (leve) e outros; escolha na instalação e troque quando quiser no app.
+- **Idioma da live** e **O que procurar**, com modelos prontos para MMORPG, FPS, Just Chatting e Podcast.
+- **Legenda em destaque:** a palavra que está sendo falada cresce; o estilo clássico continua disponível na aba Marca.
+- **Kick:** VODs com o identificador novo funcionam, e links de live são recusados com a orientação de usar o VOD.
+- **Mais rápido:** transcrição na GPU NVIDIA (opcional na instalação) e etapas já feitas reaproveitadas ao processar a mesma VOD de novo.
+- **Instalador personalizável:** você escolhe os modelos e a aceleração NVIDIA, e a preparação acontece dentro do assistente, com barra de progresso.
+
 ## Instalação e primeiro uso
 
-1. Baixe o instalador em **Releases**.
-2. Execute o instalador. Ele cria os atalhos e prepara automaticamente os componentes e modelos.
-3. Se aparecer a janela inicial do **Ollama**, prossiga com o **uso local**. Não é necessário usar modelos cloud.
-4. Aguarde a preparação terminar. Os modelos são baixados nessa etapa.
+1. Baixe o instalador em **Releases** e execute-o.
+2. Na página **Componentes**, escolha:
+   - **Modelos de IA:** marque um ou mais. O **Gemma 4 12B** é o recomendado (precisa de ~10 GB de memória de vídeo); o **Llama 3.1 8B** é o mais leve. Se nenhum for marcado, o Llama 3.1 é instalado.
+   - **Aceleração NVIDIA (CUDA):** transcrição ~4x mais rápida em placas NVIDIA (download de 528 MB). Vem marcada quando há placa NVIDIA.
+   - Os componentes essenciais (aplicativo, FFmpeg, Ollama, Whisper, WebView2 e curl_cffi) são sempre instalados.
+3. Aguarde a preparação: a barra mostra cada download e verificação.
+4. Se aparecer a janela inicial do **Ollama**, prossiga com o **uso local**. Não é necessário usar modelos cloud.
 5. Ao final, abra o Serial ClipPRO pelo instalador ou pelo atalho criado.
 
-Nos próximos usos, basta abrir o atalho **Serial ClipPRO**.
+Nos próximos usos, basta abrir o atalho **Serial ClipPRO**. Outros modelos podem ser instalados depois com `ollama pull nome-do-modelo` e escolhidos em **Primeiros Passos**.
 
 ### Durante a preparação
 
@@ -49,8 +63,8 @@ Python e Node.js não precisam estar instalados no computador de destino.
 
 Comece com um vídeo curto antes de processar uma VOD longa:
 
-1. Informe uma URL compatível ou selecione um arquivo local.
-2. Escolha o modo de análise.
+1. Informe o link de uma VOD (Twitch, Kick ou YouTube) ou selecione um arquivo local. Lives em andamento não são aceitas.
+2. Escolha o modo de análise e, em **Configurações avançadas**, o idioma da live.
 3. Ajuste o enquadramento e a marca, se desejar.
 4. Inicie o processamento.
 5. Revise os vídeos na galeria e exporte seus favoritos.
@@ -61,19 +75,19 @@ Mantenha o computador ligado e sem entrar em suspensão durante o processamento.
 
 | Modo | Como funciona |
 |---|---|
-| **Picos de áudio** | Busca candidatos a partir da intensidade sonora e analisa os trechos selecionados. |
-| **Híbrido** | Combina picos de áudio com amostras distribuídas ao longo do conteúdo. |
+| **Híbrido** | Combina picos de áudio com amostras distribuídas ao longo de toda a VOD. Recomendado para lives longas. |
+| **Picos de áudio** | Avalia todos os momentos mais intensos da VOD e fica com os de maior nota. |
 | **Contexto completo** | Transcreve e analisa toda a fonte, exigindo mais tempo de processamento. |
 
-Nenhum modo garante encontrar todos os momentos interessantes. O tempo varia conforme a duração da VOD, a conexão, o hardware e as configurações escolhidas.
+Nos três modos, os cortes são escolhidos pela nota em toda a VOD, não pela ordem em que aparecem. Nenhum modo garante encontrar todos os momentos interessantes. O tempo varia conforme a duração da VOD, a conexão, o hardware e as configurações escolhidas.
 
 ## Processamento local e hardware
 
 A transcrição e a análise por IA utilizam **Whisper e Ollama no computador**.
 
-- O Whisper usa CPU por compatibilidade.
-- A renderização tenta utilizar NVENC em GPUs NVIDIA compatíveis.
-- Quando NVENC não está disponível, a renderização utiliza CPU.
+- Com a **Aceleração NVIDIA** instalada, o Whisper transcreve na GPU; sem ela, ou sem placa NVIDIA, usa a CPU.
+- O modelo de IA da curadoria roda no Ollama; o Gemma 4 12B precisa de ~10 GB de memória de vídeo para rodar inteiro na placa.
+- A renderização tenta NVIDIA NVENC, depois AMD AMF e, se nenhum estiver disponível, a CPU.
 
 O processamento local não elimina a necessidade de internet para baixar modelos, acessar VODs e abrir as plataformas sociais.
 
@@ -89,11 +103,12 @@ Cole esse caminho na barra de endereços do Explorador de Arquivos.
 |---|---|
 | `Cortes_Prontos` | Vídeos disponíveis na galeria. |
 | `Cortes_Exportados` | Cópias dos cortes exportados em lote. |
-| `transcricoes` | Cache de transcrições. |
+| `transcricoes` | Cache de transcrições, amostras, mapas de áudio e curadoria. |
 | `relatorios_curadoria` | Relatórios da análise. |
 | `cache_revisao` | Bases para revisar legendas dos cortes. |
 | `marca` | Imagem e configuração da marca do canal. |
 | `logs` | Registros de diagnóstico. |
+| `tools` | FFmpeg e, se instalada, a aceleração NVIDIA. |
 
 Excluir um corte da galeria não apaga as cópias já exportadas. O botão **Descarregar** permite escolher onde salvar um vídeo individual.
 
@@ -146,7 +161,7 @@ Aplicação local para transformar arquivos e VODs de Twitch, YouTube e Kick em 
 
 ## Uso pelo código
 
-Requer Python e Node para desenvolvimento; FFmpeg/ffprobe no PATH e Ollama com `llama3.1` para processamento.
+Requer Python e Node para desenvolvimento; FFmpeg/ffprobe no PATH e Ollama com ao menos um modelo (`llama3.1` por padrão; `gemma4:12b` recomendado) para processamento. Com uma placa NVIDIA, instale `nvidia-cublas-cu12` no ambiente para transcrever na GPU.
 
 ```powershell
 python -m venv venv
@@ -162,58 +177,39 @@ Abra http://127.0.0.1:8765. Para desenvolvimento com atualização automática, 
 
 Fechar a aba do navegador não encerra o servidor. Para encerrar, pressione **Ctrl+C no terminal que executou `main.py`** e aguarde o retorno do prompt antes de iniciar novamente. O encerramento solicita cancelamento do pipeline e aguarda as tarefas terminarem; chamadas de modelos podem demorar a responder. Se a porta estiver ocupada, a inicialização informa o conflito sem abrir outra aba. No desktop, feche a janela após terminar/cancelar o processamento; revisões e previews também bloqueiam o fechamento enquanto estão ativos. Encerramento forçado pelo Gerenciador de Tarefas não garante a limpeza de subprocessos ou temporários.
 
-## Instalador 2.0 — Windows x64
+## Instalador 3.0 — Windows x64
 
-A distribuição 2.0 usa um único `Serial-ClipPRO-2.0.0-Setup-x64.exe`. O instalador cria os atalhos e executa a preparação dos componentes e modelos automaticamente; não é necessário executar um BAT separado. Os modelos são baixados durante a preparação, exigindo internet e espaço para vários GB. Python e Node não são necessários no computador de destino.
+A distribuição usa um único `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). A página de componentes mostra os essenciais (fixos) e as opções: modelos de IA e aceleração NVIDIA. Depois da cópia dos arquivos, o assistente executa `bootstrap.ps1` sem console, com `-Modelos` e `-Gpu`; o script emite linhas `@@PROGRESSO|pct|mensagem`, que o assistente usa na barra de progresso.
+
+- Modelos são baixados pela API do Ollama; se o Ollama for antigo demais para um modelo, ele é atualizado e o download refeito. O mais forte entre os escolhidos vira o modelo da curadoria (`config_ia.json`).
+- A aceleração NVIDIA baixa o pacote oficial `nvidia-cublas-cu12` do PyPI (SHA256 fixo) e extrai só `cublas64_12.dll` e `cublasLt64_12.dll` para `tools/cuda`; o CTranslate2 já traz o cuDNN.
+- O atalho **Preparar ou reparar** roda a mesma preparação; sem escolha, mantém o modelo já configurado.
 
 O programa fica em `%LOCALAPPDATA%/Programs/Serial ClipPRO/`, separado dos dados em `%LOCALAPPDATA%/Serial ClipPRO/`. Atualizações e desinstalação preservam vídeos, configurações e modelos. Feche o aplicativo após terminar/cancelar as operações antes de atualizar.
 
-Para compilar, prepare um ambiente Python estável x64 chamado `build-env`, instale `requirements-build.lock.txt`, instale Inno Setup e execute `scripts/build_installer.ps1`. O resultado e seu SHA256 ficam em `dist/installer/`. Veja [compilação, retomada e validação](docs/INSTALADOR_V2.md). O fluxo ainda requer validação completa em Windows limpo antes de distribuição pública.
+Para compilar, prepare um ambiente Python estável x64 chamado `build-env`, instale `requirements-build.lock.txt`, instale Inno Setup e execute `scripts/build_installer.ps1`. O resultado e seu SHA256 ficam em `dist/installer/`. Veja [compilação, retomada e validação](docs/INSTALADOR_V2.md). O fluxo requer validação em Windows limpo antes de cada distribuição pública.
 
-## Desktop WebView2 e distribuição anterior (pasta/ZIP)
+O instalador verifica assinaturas dos instaladores Microsoft/Ollama e o SHA256 do FFmpeg e do pacote NVIDIA. Não altera exclusões nem desativa o Defender. Registra diagnóstico em `instalacao.log`, `self-test.json` e `models-setup.json` na pasta de dados.
 
-Para preparar o ambiente de build:
-
-```powershell
-venv\Scripts\python.exe -m pip install -r requirements-desktop.txt
-powershell -ExecutionPolicy Bypass -File scripts\build_desktop.ps1
-```
-
-Distribua **a pasta inteira `dist/Serial ClipPRO/`**, incluindo `_internal`, o executável e os scripts de preparação. Não copie somente o EXE. O build usa React compilado e uma janela pywebview/WebView2; o servidor permanece em localhost, em uma porta disponível.
-
-No outro computador Windows x64:
-
-1. Extraia a pasta inteira e execute `Instalar dependencias.bat`. Ele verifica .NET Framework, Visual C++, FFmpeg/ffprobe, WebView2 e Ollama, baixando o que faltar diretamente dos fornecedores. **Não depende de winget, Python, Node ou comandos manuais.** Requer internet e espaço para vários GB de modelos; aceite as solicitações legítimas dos instaladores do Windows.
-2. Aguarde as sete etapas: a preparação baixa/verifica `llama3.1` e Whisper Small, testa o runtime e abre o aplicativo ao concluir. Nas próximas vezes, basta `Serial ClipPRO.exe`. Executáveis antigos mantêm o modelo daquela versão até uma nova compilação.
-3. Se o Windows solicitar reinicialização, reinicie e clique novamente no mesmo BAT para concluir. Em falhas de rede, repita o BAT; não é necessário corrigir comandos no terminal.
-4. Na aba Primeiros Passos, use **Verificar dependências**. O FFmpeg instalado pelo pacote fica na pasta de dados do usuário e é encontrado automaticamente, sem alterar o PATH global.
-5. Comece com um vídeo curto, depois teste uma VOD longa. Teste em máquina sem NVIDIA para validar a alternativa em CPU.
-
-A preparação é iniciada pelo BAT e abre a aplicação no final; abrir somente o EXE não instala pré-requisitos. O instalador verifica assinaturas dos instaladores Microsoft/Ollama e SHA256 do pacote FFmpeg. Remove a marca de origem de download somente dos binários da distribuição para permitir o carregamento das DLLs .NET. Não altera exclusões nem desativa o Defender. Registra diagnóstico em `instalacao.log`, `self-test.json` e `models-setup.json` na pasta de dados.
-
-O fluxo atualizado ainda precisa ser revalidado em Windows limpo. Uma detecção do Defender na linha de comando de desenvolvimento não equivale à detecção de um arquivo do pacote; não restaure nem exclua itens da proteção para contornar alertas. O build atual usa o Python do ambiente local; para distribuição definitiva, recrie o ambiente com uma versão estável de Python (o ambiente de origem estava em 3.11.0b4).
-
-O desktop bloqueia fechamento enquanto o pipeline estiver ativo: cancele e aguarde antes de fechar. Uma segunda instância desktop usando a mesma pasta de dados é recusada. Evite executar simultaneamente Gradio, servidor manual e desktop sobre os mesmos dados.
-
-Dados do EXE: `%LOCALAPPDATA%/Serial ClipPRO/`. No desenvolvimento, os dados continuam na raiz do projeto. `CLIPPRO_DATA_DIR` permite escolher outro diretório. Recursos empacotados ficam separados dos vídeos, logos e presets. Não há migração automática de dados de builds antigos; copie-os explicitamente se necessário.
+O desktop bloqueia fechamento enquanto o pipeline estiver ativo: cancele e aguarde antes de fechar. Uma segunda instância desktop usando a mesma pasta de dados é recusada. `CLIPPRO_DATA_DIR` permite escolher outro diretório de dados; no desenvolvimento, os dados ficam na raiz do projeto.
 
 ## Modos e custo
 
-- **Picos:** varre o áudio, seleciona até 50 candidatos espaçados e transcreve/avalia somente esses trechos. Não procura conversas fora dos candidatos sonoros.
 - **Híbrido:** varre o áudio e combina picos com cobertura temporal. Até 40 amostras de 90 segundos por padrão (60 minutos de áudio para transcrição). Pode perder acontecimentos fora das amostras. O limite de amostras é diferente do limite de cortes gerados.
-- **Contexto completo:** prepara e transcreve toda a fonte em blocos; custa mais CPU e leitura de mídia. O cache beneficia apenas novas análises da mesma entrada/configuração.
+- **Picos:** uma amostra por pico de áudio; todas são avaliadas e os cortes saem pela nota.
+- **Contexto completo:** prepara e transcreve toda a fonte em blocos; custa mais CPU e leitura de mídia.
 
-A varredura de Picos/Híbrido percorre toda a fonte, mesmo sem salvar a VOD integral. Em fontes com áudio/vídeo juntos, tráfego de rede pode continuar elevado. Não há garantia de processamento em 15–30 minutos.
+A varredura percorre toda a fonte, mesmo sem salvar a VOD integral. Na Twitch, a análise usa a variante só de áudio; na Kick, a menor qualidade de vídeo (mesmo áudio). Mapa de áudio, amostras transcritas e blocos avaliados ficam em cache: uma nova execução da mesma VOD só refaz o que mudou (o mapa é refeito se a VOD cresceu).
 
-Whisper usa CPU/int8 por compatibilidade. A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`) e, se ambos falharem, CPU com libx264. AMF requer GPU AMD com codificação H.264, driver compatível e FFmpeg compilado com esse encoder; sua presença no FFmpeg não garante disponibilidade no hardware. O terminal informa o encoder usado. A composição/filtros, a extração intermediária e os demais passos em CPU continuam como antes. A aceleração AMD ainda precisa de validação em hardware real. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
+A curadoria envia cada bloco ao modelo configurado com o idioma da live e as prioridades do campo **O que procurar**. A resposta segue um esquema JSON; a fala-chave de cada momento é conferida na transcrição, momentos curtos são ampliados com a fala vizinha, candidatos adjacentes são fundidos e os limites são ajustados a frases completas e pausas. Se a IA não aprovar nada, o app sugere trechos para revisão por sinais neutros (termos e foco informados, exclamações, perguntas, repetições, fala acelerada).
 
-Picos emite timestamps/RMS por segundo, sem processar vídeo na varredura. Os relatórios distinguem varredura, extração, transcrição e Ollama, além dos tempos gerais. Tempos detalhados estão contidos no total de análise: não some ambos como etapas independentes.
+A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`) e, se ambos falharem, CPU com libx264; um encoder que falhar não é tentado de novo na sessão. O áudio é normalizado em duas passagens a -14 LUFS. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
 
-Antes de preparar a mídia, o pipeline verifica se o Ollama responde e se `llama3.1` está instalado. Essa consulta não carrega o modelo nem garante inferência durante toda a execução. Contexto/Híbrido exibem os blocos avaliados, falhos e suspensos; falhas técnicas não são apresentadas como rejeição editorial. Uma conclusão com limitações ou sugestões é identificada na interface e no relatório.
+Antes de preparar a mídia, o pipeline verifica se o Ollama responde e se o modelo configurado está instalado. Falhas técnicas não são apresentadas como rejeição editorial; só blocos sem avaliação tornam a curadoria parcial.
 
 ## Estúdio e marca
 
-O preview Twitch é extraído de **30:00 até 30:10**, sem recuar para a abertura. Outras origens usam o minuto 1 e permitem alternativa para arquivos curtos.
+O preview do estúdio é extraído da **metade da VOD** (10 segundos), onde a live costuma estar em andamento e com a webcam visível. Sem duração conhecida, usa 30:00 na Twitch e o minuto 1 nas demais origens.
 
 O enquadramento usa percentuais da imagem original. O preview acompanha a proporção da fonte, a lupa acompanha a área selecionada, e presets anteriores não são regravados automaticamente. Redimensionar mantém 16:9; o preset antigo pode ter outra proporção.
 
@@ -223,7 +219,7 @@ O envio de um PNG ativa a marca automaticamente. Para uma imagem já salva e des
 
 Com o modo estúdio ativo, a webcam ocupa uma área acima do conteúdo, sem cobri-lo. O conteúdo preenche toda a área abaixo com recorte central, mantendo a proporção e cortando as laterais quando necessário, sem faixas de preenchimento. Sem webcam, permanece o recorte vertical central.
 
-As legendas usam Bangers em amarelo, em grupos de 3–5 palavras quando a fala permite. Pausas, finais de frase e duração máxima do grupo podem produzir grupos menores. Os timestamps continuam provenientes da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
+As legendas usam Bangers em amarelo, em grupos de até 5 palavras, quebrando em pausas e finais de frase. No estilo **Destaque** (padrão), a palavra que está sendo falada fica 22% maior; no **Clássico**, a frase aparece inteira de uma vez. O estilo é escolhido na aba Marca e vale também para a revisão. Os tempos vêm da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
 
 ## Revisão opcional de legendas (teste)
 
@@ -237,7 +233,9 @@ As bases ficam em `cache_revisao/<id único>/`: original horizontal, marca da ex
 
 **Limpar cache**, no lado direito das abas, mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
 
-Whisper **Small**, CPU/int8, está ativo nos três modos. O primeiro uso pode baixar o modelo e o processamento pode levar mais tempo. O cache de transcrição identifica o modelo e não reaproveita resultados do Base.
+Ao aplicar uma revisão, frases não editadas mantêm o tempo real de cada palavra; nas editadas e nas bases antigas, o tempo é estimado pelo tamanho de cada palavra.
+
+Whisper **Small** está ativo nos três modos, na GPU NVIDIA quando disponível e na CPU nos demais casos. O primeiro uso pode baixar o modelo.
 
 ## Galeria e desktop
 
@@ -259,9 +257,9 @@ No desktop, “Abrir site” da aba Social abre uma janela WebView2 separada do 
 - `relatorios_curadoria/`: decisões e tempos; `marca/`: PNG/configuração.
 - `logs/`: diagnósticos do desktop. Cortes antigos não são apagados ao iniciar um processamento.
 
-Rotas principais: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`.
+Rotas principais: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`, `GET/PUT /api/ia`.
 
-Parâmetros do pipeline: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`.
+Parâmetros do pipeline: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`, `idioma`, `foco`.
 
 ## Validação
 
@@ -274,7 +272,7 @@ npm run build
 
 Há testes com mídia sintética e FFmpeg real; as chamadas de IA são simuladas para testes determinísticos. Isso não substitui validação da qualidade editorial, CDN ao vivo, visual da janela e teste em PC limpo. O teste do instalador falha de propósito se o Serial ClipPRO estiver aberto.
 
-O executável aceita `--self-test`: verifica imports, frontend e runtime WebView2 sem abrir janela nem baixar modelos; grava `self-test.json` na pasta de dados. Não valida a renderização da janela nem o pipeline completo.
+O executável aceita `--self-test`: verifica imports, frontend, runtime WebView2 e o acesso à Kick (curl_cffi) sem abrir janela nem baixar modelos; grava `self-test.json` na pasta de dados. Não valida a renderização da janela nem o pipeline completo.
 
 O andamento das correções está em [Plano de correções](docs/PLANO_DE_CORRECOES.md).
 
@@ -282,6 +280,6 @@ O andamento das correções está em [Plano de correções](docs/PLANO_DE_CORREC
 
 ## Licença
 
-Código sob licença [MIT](LICENSE): uso, modificação e redistribuição livres, inclusive comercial, mantendo o aviso de copyright. Componentes de terceiros permanecem sujeitos às respectivas licenças (por exemplo, a fonte Bangers, sob [SIL Open Font License](assets/fonts/Bangers/OFL.txt)).
+Código sob licença [MIT](LICENSE): uso, modificação e redistribuição livres, inclusive comercial, mantendo o aviso de copyright. Componentes de terceiros permanecem sujeitos às respectivas licenças; veja [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Partes da curadoria e da transcrição foram adaptadas do [AutoClip](https://github.com/artbyjazi/autoclip), de Jad Ghazi (MIT). A fonte Bangers está sob a [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
 
 Desenvolvido por **SerialHealer**.
