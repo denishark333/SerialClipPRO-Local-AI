@@ -127,7 +127,7 @@ export function StepsTab() {
         </div>}
         <details className={NOTAS}>
           <summary className="cursor-pointer font-medium text-slate-300">Notes</summary>
-          <p className="mt-2">Na versão 2.0, o instalador prepara os componentes e baixa os modelos automaticamente. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
+          <p className="mt-2">O instalador prepara os componentes e baixa os modelos de IA escolhidos na instalação. Depois, abra o ClipPRO pelo atalho. Para retomar uma preparação interrompida, use “Preparar ou reparar Serial ClipPRO” no menu Iniciar.</p>
         </details>
       </div>
       <ModelCard />
