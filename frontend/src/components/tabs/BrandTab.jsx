@@ -48,7 +48,7 @@ export function BrandTab() {
     <h2 className="text-lg font-bold">Marca do canal</h2>
     <p className="text-sm text-slate-400 my-3">Envie sua logo ou um PNG transparente com o endereço do canal. A configuração salva vale para novas execuções.</p>
     <p role="status" className="text-sm text-cyan-300">{message}</p>
-    {config && <div className="grid gap-6 mt-6 items-start lg:grid-cols-2 xl:grid-cols-[minmax(250px,0.9fr)_minmax(190px,0.6fr)_minmax(230px,0.85fr)_minmax(250px,0.9fr)]">
+    {config && <div className="grid gap-6 mt-6 items-start lg:grid-cols-2 xl:grid-cols-[minmax(220px,0.65fr)_minmax(190px,0.6fr)_minmax(230px,0.85fr)_minmax(280px,1.15fr)]">
       <fieldset disabled={busy} className="min-w-0 flex flex-col gap-5 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
         <label>Imagem PNG (até 5 MB e 4096 × 4096 pixels)
           <input aria-label="Selecionar imagem PNG para a marca do canal" type="file" accept="image/png" className="block w-full mt-3 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border file:border-cyan-400/50 file:bg-purple-700 file:px-4 file:py-3 file:font-bold file:text-white hover:file:bg-purple-600 cursor-pointer" onChange={event => {
