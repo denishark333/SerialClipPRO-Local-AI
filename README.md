@@ -1,4 +1,5 @@
 # Serial ClipPRO
+<img width="1920" height="1045" alt="image" src="https://github.com/user-attachments/assets/4de74f11-5c49-43de-a4cd-ec6592ea3d06" />
 
 **Sua live continua em cada corte.**
 
