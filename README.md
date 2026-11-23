@@ -307,6 +307,6 @@ The executable accepts `--self-test`: it checks imports, the frontend, the WebVi
 
 ## License
 
-Code under the [MIT](LICENSE) license: free to use, modify and redistribute, including commercially, as long as the copyright notice is kept. Third-party components remain under their own licenses; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Parts of the curation and transcription were adapted from [AutoClip](https://github.com/artbyjazi/autoclip) by Jad Ghazi (MIT). The Bangers font is under the [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
+Code under the [MIT](LICENSE) license: free to use, modify and redistribute, including commercially, as long as the copyright notice is kept. Third-party components remain under their own licenses; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). The Bangers font is under the [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
 
 Developed by **SerialHealer**.
