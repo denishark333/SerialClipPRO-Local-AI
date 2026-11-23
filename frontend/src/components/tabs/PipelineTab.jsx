@@ -43,6 +43,17 @@ export function PipelineTab({
     Number(ignorarInicio) > 0 && t('pipeline.resumo.abertura', { segundos: Number(ignorarInicio) }),
   ].filter(Boolean).join(' · ');
   const [carregandoPreview, setCarregandoPreview] = React.useState(false);
+  // Modelo da curadoria em uso (escolhido em Primeiros Passos); a aba é remontada ao voltar para ela.
+  const [modeloIA, setModeloIA] = React.useState('');
+  useEffect(() => {
+    let ativo = true;
+    apiFetch('/ia').then(r => r.json()).then(dados => {
+      if (!ativo) return;
+      const instalado = dados.instalados?.find(m => m.id === dados.modelo_id);
+      setModeloIA(instalado?.nome || dados.modelo);
+    }).catch(() => { /* backend fora do ar: o card fica com o traço */ });
+    return () => { ativo = false; };
+  }, []);
   const [previewPronto, setPreviewPronto] = React.useState(0);
   const [selecionandoArquivo, setSelecionandoArquivo] = React.useState(false);
   const entradas = React.useRef({ arquivo: '', url: '' });
@@ -359,7 +370,7 @@ export function PipelineTab({
               </div>
               <div className="bg-[#0e0a1a] border border-[#1f1633] p-2.5 rounded-xl flex justify-between items-center">
                 <span className="text-slate-400">{t('pipeline.iaEngine')}</span>
-                <span className="text-cyan-400 font-bold">Llama 3.1</span>
+                <span className="text-cyan-400 font-bold text-right">{modeloIA || '—'}</span>
               </div>
             </div>
           </div>
