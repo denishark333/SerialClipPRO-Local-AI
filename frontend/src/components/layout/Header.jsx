@@ -1,12 +1,30 @@
 import React from 'react';
 import { useDialog } from './useDialog';
 import { version } from '../../../../version.json';
+import { useI18n } from '../../i18n/useI18n';
+import { IDIOMAS } from '../../i18n/traduzir';
+
+function SeletorIdioma() {
+  const { idioma, setIdioma, t } = useI18n();
+  return (
+    <div role="group" aria-label={t('cabecalho.idiomaInterface')} title={t('cabecalho.idiomaInterface')}
+      className="flex items-center rounded-xl border border-[#1b1528] bg-[#0a0712] p-1 text-xs font-mono">
+      {IDIOMAS.map(({ id, sigla, nome }) => (
+        <button key={id} type="button" lang={id} aria-pressed={idioma === id} title={nome} onClick={() => setIdioma(id)}
+          className={`rounded-lg px-2.5 py-1 font-bold transition focus-visible:outline-2 focus-visible:outline-cyan-400 ${idioma === id ? 'bg-gradient-to-r from-[#9333ea]/60 to-[#00ffff]/30 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+          {sigla}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function Header() {
   const { notify } = useDialog();
+  const { t } = useI18n();
   const donations = [
-    ['pix', 'Donate via Pix', 'https://livepix.gg/serialhealer'],
-    ['paypal', 'Donate via PayPal', 'https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL'],
+    ['pix', t('cabecalho.doarPix'), 'https://livepix.gg/serialhealer'],
+    ['paypal', t('cabecalho.doarPaypal'), 'https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL'],
   ];
   return (
     <header className="mb-6 border-b border-[#1b1528] pb-4 flex flex-wrap gap-4 items-center justify-between w-full mx-auto">
@@ -22,15 +40,18 @@ export function Header() {
           <h1 className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#b3ff33] via-[#9333ea] to-[#00ffff] drop-shadow-[0_2px_10px_rgba(147,51,234,0.3)]">
             Serial ClipPRO - LOCAL AI
           </h1>
-          <span className="inline-block mt-1 rounded-full border border-purple-500/40 bg-purple-950/40 px-2 py-0.5 text-xs font-mono text-cyan-300">Versão {version}</span>
-          <p className="text-slate-400 text-xs font-mono mt-0.5">Pipeline Profissional VOD • FastAPI + React • (NVENC)</p>
+          <span className="inline-block mt-1 rounded-full border border-purple-500/40 bg-purple-950/40 px-2 py-0.5 text-xs font-mono text-cyan-300">{t('cabecalho.versao', { versao: version })}</span>
+          <p className="text-slate-400 text-xs font-mono mt-0.5">{t('cabecalho.subtitulo')}</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 items-end">
+      <div className="flex items-center gap-2">
+      <SeletorIdioma />
       <div className="flex items-center gap-2 bg-[#0a0712] px-4 py-2 rounded-xl border border-[#1b1528] text-xs font-mono">
         <span className="w-2.5 h-2.5 rounded-full bg-[#b3ff33] animate-pulse"></span>
-        <span className="text-slate-300">Local AI Engine Ativo</span>
+        <span className="text-slate-300">{t('cabecalho.motorAtivo')}</span>
+      </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {donations.map(([id, label, url]) => <a key={id} href={url} target="_blank" rel="noopener noreferrer"
@@ -38,8 +59,8 @@ export function Header() {
             if (!window.pywebview?.api?.abrir_doacao) return;
             event.preventDefault();
             try {
-              if (!await window.pywebview.api.abrir_doacao(id)) notify('Não foi possível abrir o navegador.', 'Doação');
-            } catch (error) { notify(error.message, 'Doação'); }
+              if (!await window.pywebview.api.abrir_doacao(id)) notify(t('cabecalho.navegadorFalhou'), t('cabecalho.doacao'));
+            } catch (error) { notify(error.message, t('cabecalho.doacao')); }
           }}
           className="rounded-xl p-[1px] bg-gradient-to-r from-[#b3ff33] via-[#9333ea] to-[#00ffff] shadow-[0_0_12px_rgba(147,51,234,0.35)] hover:shadow-[0_0_20px_rgba(0,255,255,0.35)] transition-shadow focus-visible:outline focus-visible:outline-cyan-300">
           <span className="block rounded-xl bg-[#0a0712] px-4 py-2 text-xs font-bold text-slate-100">{label}</span>
