@@ -6,6 +6,7 @@ inteira, como nas versões anteriores. Fonte, cor e contorno são os mesmos nos
 dois estilos (definidos em ``filtro_legenda``).
 """
 from core.config import BASE_DIR
+from core.textos import tr
 import math
 from pathlib import Path
 
@@ -142,7 +143,7 @@ def escrever_legenda(caminho, palavras, estilo=PADRAO):
 def filtro_legenda(caminho):
     fontes = BASE_DIR / 'assets' / 'fonts' / 'Bangers'
     if not (fontes / 'Bangers-Regular.ttf').is_file():
-        raise FileNotFoundError('Fonte Bangers ausente. Verifique os arquivos do aplicativo.')
+        raise FileNotFoundError(tr('pipeline.fonte_ausente'))
     def escapar(valor):
         return str(valor).replace('\\', '/').replace(':', '\\:').replace("'", "'\\\\\\''")
     return (f",subtitles=filename='{escapar(caminho)}':fontsdir='{escapar(fontes)}':"

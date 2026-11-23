@@ -2,6 +2,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from core import ia
+from core.textos import tr
 
 router = APIRouter(prefix='/ia')
 ORDEM_PERFIL = {'Recomendado': 0, 'Leve': 1, 'Intermediário': 2, 'Experimental': 3}
@@ -20,7 +21,7 @@ def obter():
     return {'modelo': atual, 'modelo_id': correspondente or atual, 'padrao': ia.PADRAO, 'ollama_online': online,
             'memoria_gpu_gb': memoria,
             'instalados': sorted((ia.descrever(m, memoria) for m in instalados),
-                                 key=lambda m: (ORDEM_PERFIL.get(m['perfil'], len(ORDEM_PERFIL)), m['nome'])),
+                                 key=lambda m: (ORDEM_PERFIL.get(m['perfil_id'], len(ORDEM_PERFIL)), m['nome'])),
             'modelo_instalado': correspondente is not None}
 
 
@@ -29,8 +30,8 @@ def salvar(config: ia.ConfigIA):
     try:
         instalados = ia.modelos_instalados()
     except (httpx.HTTPError, ValueError) as erro:
-        raise HTTPException(503, 'O Ollama não respondeu. Abra o Ollama para escolher um modelo instalado.') from erro
+        raise HTTPException(503, tr('ollama.offline_escolha')) from erro
     if not any(ia.mesmo_modelo(m['nome'], config.modelo) for m in instalados):
-        raise HTTPException(422, f'O modelo {config.modelo} não está instalado no Ollama.')
+        raise HTTPException(422, tr('ollama.nao_instalado', modelo=config.modelo))
     ia.salvar(config)
     return obter()

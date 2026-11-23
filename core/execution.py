@@ -3,6 +3,7 @@ import os
 import subprocess
 import threading
 import time
+from core.textos import tr
 
 from core.config import estado_pipeline, estado_lock, formatar_tempo
 
@@ -54,9 +55,9 @@ def reservar_execucao():
             return None
         _ativa = Execucao()
         estado_pipeline.update(
-            status="Preparando execução...", etapa=0, progresso_pct=0,
+            status=tr('status.preparando_execucao'), etapa=0, progresso_pct=0,
             videos=[], tempo_inicio=time.time(), tempo_decorrido="00:00",
-            tempo_total="00:00", executando=True, cancelando=False,
+            tempo_total="00:00", executando=True, cancelando=False, cancelado=False,
             relatorio_curadoria=None, resumo_curadoria=None,
             tempos_etapas={}, encoder=None, encoder_tentativa=None,
         )
@@ -68,7 +69,7 @@ def solicitar_cancelamento():
         if _ativa is None:
             return False
         _ativa.cancelamento.set()
-        estado_pipeline.update(cancelando=True, status="Cancelando; aguardando a etapa atual encerrar...")
+        estado_pipeline.update(cancelando=True, status=tr('status.cancelando'))
         return True
 
 
@@ -77,7 +78,7 @@ def finalizar_execucao(execucao):
     with estado_lock:
         if _ativa is execucao:
             if execucao.cancelamento.is_set():
-                estado_pipeline.update(status="Pipeline cancelado pelo usuário.", etapa=-1)
+                estado_pipeline.update(status=tr('status.cancelado'), etapa=-1, cancelado=True)
             estado_pipeline.update(executando=False, cancelando=False, encoder_tentativa=None)
             estado_pipeline["tempo_total"] = formatar_tempo(time.time() - estado_pipeline["tempo_inicio"])
             estado_pipeline["tempo_decorrido"] = estado_pipeline["tempo_total"]

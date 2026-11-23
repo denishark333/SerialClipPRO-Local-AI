@@ -1,6 +1,7 @@
 """Transcrição completa em blocos de áudio, com cache reutilizável."""
 import hashlib
 import json
+from core.textos import tr
 import math
 import os
 from pathlib import Path
@@ -85,12 +86,12 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos="", idioma
         try:
             dados = json.loads(caminho_cache.read_text(encoding="utf-8"))
             if dados["versao"] == VERSAO and dados.get("modelo") == "small" and isinstance(dados["segmentos"], list) and dados["duracao"] > 0:
-                atualizar_estado("Transcrição completa recuperada do cache.", 2, 34)
+                atualizar_estado(tr('status.transcricao_cache'), 2, 34)
                 return dados, str(caminho_cache)
         except (ValueError, KeyError, TypeError):
             pass
 
-    atualizar_estado("Preparando áudio completo para análise de contexto...", 2, 15)
+    atualizar_estado(tr('status.preparando_audio'), 2, 15)
     pasta_audio = Path(pasta_temp) / "audio_contexto"
     pasta_audio.mkdir()
     resultado = executar_comando([
@@ -99,10 +100,10 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos="", idioma
         str(pasta_audio / "bloco_%05d.wav"),
     ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if resultado.returncode:
-        raise ErroFFmpeg("Falha ao preparar o áudio", resultado.stderr)
+        raise ErroFFmpeg(tr('ffmpeg.preparar_audio'), resultado.stderr)
     blocos = sorted(pasta_audio.glob("bloco_*.wav"))
     if not blocos:
-        raise ValueError("Nenhum áudio disponível para transcrição.")
+        raise ValueError(tr('pipeline.sem_audio'))
 
     execucao.verificar()
     modelo = carregar_modelo()
@@ -112,7 +113,7 @@ def transcrever_completo(fonte, entrada, pasta_temp, execucao, termos="", idioma
         execucao.verificar()
         with wave.open(str(bloco), "rb") as wav:
             duracao = wav.getnframes() / wav.getframerate()
-        atualizar_estado(f"Transcrevendo a VOD: bloco {indice+1}/{len(blocos)} ({dispositivo()})...", 2, 16 + int(18 * indice / len(blocos)))
+        atualizar_estado(tr('status.transcrevendo_vod', atual=indice+1, total=len(blocos), dispositivo=dispositivo()), 2, 16 + int(18 * indice / len(blocos)))
         iterator, _ = modelo.transcribe(
             str(bloco), language=para_whisper(idioma), word_timestamps=True, beam_size=5,
             vad_filter=True, hotwords=termos or None,

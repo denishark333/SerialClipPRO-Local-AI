@@ -1,20 +1,18 @@
 import re
+from core.textos import tr
 
 import yt_dlp
 
 from core import kick
 
 
-MENSAGEM_LIVE = ("Esse link é de uma live em andamento (ou do canal). O Serial ClipPRO trabalha com "
-                 "vídeos completos: use o link do VOD, por exemplo twitch.tv/videos/… ou "
-                 "kick.com/canal/videos/…, depois que a live terminar.")
 
 
 def recusar_live(info: dict) -> None:
     """Lives não têm começo fixo nem links duráveis: a varredura só ouviria os minutos
     seguintes e os trechos sumiriam da janela da transmissão antes do corte."""
     if info.get('is_live') or info.get('live_status') in ('is_live', 'is_upcoming'):
-        raise ValueError(MENSAGEM_LIVE)
+        raise ValueError(tr('link.live'))
 
 
 def extrair_info(opcoes: dict, url: str) -> dict:
@@ -25,11 +23,10 @@ def extrair_info(opcoes: dict, url: str) -> dict:
     except yt_dlp.utils.DownloadError as erro:
         texto = re.sub(r"\x1b\[[0-9;]*m", "", str(erro)).replace("ERROR: ", "").strip()
         if re.search(r"is (currently )?offline|not (currently )?live", texto, re.I):
-            raise ValueError("O canal está offline e o link não aponta para um VOD. "
-                             "Use o link do VOD (twitch.tv/videos/… ou kick.com/canal/videos/…).") from erro
+            raise ValueError(tr('link.offline')) from erro
         if "kick.com" in url and re.search(r"HTTP Error (403|404)", texto):
-            raise ValueError("A Kick não encontrou esse VOD pela API.") from erro
-        raise ValueError(f"Não foi possível abrir o link: {texto[:300]}") from erro
+            raise ValueError(tr('link.kick_api')) from erro
+        raise ValueError(tr('link.nao_abre', erro=texto[:300])) from erro
 
 
 def _extrair(url_vod: str) -> dict:

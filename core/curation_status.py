@@ -1,6 +1,7 @@
 """Diagnóstico técnico da curadoria, separado das notas editoriais."""
 import httpx
 import ollama
+from core.textos import tr
 
 
 def verificar_ollama(execucao, modelo=None):
@@ -14,12 +15,11 @@ def verificar_ollama(execucao, modelo=None):
     except ollama.ResponseError as erro:
         execucao.verificar()
         if erro.status_code == 404:
-            raise RuntimeError(f'Modelo {modelo} não encontrado no Ollama. Instale-o ou escolha outro '
-                               'modelo em Primeiros Passos antes de iniciar.') from erro
-        raise RuntimeError(f'Ollama recusou a verificação do modelo: {erro}') from erro
+            raise RuntimeError(tr('ollama.modelo_ausente', modelo=modelo)) from erro
+        raise RuntimeError(tr('ollama.recusou', erro=erro)) from erro
     except (ConnectionError, httpx.HTTPError) as erro:
         execucao.verificar()
-        raise RuntimeError('Ollama não respondeu. Abra o Ollama e verifique as dependências antes de iniciar novamente.') from erro
+        raise RuntimeError(tr('ollama.offline')) from erro
     execucao.verificar()
 
 
@@ -52,20 +52,20 @@ def resumir_curadoria(relatorio):
     situacao = ('sem_fala' if not janelas else 'nao_avaliada' if not analisadas
                 else 'parcial' if falhas else 'completa')
     if situacao == 'nao_avaliada':
-        mensagem = 'Curadoria não concluída: nenhum bloco recebeu avaliação válida da IA. Consulte o relatório.'
+        mensagem = tr('curadoria.nao_avaliada')
     elif situacao == 'parcial':
-        mensagem = f'Curadoria parcial: {falhas} de {len(janelas)} blocos não foram avaliados.'
+        mensagem = tr('curadoria.parcial', falhas=falhas, total=len(janelas))
     elif situacao == 'sem_fala':
-        mensagem = 'Nenhum segmento de fala disponível para curadoria.'
+        mensagem = tr('curadoria.sem_fala')
     elif sugestoes:
-        mensagem = 'A IA avaliou os blocos, mas não selecionou candidatos; os cortes são sugestões para revisão.'
+        mensagem = tr('curadoria.so_sugestoes')
     else:
-        mensagem = 'Curadoria concluída. Revise os cortes selecionados antes de publicar.'
+        mensagem = tr('curadoria.completa')
     if sugestoes and situacao in ('parcial', 'nao_avaliada'):
-        mensagem += ' Os cortes são sugestões automáticas, sem aprovação da IA.'
+        mensagem += tr('curadoria.sugestoes_sem_aprovacao')
     if decisoes_invalidas:
-        mensagem += (' 1 momento indicado pela IA foi descartado' if decisoes_invalidas == 1 else
-                     f' {decisoes_invalidas} momentos indicados pela IA foram descartados') +                     ' por duração ou IDs inválidos.'
+        mensagem += (tr('curadoria.um_descartado') if decisoes_invalidas == 1
+                     else tr('curadoria.varios_descartados', total=decisoes_invalidas))
     return dict(situacao=situacao, mensagem=mensagem, janelas=len(janelas),
                 analisadas=analisadas, falhas_analise=falhas, suspensas=suspensas,
                 falhas_tentadas=falhas-suspensas, respostas_invalidas=invalidas,
@@ -75,7 +75,7 @@ def resumir_curadoria(relatorio):
 
 def mensagem_conclusao(resumo, tempo):
     if resumo and resumo.get('falhas_analise', 0):
-        return f'Processamento concluído com limitações na curadoria. ({tempo})'
+        return tr('status.concluido_limitacoes', tempo=tempo)
     if resumo and resumo.get('sugestoes', 0):
-        return f'Processamento concluído com sugestões para revisão. ({tempo})'
-    return f'Pipeline Concluído com Sucesso! ({tempo})'
+        return tr('status.concluido_sugestoes', tempo=tempo)
+    return tr('status.concluido', tempo=tempo)

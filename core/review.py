@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+from core.textos import tr
 import subprocess
 import tempfile
 import uuid
@@ -22,10 +23,10 @@ ROOT = DATA_DIR / 'cache_revisao'
 
 def pasta(identificador):
     if not re.fullmatch(r'[0-9a-f]{32}', identificador):
-        raise ValueError('Identificador inválido.')
+        raise ValueError(tr('revisao.id_invalido'))
     destino = (ROOT / identificador).resolve()
     if destino.parent != ROOT.resolve():
-        raise ValueError('Base fora do cache de revisão.')
+        raise ValueError(tr('revisao.fora_cache'))
     return destino
 
 
@@ -33,7 +34,7 @@ def guardar(corte, nome, config, marca, largura, altura, sessao):
     ROOT.mkdir(parents=True, exist_ok=True)
     tamanho = Path(corte['trecho_path']).stat().st_size
     if shutil.disk_usage(ROOT).free < tamanho + 64 * 1024 * 1024:
-        raise OSError('Espaço insuficiente para preservar o original de revisão. Libere espaço e tente novamente.')
+        raise OSError(tr('revisao.sem_espaco'))
     identificador = uuid.uuid4().hex
     with tempfile.TemporaryDirectory(prefix='pendente_', dir=ROOT) as temporario:
         base = Path(temporario)
@@ -57,9 +58,9 @@ def carregar(identificador):
     base = pasta(identificador)
     dados = json.loads((base / 'dados.json').read_text(encoding='utf-8'))
     if not (base / 'original.mp4').is_file():
-        raise FileNotFoundError('Original removido do cache.')
+        raise FileNotFoundError(tr('revisao.original_removido'))
     if Path(dados['nome']).name != dados['nome'] or '/' in dados['nome'] or '\\' in dados['nome']:
-        raise ValueError('Nome de corte inválido.')
+        raise ValueError(tr('galeria.nome_invalido'))
     return dados
 
 
@@ -87,7 +88,7 @@ def estatisticas():
 def limpar():
     # ROOT é dedicado: não alcança transcrições, temporários, finais ou exportados.
     if ROOT.resolve() != (DATA_DIR.resolve() / 'cache_revisao') or ROOT.is_symlink():
-        raise ValueError('Diretório de cache inválido.')
+        raise ValueError(tr('revisao.cache_invalido'))
     if ROOT.exists():
         shutil.rmtree(ROOT)
 
@@ -96,11 +97,11 @@ def aplicar(identificador, legendas, revisao):
     from core.pipeline import validar_video
     dados = carregar(identificador)
     if dados['revisao'] != revisao:
-        raise ValueError('A legenda mudou. Reabra o corte antes de editar.')
+        raise ValueError(tr('revisao.legenda_mudou'))
     anterior = 0
     for grupo in legendas:
         if grupo['start'] < anterior or grupo['end'] <= grupo['start'] or grupo['end'] > dados['duracao'] + .1:
-            raise ValueError('Timestamps devem estar em ordem, sem sobreposição e dentro do corte.')
+            raise ValueError(tr('revisao.tempos'))
         anterior = grupo['end']
     base = pasta(identificador)
     with tempfile.TemporaryDirectory(prefix='render_', dir=base) as temporario:

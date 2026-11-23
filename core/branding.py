@@ -3,6 +3,7 @@ import io
 import json
 import shutil
 import threading
+from core.textos import tr
 import uuid
 from pathlib import Path
 
@@ -51,10 +52,10 @@ def salvar(config):
 
 def upload(conteudo):
     if not conteudo or len(conteudo) > 5 * 1024 * 1024:
-        raise ValueError('Envie um PNG de até 5 MB.')
+        raise ValueError(tr('marca.png'))
     with Image.open(io.BytesIO(conteudo)) as img:
         if img.format != 'PNG' or max(img.size) > 4096 or min(img.size) < 1:
-            raise ValueError('Envie um PNG com até 4096 pixels por dimensão.')
+            raise ValueError(tr('marca.dimensao'))
         img.load()
         rgba = img.convert('RGBA')
     with lock:

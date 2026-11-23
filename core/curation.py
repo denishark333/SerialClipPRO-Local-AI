@@ -1,5 +1,6 @@
 """Curadoria textual com contexto sobreposto e decisões auditáveis."""
 import json
+from core.textos import tr
 import re
 from typing import Literal
 
@@ -335,7 +336,7 @@ def analisar_contexto(transcricao, max_cortes, execucao, ignorar_inicio=0, termo
     falhas_consecutivas = 0
     for indice, janela in enumerate(janelas):
         execucao.verificar()
-        atualizar_estado(f"Analisando contexto: bloco {indice+1}/{len(janelas)}...", 2, 35+int(13*indice/max(1, len(janelas))))
+        atualizar_estado(tr('status.analisando_bloco', atual=indice+1, total=len(janelas)), 2, 35+int(13*indice/max(1, len(janelas))))
         registro = {"indice": indice, "inicio_id": janela[0]["id"], "fim_id": janela[-1]["id"], "decisoes": []}
         relatorio["janelas"].append(registro)
         sugestao = sugestao_revisao(janela, indice, duracao, termos, foco)

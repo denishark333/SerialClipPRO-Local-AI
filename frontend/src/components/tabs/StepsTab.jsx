@@ -25,7 +25,8 @@ function ModelCard() {
     } catch (e) { setMensagem(e.message); }
     finally { setAtualizando(false); }
   }
-  useEffect(() => { const timer = setTimeout(carregar, 0); return () => clearTimeout(timer); }, []);
+  // Perfil e descrição dos modelos vêm do backend no idioma da interface: recarrega ao trocar.
+  useEffect(() => { const timer = setTimeout(carregar, 0); return () => clearTimeout(timer); }, [idioma]);
 
   async function salvar() {
     setSalvando(true); setMensagem('');

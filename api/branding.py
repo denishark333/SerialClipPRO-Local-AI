@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from PIL import Image, UnidentifiedImageError
 from core import branding
+from core.textos import tr
 
 router = APIRouter(prefix='/marca')
 
@@ -22,7 +23,7 @@ async def upload(request: Request):
     async for parte in request.stream():
         dados.extend(parte)
         if len(dados) > 5 * 1024 * 1024:
-            raise HTTPException(413, 'O limite da imagem é 5 MB.')
+            raise HTTPException(413, tr('marca.limite'))
     try:
         return branding.upload(bytes(dados))
     except (ValueError, UnidentifiedImageError, OSError, Image.DecompressionBombError) as erro:
@@ -34,7 +35,7 @@ def imagem():
     with branding.lock:
         caminho = branding.BRAND_DIR / 'logo.png'
         if not caminho.exists():
-            raise HTTPException(404, 'Nenhuma marca enviada.')
+            raise HTTPException(404, tr('marca.ausente'))
         return Response(caminho.read_bytes(), media_type='image/png', headers={'Cache-Control': 'no-store'})
 
 

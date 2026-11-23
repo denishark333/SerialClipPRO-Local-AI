@@ -2,6 +2,7 @@
 import json
 import threading
 import uuid
+from core.textos import tr
 from typing import Literal
 from pydantic import BaseModel, Field
 from core.config import DATA_DIR
@@ -53,7 +54,7 @@ class DesktopSocial:
         import webview
         selected = webview.windows[0].create_file_dialog(
             webview.FileDialog.OPEN, allow_multiple=False,
-            file_types=('Vídeos (*.mp4;*.mkv;*.mov;*.avi;*.webm;*.m4v;*.ts;*.flv)', 'Todos os arquivos (*.*)'),
+            file_types=(f"{tr('seletor.videos')} (*.mp4;*.mkv;*.mov;*.avi;*.webm;*.m4v;*.ts;*.flv)", f"{tr('seletor.todos')} (*.*)"),
         )
         return {'caminho': selected[0] if selected else ''}
 
@@ -64,7 +65,7 @@ class DesktopSocial:
             'paypal': 'https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL',
         }
         if metodo not in links:
-            raise ValueError('Metodo indisponivel.')
+            raise ValueError(tr('social.metodo'))
         return webbrowser.open(links[metodo])
 
     def salvar_corte(self, nome):
@@ -73,11 +74,11 @@ class DesktopSocial:
         import webview
         from core.config import PASTA_DESTINO
         if not isinstance(nome, str) or Path(nome).name != nome or any(c in nome for c in '/\\:') or not nome.lower().endswith('.mp4'):
-            raise ValueError('Nome de corte invalido.')
+            raise ValueError(tr('galeria.nome_invalido'))
         raiz = Path(PASTA_DESTINO).resolve()
         origem = (raiz / nome).resolve()
         if origem.parent != raiz or not origem.is_file():
-            raise ValueError('Corte nao encontrado.')
+            raise ValueError(tr('galeria.nao_encontrado'))
         destino = webview.windows[0].create_file_dialog(webview.FileDialog.SAVE,
             save_filename=nome, file_types=('Video MP4 (*.mp4)',))
         if not destino:
@@ -89,7 +90,7 @@ class DesktopSocial:
 
     def abrir_rede(self, plataforma, externo=False):
         if plataforma not in PORTAIS:
-            raise ValueError('Plataforma indisponível.')
+            raise ValueError(tr('social.plataforma'))
         nome, url = PORTAIS[plataforma]
         if externo:
             import webbrowser

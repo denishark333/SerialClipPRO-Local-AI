@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import time
 import wave
+from core.textos import tr
 
 from core import transcription
 from core.whisper import MODELO, carregar_modelo, dispositivo
@@ -77,7 +78,7 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
     ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     tempos['extracao_audio_trechos'] += time.monotonic()-t
     if res.returncode:
-        raise ErroFFmpeg('Falha ao extrair amostra de áudio', res.stderr)
+        raise ErroFFmpeg(tr('ffmpeg.extrair_amostra'), res.stderr)
     try:
         with wave.open(str(arquivo), 'rb') as wav:
             duracao = wav.getnframes()/wav.getframerate()
@@ -117,7 +118,7 @@ def mapear_audio(fonte, entrada, ignorar_inicio, execucao):
                 'mapa_audio', 1, transcription.identidade_entrada(entrada), round(duracao), ignorar_inicio) + '.json')
             salvo = transcription.ler_json(cache)
             if isinstance(salvo, dict) and isinstance(salvo.get('picos'), list) and salvo.get('duracao', 0) > 0:
-                atualizar_estado("Mapa de áudio recuperado do cache.", 2, 15)
+                atualizar_estado(tr('status.mapa_cache'), 2, 15)
                 return {**salvo, 'do_cache': True}
     mapa = detectar_segmentos_narrativos(fonte, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio,
                                          retornar_detalhes=True)
@@ -136,9 +137,9 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     fica em cache: uma nova execução da mesma VOD (por exemplo, depois de uma
     queda do Ollama) só transcreve as amostras que faltam.
     """
-    rotulo = 'Picos' if modo == 'picos' else 'Híbrido'
+    rotulo = tr('status.rotulo_picos' if modo == 'picos' else 'status.rotulo_hibrido')
     tempos = {}
-    atualizar_estado(f"{rotulo}: mapeando áudio para escolher amostras...", 2, 15)
+    atualizar_estado(tr('status.mapeando', rotulo=rotulo), 2, 15)
     t = time.monotonic()
     mapa = mapear_audio(fonte, entrada, ignorar_inicio, execucao)
     tempos['varredura_audio'] = time.monotonic()-t
@@ -149,7 +150,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     else:
         plano = planejar_janelas(mapa['picos'], mapa['duracao'], limite, ignorar_inicio)
     if not plano:
-        raise ValueError("Não foi possível determinar trechos para amostragem.")
+        raise ValueError(tr('pipeline.sem_amostras'))
     registrar({'amostragem': plano, 'orcamento_trechos': limite,
                'segundos_audio_planejados': sum(j['fim']-j['inicio'] for j in plano), 'tempos_hibrido': tempos})
     execucao.verificar()
@@ -158,7 +159,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     segmentos, palavras, grupos = [], [], []
     for indice, janela in enumerate(plano):
         execucao.verificar()
-        atualizar_estado(f"{rotulo}: transcrevendo amostra {indice+1}/{len(plano)} ({dispositivo()})...", 2, 16+int(18*indice/len(plano)))
+        atualizar_estado(tr('status.transcrevendo_amostra', rotulo=rotulo, atual=indice+1, total=len(plano), dispositivo=dispositivo()), 2, 16+int(18*indice/len(plano)))
         cache = None
         if entrada is not None:
             cache = transcription.CACHE_DIR / 'amostras' / (transcription.chave(

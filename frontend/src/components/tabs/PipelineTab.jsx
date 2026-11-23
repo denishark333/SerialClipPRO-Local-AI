@@ -306,7 +306,7 @@ export function PipelineTab({
               <span></span> {t('pipeline.monitoramento')}
             </h2>
             <div className="bg-[#0e0a1a] border border-[#1f1633] p-4 rounded-xl mb-4 flex items-start gap-3 justify-between text-sm font-mono">
-              <span role="status" className={`min-w-0 whitespace-pre-wrap break-words leading-relaxed ${statusInfo.etapa === -1 && !/cancelad/i.test(statusInfo.status) || (statusInfo.semComunicacao || /sem comunicação|erro|falha/i.test(statusInfo.status)) ? 'text-rose-300' : 'text-[#b3ff33]'}`}>{carregando && <span aria-hidden="true" className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />}{carregando || statusInfo.etapa === -1 || (statusInfo.semComunicacao || /sem comunicação|erro|falha/i.test(statusInfo.status)) ? statusInfo.status : statusInfo.progresso_pct === 100 ? t('pipeline.concluido') : t('pipeline.pronto')}</span>
+              <span role="status" className={`min-w-0 whitespace-pre-wrap break-words leading-relaxed ${(statusInfo.etapa === -1 && !statusInfo.cancelado) || statusInfo.semComunicacao ? 'text-rose-300' : 'text-[#b3ff33]'}`}>{carregando && <span aria-hidden="true" className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />}{carregando || statusInfo.etapa === -1 || statusInfo.semComunicacao ? statusInfo.status : statusInfo.progresso_pct === 100 ? t('pipeline.concluido') : t('pipeline.pronto')}</span>
               <span className="shrink-0 font-bold text-white bg-[#1b1528] px-2.5 py-0.5 rounded-full border border-[#261b3d]">
                 {statusInfo.progresso_pct}%
               </span>

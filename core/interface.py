@@ -25,7 +25,14 @@ class ConfigInterface(BaseModel):
 
 
 def idioma_do_sistema():
-    """pt-BR se o sistema estiver em português (de qualquer país), senão en."""
+    """pt-BR se o sistema estiver em português (de qualquer país), senão en.
+
+    CLIPPRO_IDIOMA (pt-BR ou en) substitui a detecção: útil em testes e em
+    ambientes sem idioma configurado, como o Colab.
+    """
+    forcado = os.environ.get("CLIPPRO_IDIOMA", "")
+    if forcado in IDIOMAS:
+        return forcado
     codigo = ""
     if os.name == "nt":
         try:

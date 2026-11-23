@@ -1,4 +1,5 @@
 import threading
+from core.textos import tr
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from api.media import MediaResponse
 from pydantic import BaseModel, Field
@@ -40,10 +41,10 @@ def cache():
 @router.delete('/cache')
 def limpar():
     if not reservar_manutencao():
-        raise HTTPException(409, 'Aguarde o pipeline ou a revisão terminar.')
+        raise HTTPException(409, tr('revisao.aguarde'))
     try:
         review.limpar()
-        return {'mensagem': 'Bases de revisão removidas. Vídeos finais, exportados e transcrições preservados.'}
+        return {'mensagem': tr('revisao.cache_limpo')}
     finally:
         liberar_manutencao()
 
@@ -52,7 +53,7 @@ def dados(identificador):
     try:
         return review.carregar(identificador)
     except (OSError, ValueError):
-        raise HTTPException(404, 'Base de revisão indisponível.')
+        raise HTTPException(404, tr('revisao.sem_base'))
 
 
 @router.get('/clips/{identificador}')
@@ -82,8 +83,8 @@ def executar(identificador, payload):
 def aplicar(identificador: str, payload: Edicao, tasks: BackgroundTasks):
     dados(identificador)
     if not reservar_manutencao():
-        raise HTTPException(409, 'Aguarde o pipeline ou a revisão terminar.')
+        raise HTTPException(409, tr('revisao.aguarde'))
     with lock:
         estado.update(executando=True, erro=None, id=identificador)
     tasks.add_task(executar, identificador, payload)
-    return {'mensagem': 'Revisão iniciada.'}
+    return {'mensagem': tr('revisao.iniciada')}

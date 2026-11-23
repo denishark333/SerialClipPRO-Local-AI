@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Literal
+from core.textos import tr
 
 class PipelineRequest(BaseModel):
     entrada: str = Field(min_length=1)
@@ -16,7 +17,7 @@ class PipelineRequest(BaseModel):
     def limpar_entrada(cls, valor):
         valor = valor.strip().strip('\"').strip("'")
         if not valor:
-            raise ValueError("Informe um caminho de vídeo ou URL.")
+            raise ValueError(tr('entrada.vazia'))
         return valor
 
 class CropBox(BaseModel):
@@ -28,7 +29,7 @@ class CropBox(BaseModel):
     @model_validator(mode="after")
     def validar_limites(self):
         if self.x + self.w > 100.001 or self.y + self.h > 100.001:
-            raise ValueError("O enquadramento deve ficar dentro do vídeo (0 a 100%).")
+            raise ValueError(tr('estudio.fora_do_video'))
         return self
 
 class StudioConfigRequest(BaseModel):

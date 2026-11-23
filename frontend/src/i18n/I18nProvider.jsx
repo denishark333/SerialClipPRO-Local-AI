@@ -41,13 +41,14 @@ export function I18nProvider({ children }) {
 
   const setIdioma = useCallback(async novo => {
     if (!(novo in DICIONARIOS)) return;
-    setIdiomaLocal(novo);
-    lembrar(novo);
+    // Salva no backend antes de trocar a tela: o que for recarregado já vem no idioma novo.
     try {
       await apiFetch('/interface', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idioma: novo }),
       });
-    } catch { /* a escolha vale nesta sessão; o backend recebe na próxima troca */ }
+    } catch { /* backend fora do ar: a escolha vale nesta sessão */ }
+    setIdiomaLocal(novo);
+    lembrar(novo);
   }, []);
 
   const t = useCallback((chave, variaveis) => traduzir(idioma, chave, variaveis), [idioma]);

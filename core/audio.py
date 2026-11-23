@@ -1,5 +1,6 @@
 import re
 import subprocess
+from core.textos import tr
 from core.execution import executar_comando
 from core.erros import ErroFFmpeg
 
@@ -34,7 +35,7 @@ def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execuc
 
     resultado = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if resultado.returncode != 0:
-        raise ErroFFmpeg("Falha ao analisar o áudio", resultado.stderr)
+        raise ErroFFmpeg(tr('ffmpeg.analisar_audio'), resultado.stderr)
     linhas = resultado.stderr.split("\n")
 
     mapeamento_blocos = []
@@ -61,7 +62,7 @@ def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execuc
                 pass
 
     if tempo_atual is None:
-        raise RuntimeError("A análise de áudio não retornou timestamps válidos.")
+        raise RuntimeError(tr('pipeline.audio_sem_timestamps'))
     mapeamento_blocos.sort(key=lambda x: x['energia'], reverse=True)
     
     # Em vídeos menores que a abertura ignorada, analisa desde o começo.

@@ -7,6 +7,7 @@ apresenta como navegador, por isso a busca usa o curl_cffi.
 """
 import html
 import re
+from core.textos import tr
 from urllib.parse import urljoin
 
 RE_VOD = re.compile(r'^https?://(?:www\.)?kick\.com/[\w-]+/videos/[\w-]+/?(?:[?#].*)?$')
@@ -21,8 +22,7 @@ def _buscar(url):
     try:
         from curl_cffi import requests
     except ImportError as erro:
-        raise ValueError("A Kick só entrega a página do VOD a navegadores. Falta o componente curl_cffi, "
-                         "que permite ao app acessar a Kick como um navegador.") from erro
+        raise ValueError(tr('link.kick_curl')) from erro
     resposta = requests.get(url, impersonate='chrome', timeout=30)
     resposta.raise_for_status()
     return resposta.text
@@ -51,8 +51,7 @@ def fontes_pela_pagina(url, buscar=None):
     buscar = buscar or _buscar
     achado = RE_OG_VIDEO.search(buscar(url))
     if not achado:
-        raise ValueError("A página do VOD da Kick não trouxe o link do vídeo. Confira se o VOD abre no "
-                         "navegador e se não é exclusivo para inscritos.")
+        raise ValueError(tr('link.kick_sem_video'))
     master = html.unescape(achado.group(1))
     opcoes = variantes(buscar(master), master)
     if not opcoes:

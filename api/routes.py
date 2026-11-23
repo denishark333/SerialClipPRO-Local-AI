@@ -1,4 +1,5 @@
 import os
+from core.textos import tr
 import shutil
 import time
 import threading
@@ -29,16 +30,16 @@ previews_erros = {}
 def selecionar_video(request: Request):
     from core.file_picker import selecionar_video as escolher
     if not request.client or request.client.host not in ('127.0.0.1', '::1', 'testclient'):
-        raise HTTPException(403, 'O seletor está disponível somente neste computador.')
+        raise HTTPException(403, tr('seletor.so_local'))
     origin = request.headers.get('origin')
     permitidas = {str(request.base_url).rstrip('/'), 'http://localhost:5173', 'http://127.0.0.1:5173'}
     permitidas.update(o.strip() for o in os.getenv('CLIPPRO_ALLOWED_ORIGINS', '').split(',') if o.strip())
     if origin and origin not in permitidas:
-        raise HTTPException(403, 'Origem não permitida.')
+        raise HTTPException(403, tr('seletor.origem'))
     try:
         return {'caminho': escolher()}
     except Exception as erro:
-        raise HTTPException(503, 'Não foi possível abrir o seletor de arquivos: ' + str(erro)) from erro
+        raise HTTPException(503, tr('seletor.falhou', erro=erro)) from erro
 
 
 def executar_preview(entrada, nome_arquivo):
@@ -68,7 +69,7 @@ def obter_chave_unica(entrada: str) -> str:
 def iniciar_pipeline(data: PipelineRequest, background_tasks: BackgroundTasks):
     execucao = reservar_execucao()
     if execucao is None:
-        raise HTTPException(status_code=409, detail="Pipeline em execução ou encerrando. Aguarde.")
+        raise HTTPException(status_code=409, detail=tr('pipeline.ja_em_execucao'))
     try:
         background_tasks.add_task(executar_pipeline_background, data.entrada, data.max_cortes, execucao, data.ignorar_inicio_segundos,
                                   modo_curadoria=data.modo_curadoria, termos_jogo=data.termos_jogo,
@@ -76,16 +77,16 @@ def iniciar_pipeline(data: PipelineRequest, background_tasks: BackgroundTasks):
     except Exception:
         finalizar_execucao(execucao)
         raise
-    return {"mensagem": "Pipeline iniciado.", "modo_curadoria": data.modo_curadoria}
+    return {"mensagem": tr('pipeline.iniciado'), "modo_curadoria": data.modo_curadoria}
 
 
 @router.get("/relatorios-curadoria/{nome}")
 def obter_relatorio_curadoria(nome: str):
     if not re.fullmatch(r"[0-9a-f]{32}\.json", nome):
-        raise HTTPException(status_code=404, detail="Relatório não encontrado.")
+        raise HTTPException(status_code=404, detail=tr('galeria.relatorio_ausente'))
     caminho = REPORT_DIR / nome
     if not caminho.is_file():
-        raise HTTPException(status_code=404, detail="Relatório não encontrado.")
+        raise HTTPException(status_code=404, detail=tr('galeria.relatorio_ausente'))
     return FileResponse(caminho, media_type="application/json", filename=nome)
 
 @router.post("/gerar-preview")
@@ -93,7 +94,7 @@ def disparar_geracao_preview(data: PipelineRequest, background_tasks: Background
     """Gera o preview de 10 segundos de forma isolada, aplicando Cache Hit/Miss inteligente."""
     try:
         if not data.entrada:
-            raise HTTPException(status_code=400, detail="URL ou entrada inválida.")
+            raise HTTPException(status_code=400, detail=tr('preview.entrada_invalida'))
 
         chave_vod = obter_chave_unica(data.entrada)
         nome_arquivo = f"preview_{chave_vod}.mp4"
@@ -104,7 +105,7 @@ def disparar_geracao_preview(data: PipelineRequest, background_tasks: Background
             print(f"⚡ [Cache Hit] Preview já existe para a chave: {chave_vod}")
             return {
                 "status": "sucesso",
-                "mensagem": "Preview recuperado do cache instantaneamente.",
+                "mensagem": tr('preview.cache'),
                 "preview_url": f"/temp_clip_cache/{nome_arquivo}"
             }
 
@@ -117,7 +118,7 @@ def disparar_geracao_preview(data: PipelineRequest, background_tasks: Background
 
         return {
             "status": "processando",
-            "mensagem": "Geração do preview do estúdio iniciada em segundo plano.",
+            "mensagem": tr('preview.iniciado'),
             "preview_url": f"/temp_clip_cache/{nome_arquivo}"
         }
     except HTTPException:
@@ -129,7 +130,7 @@ def disparar_geracao_preview(data: PipelineRequest, background_tasks: Background
 def stop_pipeline():
     solicitado = solicitar_cancelamento()
     return {"status": "cancelando" if solicitado else "ocioso",
-            "mensagem": "Cancelamento solicitado." if solicitado else "Nenhuma execução ativa."}
+            "mensagem": tr('pipeline.cancelamento') if solicitado else tr('pipeline.nada_ativo')}
 
 @router.get("/status")
 def obter_status():
@@ -151,7 +152,7 @@ def save_studio_config(config: StudioConfigRequest):
         salvar_config_estudio(novo_config)
         estado_pipeline["enquadramento_feito"] = True
         
-        return {"mensagem": "Configuração salva; será aplicada aos próximos cortes renderizados."}
+        return {"mensagem": tr('estudio.salvo')}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -227,7 +228,7 @@ def exportar_selecionados(payload: ExportRequest):
                 print(f"⚠️ Ficheiro não encontrado para exportar: {origem}")
                 
         return {
-            "mensagem": f"{len(exportados_com_sucesso)} cortes exportados com segurança!",
+            "mensagem": tr('galeria.exportados', total=len(exportados_com_sucesso)),
             "pasta_destino": PASTA_EXPORTADOS,
             "arquivos": exportados_com_sucesso
         }
@@ -239,7 +240,7 @@ def deletar_selecionados(payload: ExportRequest):
     """Repete bloqueios por lote, com espera limitada para toda a requisicao."""
     pendentes = list(dict.fromkeys(os.path.basename(p) for p in payload.videos))
     if any(not n.lower().endswith('.mp4') or ':' in n or n in ('.', '..') for n in pendentes):
-        raise HTTPException(status_code=400, detail="Nome de corte invalido.")
+        raise HTTPException(status_code=400, detail=tr('galeria.nome_invalido'))
     apagados, ausentes, falhas, avisos = [], [], [], []
     for tentativa in range(5):
         bloqueados = []
@@ -254,7 +255,7 @@ def deletar_selecionados(payload: ExportRequest):
                 if tentativa < 4:
                     bloqueados.append(nome)
                 else:
-                    falhas.append({"nome": nome, "motivo": "Arquivo em uso ou sem permissao para excluir."})
+                    falhas.append({"nome": nome, "motivo": tr('galeria.em_uso')})
                 continue
             except OSError as erro:
                 falhas.append({"nome": nome, "motivo": str(erro)})
@@ -265,10 +266,10 @@ def deletar_selecionados(payload: ExportRequest):
             except FileNotFoundError:
                 pass
             except OSError:
-                avisos.append({"nome": nome, "motivo": "Video excluido; metadados nao puderam ser removidos."})
+                avisos.append({"nome": nome, "motivo": tr('galeria.metadados')})
         pendentes = bloqueados
         if not pendentes:
             break
         time.sleep(0.3)
-    return {"mensagem": f"{len(apagados)} corte(s) excluido(s). {len(falhas)} nao puderam ser excluidos. {len(ausentes)} ja estavam ausentes.",
+    return {"mensagem": tr('galeria.excluidos', apagados=len(apagados), falhas=len(falhas), ausentes=len(ausentes)),
             "arquivos": apagados, "ausentes": ausentes, "falhas": falhas, "avisos": avisos}

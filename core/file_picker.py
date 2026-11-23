@@ -3,21 +3,22 @@ import json
 import os
 import subprocess
 import threading
+from core.textos import tr
 
 _lock = threading.Lock()
 
 
 def selecionar_video():
     if os.name != 'nt':
-        raise RuntimeError('O seletor local requer Windows.')
+        raise RuntimeError(tr('seletor.windows'))
     if not _lock.acquire(blocking=False):
-        raise RuntimeError('Já existe um seletor de arquivos aberto.')
+        raise RuntimeError(tr('seletor.aberto'))
     try:
         script = r'''
 Add-Type -AssemblyName System.Windows.Forms
 $dialog = New-Object System.Windows.Forms.OpenFileDialog
-$dialog.Title = 'Selecionar vídeo — Serial ClipPRO'
-$dialog.Filter = 'Vídeos|*.mp4;*.mkv;*.mov;*.avi;*.webm;*.m4v;*.ts;*.flv|Todos os arquivos|*.*'
+$dialog.Title = '__TITULO__'
+$dialog.Filter = '__VIDEOS__|*.mp4;*.mkv;*.mov;*.avi;*.webm;*.m4v;*.ts;*.flv|__TODOS__|*.*'
 $dialog.Multiselect = $false
 try {
     $path = ''
@@ -26,6 +27,9 @@ try {
     ConvertTo-Json -InputObject $path -Compress
 } finally { $dialog.Dispose() }
 '''
+        # Aspas simples do PowerShell: ' vira ''.
+        for marcador, chave in (('__TITULO__', 'seletor.titulo'), ('__VIDEOS__', 'seletor.videos'), ('__TODOS__', 'seletor.todos')):
+            script = script.replace(marcador, tr(chave).replace("'", "''"))
         result = subprocess.run(
             ['powershell.exe', '-NoProfile', '-STA', '-Command', script],
             capture_output=True, encoding='utf-8', check=True,

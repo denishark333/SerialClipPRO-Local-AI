@@ -15,6 +15,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 from core.config import DATA_DIR
+from core.textos import tr
 
 PADRAO = "llama3.1"
 CONFIG_PATH = DATA_DIR / "config_ia.json"
@@ -144,10 +145,12 @@ def descrever(modelo, memoria_gpu=None):
     """Acrescenta nome amigável, perfil e se cabe na GPU a um item de modelos_instalados()."""
     info = CATALOGO.get(_normalizar_nome(modelo["nome"]))
     if info:
-        item = {**modelo, **info}
+        # perfil_id fica fixo (ordenação); perfil e descricao saem no idioma da interface.
+        item = {**modelo, **info, "perfil_id": info["perfil"], "perfil": tr(f"modelo.perfil.{info['perfil']}"),
+                "descricao": tr(f"modelo.{_normalizar_nome(modelo['nome'])}")}
     else:
-        item = {**modelo, "nome": modelo["nome"], "perfil": "", "memoria_gb": None,
-                "descricao": "Modelo não avaliado no ClipPRO; os resultados podem variar."}
+        item = {**modelo, "nome": modelo["nome"], "perfil": "", "perfil_id": "", "memoria_gb": None,
+                "descricao": tr("modelo.nao_avaliado")}
     item["id"] = modelo["nome"]
     # Margem de ~1 GB para o sistema e o Whisper; sem GPU detectada, não opina.
     item["cabe_na_gpu"] = (None if memoria_gpu is None or item["memoria_gb"] is None

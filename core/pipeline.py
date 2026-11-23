@@ -1,4 +1,5 @@
 import os
+from core.textos import tr
 import time
 import json
 import subprocess
@@ -70,7 +71,7 @@ def obter_stream_youtube(url_limpa, incluir_audio=False):
                 break
 
     if not video_streaming_url:
-        raise Exception("Não foi possível obter a URL de streaming do vídeo.")
+        raise Exception(tr('link.sem_stream'))
     if incluir_audio:
         formatos = list(info.get('formats') or []) + list(info.get('requested_formats') or [])
         audio = next((f['url'] for f in reversed(formatos)
@@ -81,7 +82,7 @@ def obter_stream_youtube(url_limpa, incluir_audio=False):
         if not audio and info.get('acodec') not in (None, 'none'):
             audio = info.get('url')
         if not audio:
-            raise ValueError("Não foi possível obter uma fonte de áudio para o modo híbrido.")
+            raise ValueError(tr('link.sem_audio_hibrido'))
         return audio, video_streaming_url
         
     return video_streaming_url
@@ -129,12 +130,12 @@ def preparar_origem_youtube(entrada: str, pasta_temp: str, execucao=None):
         if execucao:
             execucao.verificar()
         if not os.path.isfile(caminho_audio_local):
-            raise FileNotFoundError("O áudio do YouTube não foi gerado.")
+            raise FileNotFoundError(tr('link.youtube_sem_audio'))
         return caminho_audio_local, video_streaming_url
     except Exception as e:
         if execucao:
             execucao.verificar()
-        raise Exception(f"Falha ao preparar YouTube: {str(e)}")
+        raise Exception(tr('link.youtube_falhou', erro=str(e)))
 
 def obter_dimensoes_video(caminho_ou_url, execucao=None):
     """Obtém largura e altura reais do vídeo usando ffprobe."""
@@ -157,7 +158,7 @@ def obter_dimensoes_video(caminho_ou_url, execucao=None):
 def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, ignorar_inicio_segundos=600, modo_curadoria="picos", termos_jogo="", limite_amostras=40, idioma="pt", foco=""):
     execucao = execucao or reservar_execucao()
     if execucao is None:
-        raise RuntimeError("Já existe uma execução em andamento.")
+        raise RuntimeError(tr('pipeline.em_andamento'))
     temporarios = None
     detalhe_erro = None
     marco_etapa = time.monotonic()
@@ -173,16 +174,16 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         print('[Marca] ' + ('Ativa nesta execução.' if marca else 'Desativada ou sem imagem nesta execução.'))
         entrada = entrada.strip().strip('"').strip("'")
         if not entrada or not 1 <= max_cortes <= 50:
-            raise ValueError("Informe uma entrada e um limite de 1 a 50 cortes.")
+            raise ValueError(tr('pipeline.entrada_invalida'))
         modelo_llm = modelo_ia()
-        atualizar_estado(f'Verificando Ollama e modelo {modelo_llm}...', 1, 1)
+        atualizar_estado(tr('status.verificando_ollama', modelo=modelo_llm), 1, 1)
         verificar_ollama(execucao, modelo_llm)
         print(f'[Curadoria] Ollama respondeu e {modelo_llm} está instalado. Iniciando preparação da mídia.')
         # Rascunhos existentes permanecem disponíveis até exclusão explícita.
         # -------------------------------------------------------------
         # PASSO 1: Obtenção inteligente (Áudio leve para YT / CDN / Local)
         # -------------------------------------------------------------
-        atualizar_estado("Passo 1/3: Preparando fontes de mídia...", 1, 10)
+        atualizar_estado(tr('status.passo1'), 1, 10)
         
         audio_analise_path = None
         video_corte_fonte = None
@@ -209,7 +210,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 audio_analise_path = video_corte_fonte
                 print(f"📁 Utilizando ficheiro local: {video_corte_fonte}")
             else:
-                raise FileNotFoundError(f"Ficheiro de vídeo local não encontrado: {entrada}")
+                raise FileNotFoundError(tr('pipeline.arquivo_ausente', entrada=entrada))
 
         orig_w, orig_h = obter_dimensoes_video(video_corte_fonte, execucao)
         print(f"📺 Resolução de origem detectada pelo pipeline: {orig_w}x{orig_h}")
@@ -217,13 +218,13 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         # -------------------------------------------------------------
         # PASSO 2: Mapeamento Inteligente, Transcrição e Curadoria
         # -------------------------------------------------------------
-        atualizar_estado("Passo 2/3: Analisando contexto de diálogos e reações...", 2, 30)
+        atualizar_estado(tr('status.passo2'), 2, 30)
         
         tempos[etapa_medida] = time.monotonic() - marco_etapa
         marco_etapa = time.monotonic()
         etapa_medida = "analise_e_extracao"
         if modo_curadoria not in ("contexto", "hibrido", "picos"):
-            raise ValueError("Modo de curadoria inválido.")
+            raise ValueError(tr('pipeline.modo_invalido'))
         # Os três modos usam a mesma curadoria: transcrevem (a fonte inteira ou
         # amostras), avaliam todos os trechos e escolhem os melhores pela nota.
         resolver_video = None
@@ -243,7 +244,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         print(f"🎯 Total de ganchos liberados para curadoria: {total_validos}")
 
         if total_validos == 0:
-            raise Exception("Nenhum gancho válido encontrado na varredura.")
+            raise Exception(tr('pipeline.sem_gancho'))
 
         # -------------------------------------------------------------
         # PASSO 3: Geração de Legendas SRT & Renderização Vertical
@@ -257,7 +258,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         for idx, corte in enumerate(cortes_validados):
             execucao.verificar()
             pct = 50 + int(((idx + 1) / total_validos) * 45)
-            atualizar_estado(f"Passo 3/3: Renderizando corte {idx+1} de {total_validos}...", 3, pct)
+            atualizar_estado(tr('status.passo3', atual=idx+1, total=total_validos), 3, pct)
             
             output_video = os.path.abspath(os.path.join(pasta_temp, f"corte_{timestamp_sessao}_{idx+1}.mp4"))
             
@@ -298,7 +299,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
                 if nome_encoder:
                     estado_pipeline['encoder'] = nome_encoder
             if nome_encoder is None:
-                raise ErroFFmpeg(f"Falha ao renderizar o corte {idx+1}", res_render.stderr)
+                raise ErroFFmpeg(tr('ffmpeg.renderizar', numero=idx+1), res_render.stderr)
             validar_video(output_video, execucao)
             execucao.verificar()
             guardar_base_revisao(corte, os.path.basename(output_video), config_estudio, marca, orig_w, orig_h, timestamp_sessao)
@@ -320,7 +321,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         tempo_total_seg = time.time() - estado_pipeline["tempo_inicio"] if estado_pipeline["tempo_inicio"] > 0 else 0
         estado_pipeline["tempo_total"] = formatar_tempo(tempo_total_seg)
         print(f"❌ Erro crítico no pipeline: {str(e)}")
-        atualizar_estado(f"Erro: {str(e)}", -1, estado_pipeline["progresso_pct"])
+        atualizar_estado(tr('status.erro', erro=str(e)), -1, estado_pipeline["progresso_pct"])
         if isinstance(e, ErroFFmpeg):
             detalhe_erro = e.detalhe
 
@@ -353,13 +354,13 @@ def validar_video(caminho, execucao=None, exigir_audio=True):
         "-of", "json", caminho,
     ], execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
     if resultado.returncode != 0:
-        raise RuntimeError("O vídeo produzido não pôde ser validado: " + resultado.stderr[-1000:])
+        raise RuntimeError(tr('pipeline.video_invalido', erro=resultado.stderr[-1000:]))
     dados = json.loads(resultado.stdout)
     tipos = {s.get("codec_type") for s in dados.get("streams", [])}
     duracao = float(dados.get("format", {}).get("duration", 0))
     exigidos = {"video", "audio"} if exigir_audio else {"video"}
     if not exigidos.issubset(tipos) or not math.isfinite(duracao) or duracao <= 0:
-        raise RuntimeError("O arquivo produzido precisa conter vídeo, áudio e duração positiva.")
+        raise RuntimeError(tr('pipeline.video_incompleto'))
 
 
 def eh_url_twitch(entrada: str) -> bool:
@@ -392,7 +393,7 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
             if os.path.exists(caminho_alvo):
                 video_corte_fonte = os.path.abspath(caminho_alvo)
             else:
-                raise FileNotFoundError(f"Ficheiro não encontrado: {entrada}")
+                raise FileNotFoundError(tr('preview.arquivo_ausente', entrada=entrada))
 
         trecho_preview_mp4 = os.path.join(pasta_temp, nome_arquivo)
         print(f"📸 [Preview Isolado] Extraindo trecho de 10 segundos para: {nome_arquivo}...")
@@ -426,7 +427,7 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
             return True
             
         if ao_falhar:
-            ao_falhar("O preview não foi gerado.")
+            ao_falhar(tr('preview.nao_gerado'))
         return False
     except Exception as e:
         print(f"⚠️ Erro ao gerar preview isolado: {e}")

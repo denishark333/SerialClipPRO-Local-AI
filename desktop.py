@@ -40,7 +40,8 @@ def run():
         msvcrt.locking(instancia.fileno(), msvcrt.LK_NBLCK, 1)
     except OSError:
         instancia.close()
-        raise RuntimeError('O Serial ClipPRO já está aberto. Use a janela existente.')
+        from core.textos import tr
+        raise RuntimeError(tr('desktop.ja_aberto'))
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         sock.listen(128)
@@ -52,19 +53,21 @@ def run():
             deadline = time.monotonic() + 30
             while not server.started:
                 if not thread.is_alive() or time.monotonic() > deadline:
-                    raise RuntimeError('O servidor local não iniciou. Consulte a pasta logs.')
+                    from core.textos import tr
+                    raise RuntimeError(tr('desktop.servidor'))
                 time.sleep(.1)
             from core.social import DesktopSocial
             window = webview.create_window('Serial ClipPRO', f'http://127.0.0.1:{port}', width=1400, height=900, min_size=(960, 640), js_api=DesktopSocial())
 
             def closing():
                 from core.execution import operacao_em_andamento
+                from core.textos import tr
                 from api.routes import preview_lock, previews_ativos
                 with preview_lock:
                     active = bool(previews_ativos)
                 active = active or operacao_em_andamento()
                 if active:
-                    window.create_confirmation_dialog('Processamento em andamento', 'Cancele o pipeline ou aguarde a revisão/preview terminar antes de fechar a aplicação.')
+                    window.create_confirmation_dialog(tr('desktop.processando_titulo'), tr('desktop.processando_texto'))
                     return False
                 return True
 
@@ -146,5 +149,11 @@ if __name__ == '__main__':
     except Exception as error:
         logging.exception('Falha ao abrir desktop')
         import ctypes
-        ctypes.windll.user32.MessageBoxW(None, str(error) + '\nUse Preparar ou reparar Serial ClipPRO no menu Iniciar para verificar dependências. Detalhes em logs/errors.log na pasta de dados.', 'Serial ClipPRO', 0x10)
+        try:
+            from core.textos import tr
+            dica = tr('desktop.reparar')
+        except Exception:  # o erro pode ser justamente o app não carregar
+            dica = ('Use Preparar ou reparar Serial ClipPRO no menu Iniciar para verificar dependências. '
+                    'Detalhes em logs/errors.log na pasta de dados.')
+        ctypes.windll.user32.MessageBoxW(None, str(error) + '\n' + dica, 'Serial ClipPRO', 0x10)
         sys.exit(1)

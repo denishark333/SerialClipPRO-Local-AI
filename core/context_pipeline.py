@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import uuid
+from core.textos import tr
 import time
 
 from core.config import DATA_DIR, estado_pipeline, estado_lock, atualizar_estado
@@ -63,7 +64,7 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
             execucao.verificar()
             inicio, fim = candidato["inicio"], candidato["fim"]
             trecho = str(Path(pasta_temp) / f"trecho_contexto_{indice+1}.mp4")
-            atualizar_estado(f"Preparando corte por contexto {indice+1}/{len(resultado['selecionados'])}...", 2, 49)
+            atualizar_estado(tr('status.corte_contexto', atual=indice+1, total=len(resultado['selecionados'])), 2, 49)
             identificacao = f"[Extração {indice+1}/{len(resultado['selecionados'])}]"
             print(f"{identificacao} Iniciando trecho {inicio:.2f}s–{fim:.2f}s (duração {fim-inicio:.2f}s).", flush=True)
             progresso = Path(pasta_temp) / f"progresso_contexto_{indice+1}.txt"
@@ -105,7 +106,7 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
                 progresso.unlink(missing_ok=True)
             if res.returncode:
                 print(f"{identificacao} FFmpeg terminou com erro {res.returncode} após {time.monotonic()-marco_corte:.1f}s.", flush=True)
-                raise ErroFFmpeg("Falha ao extrair o trecho do corte", res.stderr)
+                raise ErroFFmpeg(tr('ffmpeg.extrair_trecho'), res.stderr)
             print(f"{identificacao} Extração concluída em {time.monotonic()-marco_corte:.1f}s.", flush=True)
             palavras = [
                 {"word": p["word"], "start": max(0, p["start"]-inicio), "end": min(fim, p["end"])-inicio}
@@ -117,7 +118,7 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
         registrar({"estado": "selecao_concluida", "tempo_extracao_video": time.monotonic()-inicio_extracao,
                    "observacao": "A renderização dos arquivos é uma etapa posterior."})
         if not cortes:
-            raise ValueError("Não foi possível montar cortes a partir das falas. Consulte o relatório de curadoria.")
+            raise ValueError(tr('pipeline.sem_cortes_falas'))
         return cortes
     except PipelineCancelado:
         registrar({"estado": "cancelado"})
