@@ -12,7 +12,7 @@ This repository holds the source code, the installer packages and the public rel
 
 ## Download
 
-Go to **Releases** in this repository and download the installer attached to the version you want (`Serial-ClipPRO-3.0.0-Setup-x64.exe` for version 3.0).
+Go to **Releases** in this repository and download the installer attached to the version you want (`Serial-ClipPRO-3.0.1-Setup-x64.exe` for version 3.0.1). From 3.0.1 on, new versions can also be installed from inside the app (see [Updating](#updating)).
 
 > Download the **Serial ClipPRO** installer. The automatic "Source code (zip)" and "Source code (tar.gz)" files contain the source code, not the ready-to-use app.
 
@@ -22,12 +22,22 @@ Go to **Releases** in this repository and download the installer attached to the
 - Finds the best moments across the whole VOD with local AI, quoting the line that justifies each clip.
 - Works with streams in many languages and of any genre; the **What to look for** field tells it which moments to prioritize.
 - Creates vertical 9:16 clips with animated subtitles: the word being spoken is highlighted.
-- Lets you adjust the webcam framing and add your channel's logo as a PNG.
+- Lets you adjust the webcam framing, choose which part of the content goes into the vertical clip, and add your channel's logo as a PNG.
 - Offers a gallery to review, download, export and delete clips.
-- Lets you review and fix the subtitles of each clip.
+- Lets you review and fix the subtitles and the framing of each clip.
 - Gathers shortcuts to the platforms so you can post manually.
+- Interface in English or Portuguese, and updates from inside the app whenever you choose.
 
 The AI helps with the selection. Review the clips and subtitles before posting.
+
+## What's new in version 3.0.1
+
+- **Update from inside the app:** the **Check for updates** button next to the version shows whether a new version exists and what changed, and installs it in one click. The app only checks when you ask and only updates if you want to. Each installer is verified by its digital signature before it runs, and videos, settings and your AI model are kept.
+- **English interface:** a **PT | EN** switcher below the header translates the whole interface, including the processing messages. On first run, the language follows Windows.
+- **Off-center vertical crop:** drag the frame to choose which part of the content appears in the clip, great for HUDs, chats or action away from the center.
+- **Framing per clip:** in **Subtitle review**, fix the webcam or the crop of a single clip when the camera moved or changed size during the stream, without reprocessing the VOD and without changing the other clips.
+- **AMD and Intel GPUs:** rendering now uses AMD AMF (tested on a Radeon GPU) and Intel QuickSync, besides NVIDIA NVENC, and falls back to the CPU when none is available. The model selector now also reads the video memory of AMD cards.
+- **Clearer progress:** on long VODs, the progress bar moves while the audio is mapped and shows the point being read (e.g. "04:12:30 of 11:31:59"). The stream language is always visible next to **Advanced settings**, and the **AI Engine** card shows the AI model in use.
 
 ## What's new in version 3.0
 
@@ -92,6 +102,7 @@ Transcription and AI analysis use **Whisper and Ollama on your computer**.
 - With **NVIDIA acceleration** installed, Whisper transcribes on the GPU; without it, or without an NVIDIA card, it uses the CPU.
 - The curation AI model runs in Ollama; Gemma 4 12B needs ~10 GB of video memory to run fully on the card.
 - Rendering tries NVIDIA NVENC, then AMD AMF, then Intel QuickSync and, if none is available, the CPU.
+- The model selector in **Getting Started** checks the video memory of NVIDIA and AMD cards to recommend a model.
 
 Local processing still needs the internet to download models, access VODs and open the social platforms.
 
@@ -113,6 +124,7 @@ Paste this path into the File Explorer address bar.
 | `marca` | Channel logo image and its settings. |
 | `logs` | Diagnostic logs. |
 | `tools` | FFmpeg and, if installed, NVIDIA acceleration. |
+| `atualizacao` | Installer downloaded by the in-app updater; deleted automatically after the update. |
 
 Deleting a clip from the gallery does not delete copies already exported. The **Download** button lets you choose where to save a single video.
 
@@ -126,11 +138,21 @@ If a platform refuses to log in inside the built-in window, use **Open in browse
 
 ## Updating
 
+**From inside the app (3.0.1 and later):**
+
+1. Click **Check for updates**, next to the version at the top of the app.
+2. If there is a new version, read what changed and click **Download update**.
+3. When the download is verified, click **Install now**. The app closes, the installer shows its progress and Serial ClipPRO reopens on its own.
+
+Nothing is checked or installed without your click. Installing is blocked while a clip is being processed, reviewed or previewed.
+
+**Manually (needed once to go from 3.0.0 to 3.0.1):**
+
 1. Wait for processing to finish and close the app.
 2. Download the new version's installer from **Releases**.
 3. Run the installer.
 
-Updates and uninstalling keep your videos, settings and models. Check the Release notes for any version-specific instructions.
+Updates replace the previous version in place (one installation, one shortcut) and keep your videos, settings and models. Check the Release notes for any version-specific instructions.
 
 ## Issues and suggestions
 
@@ -145,6 +167,8 @@ The project is under development. To report a problem, open an **Issue** in this
 For installation problems, check:
 
 `%LOCALAPPDATA%\Serial ClipPRO\instalacao.log`
+
+For problems updating from inside the app, also check `%LOCALAPPDATA%\Serial ClipPRO\logs\atualizacao.log`.
 
 Review logs before posting them and remove personal information, tokens or private URLs.
 
@@ -181,9 +205,9 @@ Open http://127.0.0.1:8765. For development with hot reload, keep the backend ru
 
 Closing the browser tab does not stop the server. To stop it, press **Ctrl+C in the terminal running `main.py`** and wait for the prompt to return before starting again. Shutdown asks the pipeline to cancel and waits for tasks to finish; model calls may take a while to respond. If the port is busy, startup reports the conflict without opening another tab. On desktop, close the window after processing finishes or is cancelled; reviews and previews also block closing while they are running. Force-quitting from Task Manager does not guarantee that subprocesses and temporary files are cleaned up.
 
-## Installer 3.0 - Windows x64
+## Installer - Windows x64
 
-Distribution uses a single `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). The components page shows the essential components (fixed) and the options: AI models and NVIDIA acceleration. After copying the files, the wizard runs `bootstrap.ps1` without a console, with `-Modelos` and `-Gpu`; the script emits `@@PROGRESSO|pct|message` lines, which the wizard uses for its progress bar.
+Distribution uses a single `Serial-ClipPRO-3.0.1-Setup-x64.exe` (Inno Setup). The components page shows the essential components (fixed) and the options: AI models and NVIDIA acceleration. After copying the files, the wizard runs `bootstrap.ps1` without a console, with `-Modelos` and `-Gpu`; the script emits `@@PROGRESSO|pct|message` lines, which the wizard uses for its progress bar.
 
 - Models are downloaded through the Ollama API; if Ollama is too old for a model, it is updated and the download is retried. The strongest of the chosen models becomes the curation model (`config_ia.json`).
 - NVIDIA acceleration downloads the official `nvidia-cublas-cu12` package from PyPI (pinned SHA256) and extracts only `cublas64_12.dll` and `cublasLt64_12.dll` into `tools/cuda`; CTranslate2 already ships cuDNN.
@@ -191,7 +215,13 @@ Distribution uses a single `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). Th
 
 The program lives in `%LOCALAPPDATA%/Programs/Serial ClipPRO/`, separate from the data in `%LOCALAPPDATA%/Serial ClipPRO/`. Updates and uninstalling keep videos, settings and models. Close the app after operations finish or are cancelled before updating.
 
-To build, prepare a stable x64 Python environment named `build-env`, install `requirements-build.lock.txt`, install Inno Setup and run `scripts/build_installer.ps1`. The output and its SHA256 go to `dist/installer/`. Each public release needs to be validated on a clean Windows install first.
+To build, prepare a stable x64 Python environment named `build-env`, install `requirements-build.lock.txt`, install Inno Setup and run `scripts/build_installer.ps1`. The output, its SHA256 and its signature (`.sig`) go to `dist/installer/`. Each public release needs to be validated on a clean Windows install first.
+
+### In-app updates
+
+The **Check for updates** button queries the latest GitHub Release (`/api/atualizacao/*`, `core/atualizacao.py`) only when the user clicks it. The installer is downloaded to `atualizacao/` in the data folder and accepted only with a valid Ed25519 signature over its version, file name and SHA-256; the public key is embedded in the app. After the download, a hidden PowerShell waits for the app process to exit and runs the installer with `/SILENT /ATUALIZACAO=1`. In that mode the installer reopens the app at the end and runs `bootstrap.ps1` as a repair (without `-Modelos`), so the model chosen in the app is kept. Every installation deletes `_internal` before copying, so no libraries from the previous version are left behind. The new version deletes the downloaded installer when it opens.
+
+Each Release (tag `vX.Y.Z`) must attach the installer **and** its `.sig`; without the signature, the app sends the user to the Release page. `build_installer.ps1` signs with the private key from `CLIPPRO_CHAVE_ATUALIZACAO` or `%USERPROFILE%\.serialclippro\chave-atualizacao.pem`, which never goes into the repository (`scripts/chave_atualizacao.py gerar` creates the key pair; `-SemAssinatura` skips signing for local tests only).
 
 The installer verifies the signatures of the Microsoft/Ollama installers and the SHA256 of FFmpeg and the NVIDIA package. It does not change Defender exclusions or turn Defender off. It writes diagnostics to `instalacao.log`, `self-test.json` and `models-setup.json` in the data folder.
 
@@ -203,7 +233,7 @@ The desktop app blocks closing while the pipeline is running: cancel and wait be
 - **Peaks:** one sample per audio peak; all of them are evaluated and clips are picked by score.
 - **Full context:** prepares and transcribes the whole source in chunks; costs more CPU and media reading.
 
-The scan covers the whole source, even without saving the full VOD. On Twitch, analysis uses the audio-only variant; on Kick, the lowest video quality (same audio). The audio map, transcribed samples and evaluated chunks are cached: running the same VOD again only redoes what changed (the map is rebuilt if the VOD grew).
+The scan covers the whole source, even without saving the full VOD; ffmpeg writes its position with `-progress`, and the bar moves from 15% to 25% while the scan runs. On Twitch, analysis uses the audio-only variant; on Kick, the lowest video quality (same audio). The audio map, transcribed samples and evaluated chunks are cached: running the same VOD again only redoes what changed (the map is rebuilt if the VOD grew).
 
 Curation sends each chunk to the configured model along with the stream language and the priorities from the **What to look for** field. The response follows a JSON schema; each moment's key line is checked against the transcript, short moments are expanded with the neighboring speech, adjacent candidates are merged and boundaries are snapped to complete sentences and pauses. If the AI approves nothing, the app suggests segments for review based on neutral signals (provided terms and focus, exclamations, questions, repetition, fast speech).
 
@@ -221,7 +251,7 @@ In the **Channel branding** tab, upload a PNG (up to 5 MB, 4096 pixels per side)
 
 Uploading a PNG turns branding on automatically. For an image that is already saved but turned off, check **Apply branding to clips** and save. Unchecking and saving turns it off. The terminal reports the branding state at the start of each run.
 
-With studio mode on, the webcam takes an area above the content without covering it. The content fills the whole area below with a center crop, keeping the aspect ratio and cutting the sides when needed, with no padding bars. Without a webcam, the vertical center crop remains.
+With studio mode on, the webcam takes an area above the content without covering it. The content fills the whole area below, keeping the aspect ratio and cutting the sides when needed, with no padding bars. Without a webcam, the content fills the whole vertical clip. In both cases, **Content position** (or dragging the **Vertical clip** frame over the preview) chooses which part of the image is kept, from left (0%) to right (100%); the default is the center (50%).
 
 Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
 
@@ -231,7 +261,9 @@ The gallery and the review use the same ordering: most recent runs first, and th
 
 The **Subtitle review** tab and the card below **Hardware & Folders** let you open clips that have a review source available. The modal shows the horizontal original so you can hear the speech and edit the groups by start/end in seconds. You can fix text and add or delete groups; timings must be in order with no overlap. The overlay on the player is only an editing preview.
 
-**Apply and generate corrected clip** redoes only the vertical composition, branding and subtitles, using the settings saved for that run. Once the video is validated, it replaces the saved clip. Exported copies are left untouched: export again to update them. If rendering fails, the previous video stays available.
+**Framing for this clip**, below the player, opens the same framing editor as Studio Mode over that clip's original: turn the webcam on or off, move or resize it, and change the content position. The change applies only to that clip and is saved in its review source after a successful render; the Studio Mode default does not change.
+
+**Apply and generate corrected clip** redoes only the vertical composition, branding and subtitles, using the settings saved for that run (or the clip's new framing). Once the video is validated, it replaces the saved clip. Exported copies are left untouched: export again to update them. If rendering fails, the previous video stays available.
 
 Review sources live in `cache_revisao/<unique id>/`: the horizontal original, the run's logo and a JSON file with the session, final video, framing and subtitles. New pipelines only use their own temporary files and do not remove these sources. Clips created before this change show up without a review source.
 
@@ -259,14 +291,17 @@ On desktop, "Open site" in the Social tab opens a separate WebView2 window of th
 - `temp_clip_cache/`: previews and temporary files; `transcricoes/`: full cache.
 - `relatorios_curadoria/`: decisions and timings; `marca/`: PNG/settings.
 - `logs/`: desktop diagnostics. Old clips are not deleted when a new run starts.
+- `atualizacao/`: installer downloaded by the updater, removed after the update.
 
-Main routes: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`, `GET/PUT /api/ia`.
+Interface texts live in `frontend/src/i18n/` (`pt.js`, `en.js`); backend messages shown on screen live in `core/textos.py` and follow the interface language.
+
+Main routes: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`, `GET/PUT /api/ia`, `GET/PUT /api/interface`, `GET /api/atualizacao/verificar`, `GET /api/atualizacao/status`, `POST /api/atualizacao/{baixar,cancelar,instalar}`.
 
 Pipeline parameters: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`, `idioma`, `foco`.
 
 ## Diagnostics
 
-The executable accepts `--self-test`: it checks imports, the frontend, the WebView2 runtime and access to Kick (curl_cffi) without opening a window or downloading models, and writes `self-test.json` to the data folder. It does not validate window rendering or the full pipeline.
+The executable accepts `--self-test`: it checks imports, the frontend, the WebView2 runtime, access to Kick (curl_cffi) and the updater's signature check without opening a window or downloading models, and writes `self-test.json` to the data folder. It does not validate window rendering or the full pipeline.
 
 ---
 
