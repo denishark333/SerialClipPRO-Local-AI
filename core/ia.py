@@ -80,8 +80,18 @@ def _normalizar_nome(nome):
     return nome if ":" in nome else nome + ":latest"
 
 
+#: Classe "Display adapters" do Windows: cada subchave NNNN é uma placa de vídeo.
+_CLASSE_VIDEO = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+#: Fabricantes cujas placas o Ollama usa no Windows. Intel e placas virtuais ficam de fora.
+_FABRICANTES_OLLAMA = ("nvidia", "advanced micro devices", "amd")
+
+
 def memoria_gpu_gb(timeout=5):
-    """Memória total da GPU NVIDIA em GB, ou None se não houver ou não der para medir."""
+    """Memória da maior GPU NVIDIA ou AMD em GB, ou None se não houver ou não der para medir."""
+    return _memoria_nvidia_smi(timeout) or _memoria_registro()
+
+
+def _memoria_nvidia_smi(timeout):
     import shutil
     import subprocess
     if not shutil.which("nvidia-smi"):
@@ -93,6 +103,41 @@ def memoria_gpu_gb(timeout=5):
         return round(max(float(linha) for linha in saida.stdout.split() if linha.strip()) / 1024, 1)
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
+
+
+def _memoria_registro():
+    """Memória dedicada informada pelo driver no registro do Windows (vale para AMD sem nvidia-smi).
+
+    O valor de 64 bits (qwMemorySize) é o confiável: o de 32 bits e o AdapterRAM
+    do WMI param em 4 GB.
+    """
+    try:
+        import winreg
+    except ImportError:  # Linux/Colab: lá vale só o nvidia-smi.
+        return None
+    maior = 0
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, _CLASSE_VIDEO) as classe:
+            indice = 0
+            while True:
+                try:
+                    nome = winreg.EnumKey(classe, indice)
+                except OSError:
+                    break
+                indice += 1
+                if not nome.isdigit():
+                    continue
+                try:
+                    with winreg.OpenKey(classe, nome) as placa:
+                        fabricante = str(winreg.QueryValueEx(placa, "ProviderName")[0]).lower()
+                        memoria = int(winreg.QueryValueEx(placa, "HardwareInformation.qwMemorySize")[0])
+                except (OSError, ValueError, TypeError):
+                    continue
+                if fabricante.startswith(_FABRICANTES_OLLAMA):
+                    maior = max(maior, memoria)
+    except OSError:
+        return None
+    return round(maior / 1024 ** 3, 1) if maior else None
 
 
 def descrever(modelo, memoria_gpu=None):
