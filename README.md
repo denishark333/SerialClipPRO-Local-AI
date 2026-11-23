@@ -88,7 +88,7 @@ A transcrição e a análise por IA utilizam **Whisper e Ollama no computador**.
 
 - Com a **Aceleração NVIDIA** instalada, o Whisper transcreve na GPU; sem ela, ou sem placa NVIDIA, usa a CPU.
 - O modelo de IA da curadoria roda no Ollama; o Gemma 4 12B precisa de ~10 GB de memória de vídeo para rodar inteiro na placa.
-- A renderização tenta NVIDIA NVENC, depois AMD AMF e, se nenhum estiver disponível, a CPU.
+- A renderização tenta NVIDIA NVENC, depois AMD AMF, depois Intel QuickSync e, se nenhum estiver disponível, a CPU.
 
 O processamento local não elimina a necessidade de internet para baixar modelos, acessar VODs e abrir as plataformas sociais.
 
@@ -204,7 +204,7 @@ A varredura percorre toda a fonte, mesmo sem salvar a VOD integral. Na Twitch, a
 
 A curadoria envia cada bloco ao modelo configurado com o idioma da live e as prioridades do campo **O que procurar**. A resposta segue um esquema JSON; a fala-chave de cada momento é conferida na transcrição, momentos curtos são ampliados com a fala vizinha, candidatos adjacentes são fundidos e os limites são ajustados a frases completas e pausas. Se a IA não aprovar nada, o app sugere trechos para revisão por sinais neutros (termos e foco informados, exclamações, perguntas, repetições, fala acelerada).
 
-A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`) e, se ambos falharem, CPU com libx264; um encoder que falhar não é tentado de novo na sessão. O áudio é normalizado em duas passagens a -14 LUFS. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
+A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`), depois Intel QuickSync (`h264_qsv`) e, se todos falharem, CPU com libx264; um encoder que falhar não é tentado de novo na sessão. O áudio é normalizado em duas passagens a -14 LUFS. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
 
 Antes de preparar a mídia, o pipeline verifica se o Ollama responde e se o modelo configurado está instalado. Falhas técnicas não são apresentadas como rejeição editorial; só blocos sem avaliação tornam a curadoria parcial.
 
