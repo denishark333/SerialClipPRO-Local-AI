@@ -178,7 +178,7 @@ Abra http://127.0.0.1:8765. Para desenvolvimento com atualização automática, 
 
 Fechar a aba do navegador não encerra o servidor. Para encerrar, pressione **Ctrl+C no terminal que executou `main.py`** e aguarde o retorno do prompt antes de iniciar novamente. O encerramento solicita cancelamento do pipeline e aguarda as tarefas terminarem; chamadas de modelos podem demorar a responder. Se a porta estiver ocupada, a inicialização informa o conflito sem abrir outra aba. No desktop, feche a janela após terminar/cancelar o processamento; revisões e previews também bloqueiam o fechamento enquanto estão ativos. Encerramento forçado pelo Gerenciador de Tarefas não garante a limpeza de subprocessos ou temporários.
 
-## Instalador 3.0 — Windows x64
+## Instalador 3.0 - Windows x64
 
 A distribuição usa um único `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). A página de componentes mostra os essenciais (fixos) e as opções: modelos de IA e aceleração NVIDIA. Depois da cópia dos arquivos, o assistente executa `bootstrap.ps1` sem console, com `-Modelos` e `-Gpu`; o script emite linhas `@@PROGRESSO|pct|mensagem`, que o assistente usa na barra de progresso.
 
