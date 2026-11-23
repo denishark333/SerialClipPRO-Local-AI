@@ -2,7 +2,7 @@
   #define PackageDir "..\dist\Serial ClipPRO"
 #endif
 #ifndef AppVersion
-  #define AppVersion "3.0.0"
+  #define AppVersion "3.0.1"
 #endif
 #ifndef InstallerOutput
   #define InstallerOutput "..\dist\installer"
