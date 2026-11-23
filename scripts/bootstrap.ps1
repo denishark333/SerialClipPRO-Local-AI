@@ -1,4 +1,4 @@
-param([switch]$LibraryOnly, [switch]$SkipLaunch, [string]$Modelos = '', [switch]$Gpu)
+param([switch]$LibraryOnly, [switch]$SkipLaunch, [string]$Modelos = '', [switch]$Gpu, [string]$Idioma = '')
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -11,6 +11,8 @@ $script:CatalogoModelos = [ordered]@{
     'qwen3:14b'  = 'Qwen 3 14B'
 }
 $script:ModeloPadrao = 'llama3.1'
+# Idioma das mensagens mostradas ao usuario (pt ou en); definido antes de preparar.
+$script:IdiomaUi = 'pt'
 # Aceleracao NVIDIA: o CTranslate2 ja traz o cuDNN; o Whisper so precisa destes dois
 # arquivos do cuBLAS, extraidos do pacote oficial da NVIDIA no PyPI (hash fixo).
 $script:CublasUrl = 'https://files.pythonhosted.org/packages/20/e2/fc9a0e985249d873150276d5afb02e39a66817fedbf1a385724393e505ed/nvidia_cublas_cu12-12.9.2.10-py3-none-win_amd64.whl'
@@ -26,6 +28,19 @@ function Write-Progresso($Percent, $Message) {
 function Get-DataDir {
     if ($env:CLIPPRO_DATA_DIR) { return [IO.Path]::GetFullPath($env:CLIPPRO_DATA_DIR) }
     return Join-Path $env:LOCALAPPDATA 'Serial ClipPRO'
+}
+function Get-IdiomaUi($Escolhido) {
+    # O instalador informa -Idioma; o atalho de reparo segue o idioma salvo no app.
+    if ($Escolhido -in @('pt', 'en')) { return $Escolhido }
+    try {
+        $salvo = (Get-Content -LiteralPath (Join-Path (Get-DataDir) 'config_interface.json') -Raw -ErrorAction Stop | ConvertFrom-Json).idioma
+        if ($salvo -eq 'en') { return 'en' }
+    } catch {}
+    return 'pt'
+}
+function Tx($Pt, $En) {
+    if ($script:IdiomaUi -eq 'en') { return $En }
+    return $Pt
 }
 function Refresh-Path {
     $tools = Join-Path (Get-DataDir) 'tools\ffmpeg'
@@ -43,7 +58,7 @@ function Test-MediaRuntime($Command) {
 function Get-Download($Url, $Destination) {
     for ($attempt = 1; $attempt -le 3; $attempt++) {
         try {
-            Write-Host "Baixando $(Split-Path $Destination -Leaf), tentativa $attempt/3..."
+            Write-Host (Tx "Baixando $(Split-Path $Destination -Leaf), tentativa $attempt/3..." "Downloading $(Split-Path $Destination -Leaf), attempt $attempt/3...")
             if (Test-Command curl.exe) {
                 & curl.exe --fail --location --retry 2 --connect-timeout 30 --output "$Destination.partial" $Url
                 if ($LASTEXITCODE -ne 0) { throw "Falha de download (curl $LASTEXITCODE)." }
@@ -184,7 +199,7 @@ function Invoke-OllamaPull($Nome, $Inicio, $Fim) {
                 if ($pct -ne $ultimo) {
                     $ultimo = $pct
                     $feito = '{0:N1}' -f ($evento.completed / 1GB); $total = '{0:N1}' -f ($evento.total / 1GB)
-                    Write-Progresso $pct "Baixando $rotulo ($feito de $total GB)..."
+                    Write-Progresso $pct (Tx "Baixando $rotulo ($feito de $total GB)..." "Downloading $rotulo ($feito of $total GB)...")
                 }
             }
         }
@@ -215,7 +230,7 @@ function Install-Modelo($Nome, $Inicio, $Fim, $Cache, $DataDir) {
     catch {
         # Modelos novos (como o Gemma 4) exigem um Ollama recente: atualiza e tenta de novo.
         if ($_.Exception.Message -notmatch '(?i)newer version|update ollama|upgrade') { throw }
-        Write-Progresso $Inicio "Atualizando o Ollama para baixar $(Get-NomeModelo $Nome)..."
+        Write-Progresso $Inicio (Tx "Atualizando o Ollama para baixar $(Get-NomeModelo $Nome)..." "Updating Ollama to download $(Get-NomeModelo $Nome)...")
         Get-Process ollama* -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Install-Ollama $Cache
         Wait-Ollama $DataDir | Out-Null
@@ -237,7 +252,7 @@ function Get-DownloadProgresso($Url, $Destination, $Inicio, $Fim, $Rotulo) {
                     $saida.Write($buffer, 0, $n); $lidos += $n
                     if ($total -gt 0) {
                         $pct = [int]($Inicio + ($Fim - $Inicio) * $lidos / $total)
-                        if ($pct -ne $ultimo) { $ultimo = $pct; Write-Progresso $pct ("$Rotulo ({0:N0} de {1:N0} MB)..." -f ($lidos / 1MB), ($total / 1MB)) }
+                        if ($pct -ne $ultimo) { $ultimo = $pct; Write-Progresso $pct ((Tx "$Rotulo ({0:N0} de {1:N0} MB)..." "$Rotulo ({0:N0} of {1:N0} MB)...") -f ($lidos / 1MB), ($total / 1MB)) }
                     }
                 }
             } finally { $saida.Close(); $entrada.Close(); $response.Close() }
@@ -254,7 +269,7 @@ function Install-Cuda($Cache, $DataDir, $Inicio, $Fim) {
     $faltando = @($script:CublasArquivos | Where-Object { -not (Test-Path -LiteralPath (Join-Path $destino $_)) })
     if (-not $faltando.Count) { return }
     $wheel = Join-Path $Cache 'nvidia-cublas.whl'
-    Get-DownloadProgresso $script:CublasUrl $wheel $Inicio $Fim 'Baixando aceleracao NVIDIA'
+    Get-DownloadProgresso $script:CublasUrl $wheel $Inicio $Fim (Tx 'Baixando aceleracao NVIDIA' 'Downloading NVIDIA acceleration')
     if ((Get-FileHash -LiteralPath $wheel -Algorithm SHA256).Hash -ne $script:CublasSha256) {
         Remove-Item -LiteralPath $wheel -Force
         throw 'Download da aceleracao NVIDIA falhou na verificacao SHA256. Execute novamente.'
@@ -285,10 +300,10 @@ function Install-ClipPro {
     Start-Transcript -LiteralPath (Join-Path $data 'instalacao.log') -Append | Out-Null
     $script:RestartRequired = $false
     try {
-        Write-Progresso 1 'Preparando arquivos do aplicativo...'
+        Write-Progresso 1 (Tx 'Preparando arquivos do aplicativo...' 'Preparing app files...')
         Unblock-Package $package
         Refresh-Path
-        Write-Progresso 3 'Verificando .NET Framework e Visual C++...'
+        Write-Progresso 3 (Tx 'Verificando .NET Framework e Visual C++...' 'Checking .NET Framework and Visual C++...')
         if (-not (Test-NetFramework)) {
             $installer = Join-Path $cache 'dotnet48.exe'
             Get-Download 'https://go.microsoft.com/fwlink/?linkid=2088631' $installer
@@ -303,12 +318,12 @@ function Install-ClipPro {
             Invoke-Installer $installer '/install /quiet /norestart' -Elevate
             if (-not (Test-VCRuntime) -and -not $script:RestartRequired) { throw 'Visual C++ nao foi detectado apos instalar.' }
         }
-        Write-Progresso 8 'Preparando FFmpeg...'
+        Write-Progresso 8 (Tx 'Preparando FFmpeg...' 'Preparing FFmpeg...')
         Install-FFmpeg $cache $data
         foreach ($command in @('ffmpeg', 'ffprobe')) {
             Test-MediaRuntime $command
         }
-        Write-Progresso 13 'Verificando WebView2...'
+        Write-Progresso 13 (Tx 'Verificando WebView2...' 'Checking WebView2...')
         if (-not (Test-WebView)) {
             $installer = Join-Path $cache 'WebView2Setup.exe'
             Get-Download 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' $installer
@@ -316,12 +331,12 @@ function Install-ClipPro {
             Invoke-Installer $installer '/silent /install'
             if (-not (Test-WebView)) { throw 'WebView2 nao foi detectado apos instalar.' }
         }
-        Write-Progresso 16 'Preparando Ollama...'
-        Write-Host 'Se aparecer a janela inicial do Ollama, prossiga e escolha o uso local. Nao e necessario usar modelos cloud para o ClipPRO.'
+        Write-Progresso 16 (Tx 'Preparando Ollama...' 'Preparing Ollama...')
+        Write-Host (Tx 'Se aparecer a janela inicial do Ollama, prossiga e escolha o uso local. Nao e necessario usar modelos cloud para o ClipPRO.' 'If the Ollama welcome window appears, continue and choose local use. ClipPRO does not need cloud models.')
         if (-not (Test-Command ollama)) { Install-Ollama $cache }
         $tags = Wait-Ollama $data
         if ($Gpu) {
-            Write-Progresso 22 'Preparando aceleracao NVIDIA...'
+            Write-Progresso 22 (Tx 'Preparando aceleracao NVIDIA...' 'Preparing NVIDIA acceleration...')
             Install-Cuda $cache $data 22 34
         }
         $escolhidos = Resolve-Modelos $Modelos $data
@@ -329,7 +344,7 @@ function Install-ClipPro {
         for ($i = 0; $i -lt $escolhidos.Count; $i++) {
             $nome = $escolhidos[$i]
             $inicio = 35 + $faixa * $i
-            Write-Progresso $inicio "Verificando $(Get-NomeModelo $nome)..."
+            Write-Progresso $inicio (Tx "Verificando $(Get-NomeModelo $nome)..." "Checking $(Get-NomeModelo $nome)...")
             if (Test-ModeloInstalado $tags $nome) {
                 & ollama show $nome | Out-Null
                 if ($LASTEXITCODE -eq 0) { continue }
@@ -341,19 +356,19 @@ function Install-ClipPro {
             Save-ConfigIa $data (Select-ModeloPrincipal $escolhidos)
         }
         if ($script:RestartRequired) {
-            Write-Host 'O Windows solicitou reinicializacao. Reinicie e use Preparar ou reparar Serial ClipPRO no menu Iniciar para concluir.' -ForegroundColor Yellow
+            Write-Host (Tx 'O Windows solicitou reinicializacao. Reinicie e use Preparar ou reparar Serial ClipPRO no menu Iniciar para concluir.' 'Windows asked for a restart. Restart and use Prepare or repair Serial ClipPRO in the Start menu to finish.') -ForegroundColor Yellow
             return 3010
         }
-        Write-Progresso 90 'Testando o aplicativo...'
+        Write-Progresso 90 (Tx 'Testando o aplicativo...' 'Testing the app...')
         $app = Join-Path $package 'Serial ClipPRO.exe'
         $env:CLIPPRO_DATA_DIR = $data
-        $process = Wait-AppSetup $app '--self-test' 'Verificando o aplicativo'
+        $process = Wait-AppSetup $app '--self-test' (Tx 'Verificando o aplicativo' 'Checking the app')
         if ($process.ExitCode -ne 0) { throw "Teste do aplicativo falhou. Diagnostico: $(Join-Path $data 'self-test.json')" }
-        Write-Progresso 94 'Preparando o Whisper (transcricao das falas)...'
+        Write-Progresso 94 (Tx 'Preparando o Whisper (transcricao das falas)...' 'Preparing Whisper (speech transcription)...')
         Write-Host "Detalhes: $(Join-Path $data 'models-setup.log')"
-        $process = Wait-AppSetup $app '--prepare-models' 'Preparando Whisper'
+        $process = Wait-AppSetup $app '--prepare-models' (Tx 'Preparando Whisper' 'Preparing Whisper')
         if ($process.ExitCode -ne 0) { throw "Preparacao do Whisper falhou. Diagnostico: $(Join-Path $data 'models-setup.json'). Execute novamente para retomar." }
-        Write-Progresso 100 'Preparacao concluida. Todos os testes passaram.'
+        Write-Progresso 100 (Tx 'Preparacao concluida. Todos os testes passaram.' 'Setup complete. All tests passed.')
         if (-not $SkipLaunch) { Start-Process -FilePath $app -WindowStyle Hidden }
         return 0
     } finally { Stop-Transcript | Out-Null }
@@ -363,12 +378,13 @@ function Wait-AppSetup($AppPath, $Argument, $Label) {
     $started = Get-Date
     while (-not $process.WaitForExit(10000)) {
         $seconds = [int]((Get-Date) - $started).TotalSeconds
-        Write-Host "$Label - processo ainda em execucao ($seconds segundos). Aguarde."
+        Write-Host (Tx "$Label - processo ainda em execucao ($seconds segundos). Aguarde." "$Label - still running ($seconds seconds). Please wait.")
     }
     return $process
 }
 
 if (-not $LibraryOnly) {
+    $script:IdiomaUi = Get-IdiomaUi $Idioma
     try { exit (Install-ClipPro -Modelos $Modelos -Gpu:$Gpu) }
     catch {
         $failureLog = Join-Path (Get-DataDir) 'instalacao.log'
@@ -376,7 +392,7 @@ if (-not $LibraryOnly) {
             ('FALHA: ' + $_.Exception.Message) | Out-File -LiteralPath $failureLog -Append -Encoding utf8
         }
         Write-Host $_.Exception.Message -ForegroundColor Red
-        Write-Host 'Retome pelo instalador ou pelo atalho Preparar ou reparar Serial ClipPRO no menu Iniciar.'
+        Write-Host (Tx 'Retome pelo instalador ou pelo atalho Preparar ou reparar Serial ClipPRO no menu Iniciar.' 'Resume from the installer or with the Prepare or repair Serial ClipPRO shortcut in the Start menu.')
         exit 1
     }
 }
