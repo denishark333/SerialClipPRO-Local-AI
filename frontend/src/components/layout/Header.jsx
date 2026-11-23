@@ -2,22 +2,6 @@ import React from 'react';
 import { useDialog } from './useDialog';
 import { version } from '../../../../version.json';
 import { useI18n } from '../../i18n/useI18n';
-import { IDIOMAS } from '../../i18n/traduzir';
-
-function SeletorIdioma() {
-  const { idioma, setIdioma, t } = useI18n();
-  return (
-    <div role="group" aria-label={t('cabecalho.idiomaInterface')} title={t('cabecalho.idiomaInterface')}
-      className="flex items-center rounded-xl border border-[#1b1528] bg-[#0a0712] p-1 text-xs font-mono">
-      {IDIOMAS.map(({ id, sigla, nome }) => (
-        <button key={id} type="button" lang={id} aria-pressed={idioma === id} title={nome} onClick={() => setIdioma(id)}
-          className={`rounded-lg px-2.5 py-1 font-bold transition focus-visible:outline-2 focus-visible:outline-cyan-400 ${idioma === id ? 'bg-gradient-to-r from-[#9333ea]/60 to-[#00ffff]/30 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
-          {sigla}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function Header() {
   const { notify } = useDialog();
@@ -27,7 +11,7 @@ export function Header() {
     ['paypal', t('cabecalho.doarPaypal'), 'https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL'],
   ];
   return (
-    <header className="mb-6 border-b border-[#1b1528] pb-4 flex flex-wrap gap-4 items-center justify-between w-full mx-auto">
+    <header className="mb-3 border-b border-[#1b1528] pb-4 flex flex-wrap gap-4 items-center justify-between w-full mx-auto">
       <div className="flex items-center gap-4">
         <div className="relative w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-[#b3ff33] via-[#9333ea] to-[#00ffff] shadow-[0_0_15px_rgba(147,51,234,0.4)] flex-shrink-0">
           <img 
@@ -46,12 +30,9 @@ export function Header() {
       </div>
 
       <div className="flex flex-col gap-3 items-end">
-      <div className="flex items-center gap-2">
-      <SeletorIdioma />
       <div className="flex items-center gap-2 bg-[#0a0712] px-4 py-2 rounded-xl border border-[#1b1528] text-xs font-mono">
         <span className="w-2.5 h-2.5 rounded-full bg-[#b3ff33] animate-pulse"></span>
         <span className="text-slate-300">{t('cabecalho.motorAtivo')}</span>
-      </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {donations.map(([id, label, url]) => <a key={id} href={url} target="_blank" rel="noopener noreferrer"

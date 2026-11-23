@@ -6,6 +6,7 @@ import { useI18n, useTAtual } from './i18n/useI18n';
 
 import { GalleryDialog } from './components/layout/GalleryDialog';
 import { Header } from './components/layout/Header';
+import { SeletorIdioma } from './components/layout/SeletorIdioma';
 import { Footer } from './components/layout/Footer';
 import { Tabs } from './components/layout/Tabs';
 import { PipelineTab } from './components/tabs/PipelineTab';
@@ -220,6 +221,7 @@ function App() {
       
       <div>
         <Header />
+        <div className="mb-4 flex justify-start"><SeletorIdioma /></div>
 
         <div className="w-full mx-auto flex flex-col gap-6">
           
