@@ -79,8 +79,14 @@ Name: "{group}\Serial ClipPRO"; Filename: "{app}\Serial ClipPRO.exe"; WorkingDir
 Name: "{autodesktop}\Serial ClipPRO"; Filename: "{app}\Serial ClipPRO.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{group}\Preparar ou reparar Serial ClipPRO"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bootstrap.ps1"""; WorkingDir: "{app}"; IconFilename: "{app}\Serial ClipPRO.exe"
 
+[InstallDelete]
+; Bibliotecas da versão anterior: a pasta é recriada inteira, sem sobras de arquivos que deixaram de existir.
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Run]
 Filename: "{app}\Serial ClipPRO.exe"; Description: "Abrir Serial ClipPRO"; Flags: nowait postinstall skipifsilent; Check: PreparationSucceeded
+; Atualização pelo app (/SILENT /ATUALIZACAO=1): reabre o app sozinho ao terminar.
+Filename: "{app}\Serial ClipPRO.exe"; Flags: nowait; Check: ReabrirAposAtualizacao
 
 [Code]
 var
@@ -91,6 +97,18 @@ var
 function PreparationSucceeded: Boolean;
 begin
   Result := Ready and not RestartRequired;
+end;
+
+{ Instalação disparada pelo atualizador do app. }
+function ModoAtualizacao: Boolean;
+begin
+  Result := ExpandConstant('{param:atualizacao|0}') = '1';
+end;
+
+{ Mesmo se a preparação falhar, o app reabre e mostra o diagnóstico das dependências. }
+function ReabrirAposAtualizacao: Boolean;
+begin
+  Result := ModoAtualizacao and not RestartRequired;
 end;
 
 function NeedRestart: Boolean;
@@ -199,8 +217,10 @@ var
 begin
   if CurStep <> ssPostInstall then Exit;
   Ready := False;
-  Parametros := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\bootstrap.ps1') +
-    '" -SkipLaunch -Modelos "' + ModelosEscolhidos + '"';
+  Parametros := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\bootstrap.ps1') + '" -SkipLaunch';
+  { Na atualização, o bootstrap roda como reparo: mantém o modelo escolhido no app em vez de voltar ao do instalador. }
+  if not ModoAtualizacao then
+    Parametros := Parametros + ' -Modelos "' + ModelosEscolhidos + '"';
   if WizardIsComponentSelected('gpu') then
     Parametros := Parametros + ' -Gpu';
   repeat
