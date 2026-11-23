@@ -68,6 +68,12 @@ class DesktopSocial:
             raise ValueError(tr('social.metodo'))
         return webbrowser.open(links[metodo])
 
+    def abrir_releases(self, url=''):
+        """Página de Releases no navegador; só aceita páginas do próprio repositório."""
+        import webbrowser
+        from core.atualizacao import URL_RELEASES
+        return webbrowser.open(url if str(url).startswith(URL_RELEASES + '/') else URL_RELEASES)
+
     def salvar_corte(self, nome):
         from pathlib import Path
         import shutil

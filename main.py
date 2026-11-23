@@ -15,6 +15,7 @@ from api.social import router as social_router
 from api.review import router as review_router
 from api.ia import router as ia_router
 from api.interface import router as interface_router
+from api.atualizacao import router as atualizacao_router
 from core.version import APP_VERSION
 
 app = FastAPI(title="Serial ClipPRO - Stream/Zero-Download Engine", version=APP_VERSION)
@@ -49,6 +50,7 @@ app.include_router(social_router, prefix="/api")
 app.include_router(review_router, prefix="/api")
 app.include_router(ia_router, prefix="/api")
 app.include_router(interface_router, prefix="/api")
+app.include_router(atualizacao_router, prefix="/api")
 
 # API and media routes take precedence over the built React interface.
 frontend_dist = BASE_DIR / "frontend" / "dist"

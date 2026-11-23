@@ -72,6 +72,10 @@ def run():
                 return True
 
             window.events.closing += closing
+            from core import atualizacao
+            # O instalador baixado pelo atualizador só é apagado depois de a versão nova abrir.
+            atualizacao.limpar_pasta()
+            atualizacao.registrar_fechamento(window.destroy)
             webview.start(gui='edgechromium', private_mode=False, storage_path=str(DATA_DIR / 'webview'))
         finally:
             server.should_exit = True
@@ -93,6 +97,15 @@ def kick_disponivel():
         return False
 
 
+def atualizador_disponivel():
+    """A verificação Ed25519 do atualizador funciona: recusa uma assinatura forjada sem erro de import."""
+    try:
+        from core.atualizacao import assinatura_valida
+        return assinatura_valida('0.0.0', 'teste.exe', '0' * 64, 'A' * 88) is False
+    except Exception:
+        return False
+
+
 def self_test():
     """Verifica imports e recursos do pacote sem abrir janela nem baixar modelos."""
     from core.config import BASE_DIR, DATA_DIR
@@ -104,8 +117,8 @@ def self_test():
         from PIL import Image
         resultado = {'ok': True, 'frontend': (BASE_DIR / 'frontend/dist/index.html').is_file(),
                      'webview2': winforms._is_chromium(), 'rotas': len(app.routes),
-                     'kick': kick_disponivel(), 'dados': str(DATA_DIR), 'recursos': str(BASE_DIR)}
-        resultado['ok'] = resultado['frontend'] and resultado['webview2'] and resultado['kick']
+                     'kick': kick_disponivel(), 'atualizador': atualizador_disponivel(), 'dados': str(DATA_DIR), 'recursos': str(BASE_DIR)}
+        resultado['ok'] = resultado['frontend'] and resultado['webview2'] and resultado['kick'] and resultado['atualizador']
     except Exception as error:
         import traceback
         resultado = {'ok': False, 'erro': str(error), 'traceback': traceback.format_exc()}

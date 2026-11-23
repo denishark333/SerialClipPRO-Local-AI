@@ -210,6 +210,27 @@ TEXTOS = {
     'desktop.processando_titulo': ('Processamento em andamento', 'Processing in progress'),
     'desktop.processando_texto': ('Cancele o pipeline ou aguarde a revisão/preview terminar antes de fechar a aplicação.',
                                   'Cancel the pipeline or wait for the review/preview to finish before closing the app.'),
+    # --- Atualização pelo app ---
+    'atualizacao.sem_conexao': ('Não foi possível consultar as atualizações: {erro}',
+                                'Could not check for updates: {erro}'),
+    'atualizacao.resposta_invalida': ('O GitHub respondeu num formato inesperado. Tente de novo mais tarde.',
+                                      'GitHub replied in an unexpected format. Try again later.'),
+    'atualizacao.ja_atualizado': ('Você já está na versão mais recente.', 'You are already on the latest version.'),
+    'atualizacao.sem_assinatura': ('Esta versão não tem instalador assinado para atualizar pelo app. Baixe pela página da Release.',
+                                   'This version has no signed installer for in-app updates. Download it from the Release page.'),
+    'atualizacao.ja_baixando': ('O download da atualização já está em andamento.', 'The update download is already in progress.'),
+    'atualizacao.assinatura_invalida': ('O instalador baixado não passou na verificação de assinatura e foi apagado. '
+                                        'Baixe pela página da Release ou tente mais tarde.',
+                                        'The downloaded installer failed the signature check and was deleted. '
+                                        'Download it from the Release page or try later.'),
+    'atualizacao.falha_download': ('O download da atualização falhou: {erro}', 'The update download failed: {erro}'),
+    'atualizacao.so_instalado': ('A atualização pelo app só funciona no Serial ClipPRO instalado.',
+                                 'In-app updates only work in the installed Serial ClipPRO.'),
+    'atualizacao.nao_baixada': ('Baixe a atualização antes de instalar.', 'Download the update before installing.'),
+    'atualizacao.aguarde': ('Aguarde o processamento, a revisão ou o preview terminar antes de atualizar.',
+                            'Wait for processing, review or preview to finish before updating.'),
+    'atualizacao.instalando': ('O app vai fechar e o instalador abrirá em seguida. Ao terminar, o Serial ClipPRO reabre sozinho.',
+                               'The app will close and the installer will open next. When it finishes, Serial ClipPRO reopens on its own.'),
 }
 
 
