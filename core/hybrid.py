@@ -10,7 +10,7 @@ from core import transcription
 from core.whisper import MODELO, carregar_modelo, dispositivo
 from core.idiomas import para_whisper
 from core.audio import detectar_segmentos_narrativos, medir_duracao
-from core.config import atualizar_estado
+from core.config import atualizar_estado, formatar_tempo
 from core.execution import executar_comando
 from core.erros import ErroFFmpeg
 
@@ -103,7 +103,7 @@ def _transcrever_amostra(modelo, fonte, janela, arquivo, execucao, termos, tempo
     return {'versao': 1, 'duracao': duracao, 'segmentos': segmentos}
 
 
-def mapear_audio(fonte, entrada, ignorar_inicio, execucao):
+def mapear_audio(fonte, entrada, ignorar_inicio, execucao, rotulo=''):
     """Picos de áudio da fonte, com cache por VOD.
 
     A chave inclui a duração atual da fonte: o VOD de uma live em andamento
@@ -111,8 +111,8 @@ def mapear_audio(fonte, entrada, ignorar_inicio, execucao):
     a varredura é refeita.
     """
     cache = None
+    duracao = medir_duracao(fonte, execucao)
     if entrada is not None:
-        duracao = medir_duracao(fonte, execucao)
         if duracao:
             cache = transcription.CACHE_DIR / 'mapas' / (transcription.chave(
                 'mapa_audio', 1, transcription.identidade_entrada(entrada), round(duracao), ignorar_inicio) + '.json')
@@ -120,8 +120,13 @@ def mapear_audio(fonte, entrada, ignorar_inicio, execucao):
             if isinstance(salvo, dict) and isinstance(salvo.get('picos'), list) and salvo.get('duracao', 0) > 0:
                 atualizar_estado(tr('status.mapa_cache'), 2, 15)
                 return {**salvo, 'do_cache': True}
+    def progresso(lido, total):
+        # A varredura ocupa de 15% a 25% da barra; a transcrição das amostras vem depois.
+        atualizar_estado(tr('status.mapeando_progresso', rotulo=rotulo, feito=formatar_tempo(lido),
+                            total=formatar_tempo(total)), 2, 15 + int(10 * lido / total))
+
     mapa = detectar_segmentos_narrativos(fonte, execucao=execucao, ignorar_inicio_segundos=ignorar_inicio,
-                                         retornar_detalhes=True)
+                                         retornar_detalhes=True, duracao=duracao, ao_progresso=progresso)
     execucao.verificar()
     if cache and mapa['duracao'] > 0:
         transcription.salvar_json(cache, mapa)
@@ -141,7 +146,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     tempos = {}
     atualizar_estado(tr('status.mapeando', rotulo=rotulo), 2, 15)
     t = time.monotonic()
-    mapa = mapear_audio(fonte, entrada, ignorar_inicio, execucao)
+    mapa = mapear_audio(fonte, entrada, ignorar_inicio, execucao, rotulo)
     tempos['varredura_audio'] = time.monotonic()-t
     tempos['mapa_do_cache'] = bool(mapa.get('do_cache'))
     if modo == 'picos':
@@ -159,7 +164,7 @@ def transcrever_hibrido(fonte, pasta_temp, execucao, termos, ignorar_inicio, lim
     segmentos, palavras, grupos = [], [], []
     for indice, janela in enumerate(plano):
         execucao.verificar()
-        atualizar_estado(tr('status.transcrevendo_amostra', rotulo=rotulo, atual=indice+1, total=len(plano), dispositivo=dispositivo()), 2, 16+int(18*indice/len(plano)))
+        atualizar_estado(tr('status.transcrevendo_amostra', rotulo=rotulo, atual=indice+1, total=len(plano), dispositivo=dispositivo()), 2, 25+int(9*indice/len(plano)))
         cache = None
         if entrada is not None:
             cache = transcription.CACHE_DIR / 'amostras' / (transcription.chave(

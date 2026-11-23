@@ -29,6 +29,8 @@ TEXTOS = {
     'status.rotulo_picos': ('Picos', 'Peaks'),
     'status.rotulo_hibrido': ('Híbrido', 'Hybrid'),
     'status.mapeando': ('{rotulo}: mapeando áudio para escolher amostras...', '{rotulo}: mapping audio to pick samples...'),
+    'status.mapeando_progresso': ('{rotulo}: mapeando áudio para escolher amostras ({feito} de {total})...',
+                                  '{rotulo}: mapping audio to pick samples ({feito} of {total})...'),
     'status.transcrevendo_amostra': ('{rotulo}: transcrevendo amostra {atual}/{total} ({dispositivo})...',
                                      '{rotulo}: transcribing sample {atual}/{total} ({dispositivo})...'),
     'status.transcricao_cache': ('Transcrição completa recuperada do cache.', 'Full transcript restored from cache.'),

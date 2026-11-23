@@ -1,5 +1,7 @@
 import re
 import subprocess
+import tempfile
+from pathlib import Path
 from core.textos import tr
 from core.execution import executar_comando
 from core.erros import ErroFFmpeg
@@ -18,9 +20,30 @@ def medir_duracao(fonte, execucao=None):
     return duracao if duracao > 0 else None
 
 
-def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execucao=None, ignorar_inicio_segundos=600, retornar_detalhes=False):
-    print("🎧 Mapeando blocos narrativos e de interação...")
+def ler_progresso(arquivo):
+    """Último ``out_time_us`` (em segundos) gravado pelo ``-progress`` do ffmpeg, ou None."""
+    try:
+        texto = Path(arquivo).read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return None
+    valores = re.findall(r'^out_time_us=(\d+)\s*$', texto, re.MULTILINE)
+    return int(valores[-1]) / 1_000_000 if valores else None
 
+
+def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execucao=None, ignorar_inicio_segundos=600,
+                                  retornar_detalhes=False, duracao=None, ao_progresso=None):
+    """Picos de áudio da fonte inteira.
+
+    Com ``duracao`` e ``ao_progresso``, informa ``ao_progresso(segundos_lidos, duracao)``
+    durante a varredura, que em VODs longas leva vários minutos.
+    """
+    print("🎧 Mapeando blocos narrativos e de interação...")
+    with tempfile.TemporaryDirectory(prefix='clippro_mapa_') as temporario:
+        return _detectar(url_cdn, execucao, ignorar_inicio_segundos, retornar_detalhes, duracao, ao_progresso,
+                         Path(temporario) / 'progresso.txt')
+
+
+def _detectar(url_cdn, execucao, ignorar_inicio_segundos, retornar_detalhes, duracao, ao_progresso, arquivo_progresso):
     # Uma medição por segundo, inclusive durante silêncio. O astats sozinho não
     # imprime os timestamps: ametadata publica o par tempo/RMS consumido abaixo.
     filtro_audio = ('aresample=16000,asetpts=N/SR/TB,asetnsamples=n=16000:p=1,'
@@ -32,8 +55,17 @@ def detectar_segmentos_narrativos(url_cdn: str, chunk_size: float = 15.0, execuc
         "-af", filtro_audio,
         "-f", "null", "-"
     ]
+    monitor = None
+    if duracao and ao_progresso:
+        cmd[-3:-3] = ["-progress", str(arquivo_progresso)]
 
-    resultado = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        def monitor(_decorrido):
+            lido = ler_progresso(arquivo_progresso)
+            if lido is not None:
+                ao_progresso(min(lido, duracao), duracao)
+
+    resultado = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                 monitor=monitor, intervalo_monitor=3)
     if resultado.returncode != 0:
         raise ErroFFmpeg(tr('ffmpeg.analisar_audio'), resultado.stderr)
     linhas = resultado.stderr.split("\n")
