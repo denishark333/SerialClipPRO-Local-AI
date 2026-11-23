@@ -36,7 +36,8 @@ export function PipelineTab({
   const { t } = useI18n();
   const presetAtual = presetDoFoco(foco);
   const resumoAvancado = [
-    idioma !== 'pt' && t(`pipeline.idiomaCurto.${idioma}`),
+    // O idioma aparece sempre: é o ajuste que mais muda o resultado (legendas e curadoria).
+    t(`pipeline.idiomaCurto.${idioma}`),
     foco.trim() && (presetAtual === 'personalizado' ? t('pipeline.resumo.focoPersonalizado')
       : t('pipeline.resumo.foco', { nome: t(`pipeline.presets.${presetAtual}.rotulo`) })),
     termosJogo.trim() && t('pipeline.resumo.termos'),
@@ -231,7 +232,7 @@ export function PipelineTab({
               <span>{t('pipeline.dicaMinutos', { minutos: Number(limiteAmostras) * 1.5 })}</span>
             </label>
           </details>}
-          {/* Idioma e foco ficam salvos entre execuções: o título lembra o que está fora do padrão. */}
+          {/* Idioma e foco ficam salvos entre execuções: o título mostra o idioma e o que está fora do padrão. */}
           <details className="text-sm text-slate-400 mb-3 border border-[#1f1633] rounded-lg p-3">
             <summary className="cursor-pointer font-medium text-slate-300">
               {t('pipeline.configuracoesAvancadas')}
