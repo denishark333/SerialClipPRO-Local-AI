@@ -1,21 +1,20 @@
 import React from 'react';
 import { YouTubeIcon, KickIcon, TwitchIcon, InstagramIcon, TikTokIcon } from '../icons/Icons';
 import { version } from '../../../../version.json';
+import { useI18n } from '../../i18n/useI18n';
 
 // Cada projeto com a própria identidade no nome; os projetos Serial dividem a logo do SerialHealer.
 const GRADIENTE = 'text-transparent bg-clip-text bg-gradient-to-r';
 const LOGO_SERIAL = '/serial-healer.png';
 const ECOSSISTEMA = [
-  { chave: 'serialhealer', url: 'https://serialhealer.com.br', logo: LOGO_SERIAL, descricao: 'Site do criador e da comunidade.',
+  { chave: 'serialhealer', url: 'https://serialhealer.com.br', logo: LOGO_SERIAL,
     nome: <span className={`${GRADIENTE} from-[#b3ff33] to-[#ff5fd2]`}>Serial Healer</span> },
-  { chave: 'clippro', url: 'https://serialclip.pro', logo: LOGO_SERIAL, descricao: 'Página oficial e downloads.',
-    aviso: 'Em desenvolvimento',
+  { chave: 'clippro', url: 'https://serialclip.pro', logo: LOGO_SERIAL, aviso: 'desenvolvimento',
     nome: <span className={`${GRADIENTE} from-[#b3ff33] via-[#9333ea] to-[#00ffff]`}>Serial ClipPRO</span> },
-  { chave: 'creatorstudio', url: 'https://creatorstudio.serialhealer.com.br', logo: LOGO_SERIAL,
-    descricao: 'Métricas e planejamento de conteúdo do canal.', aviso: 'Em desenvolvimento',
+  { chave: 'creatorstudio', url: 'https://creatorstudio.serialhealer.com.br', logo: LOGO_SERIAL, aviso: 'desenvolvimento',
     nome: <><span className="text-[#ff1f4f]">Serial</span> <span className="text-[#a78bfa]">Creator</span> <span className="text-[#53fc18]">Studio</span></> },
-  { chave: 'chronoodyssey', url: 'https://chronoodyssey.com.br', logo: '/ecossistema/chronoodyssey.png', descricao: 'Projeto da comunidade.',
-    aviso: 'Em desenvolvimento/Aguardando mais dados',
+  { chave: 'chronoodyssey', url: 'https://chronoodyssey.com.br', logo: '/ecossistema/chronoodyssey.png',
+    aviso: 'aguardandoDados',
     nome: <span className="text-[#d4af37]">Chrono Odyssey | Interactive Map</span> },
 ];
 
@@ -30,6 +29,7 @@ const CANAIS = [
 ];
 
 export function CopyrightTab() {
+  const { t } = useI18n();
   return (
     <div className="bg-[#0a0712] border border-[#1b1528] p-8 rounded-2xl shadow-xl w-full lg:w-[94%] mx-auto flex flex-col gap-6">
       
@@ -37,50 +37,49 @@ export function CopyrightTab() {
       <div className="border-b border-[#1b1528] pb-4 text-center">
         <h2 className="text-xl font-bold text-slate-100">Serial ClipPRO</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Versão {version} · Gratuito e de código aberto (licença MIT) · Desenvolvido e mantido por{' '}
+          {t('copyright.versao', { versao: version })}{' '}
           <span className="text-[#b3ff33] font-semibold">SerialHealer</span>
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <article className="rounded-xl border border-purple-800/60 bg-[#0e0a1a] p-5 space-y-3 text-sm text-slate-300 leading-relaxed">
-          <h3 className="font-bold text-purple-200">Licença e créditos</h3>
+          <h3 className="font-bold text-purple-200">{t('copyright.licencaTitulo')}</h3>
           <p>
-            © 2026 SerialHealer. Distribuído sob a licença MIT: use, modifique e compartilhe livremente,
-            mantendo este aviso. O software é fornecido sem garantia.
+            {t('copyright.licencaTexto')}
           </p>
           <ul className="space-y-2">
             <li>
               <a href="https://github.com/artbyjazi/autoclip" target="_blank" rel="noreferrer" className={LINK}>AutoClip</a>
-              {' '}— © 2026 Jad Ghazi, licença MIT. Base do ajuste das bordas dos cortes, do Whisper na GPU e de ideias de codificação e áudio.
+              {' '}— {t('copyright.creditoAutoclip')}
             </li>
             <li>
-              <a href="https://github.com/googlefonts/bangers" target="_blank" rel="noreferrer" className={LINK}>Fonte Bangers</a>
+              <a href="https://github.com/googlefonts/bangers" target="_blank" rel="noreferrer" className={LINK}>{t('copyright.fonteBangers')}</a>
               {' '}— © 2010 The Bangers Project Authors, SIL Open Font License 1.1.
             </li>
           </ul>
         </article>
         <article className="rounded-xl border border-amber-600/30 bg-[#0e0a1a] p-5 space-y-3 text-sm text-slate-300 leading-relaxed">
-          <h3 className="font-bold text-amber-200">Antes de publicar</h3>
-          <p>O ClipPRO não identifica músicas protegidas: um corte pode conter áudio de terceiros. Assista antes de postar.</p>
+          <h3 className="font-bold text-amber-200">{t('copyright.antesTitulo')}</h3>
+          <p>{t('copyright.antesTexto')}</p>
           <ul className="list-disc pl-5 space-y-1.5">
-            <li>YouTube, TikTok e Instagram podem silenciar ou bloquear cortes com música de terceiros.</li>
-            <li>No OBS, mande a música para uma faixa de áudio separada da faixa da VOD: assim ela não chega aos cortes.</li>
+            <li>{t('copyright.antesPlataformas')}</li>
+            <li>{t('copyright.antesObs')}</li>
           </ul>
         </article>
         <article className="rounded-xl border border-cyan-500/40 bg-gradient-to-br from-purple-950/40 to-cyan-950/20 p-5 space-y-3 text-sm">
-          <h3 className="font-bold text-cyan-200">Ecossistema</h3>
+          <h3 className="font-bold text-cyan-200">{t('copyright.ecossistema')}</h3>
           <ul className="space-y-3">
-            {ECOSSISTEMA.map(({ chave, nome, url, logo, descricao, aviso }) => (
+            {ECOSSISTEMA.map(({ chave, nome, url, logo, aviso }) => (
               <li key={chave}>
                 <a href={url} target="_blank" rel="noreferrer" className="group flex items-center gap-3">
                   <img src={logo} alt="" className="w-9 h-9 shrink-0 rounded-full bg-black object-cover" />
                   <span>
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-bold group-hover:brightness-125 transition">{nome}</span>
-                      {aviso && <span className="rounded-full border border-amber-500/40 bg-amber-950/30 px-2 py-0.5 text-[10px] font-medium text-amber-200">{aviso}</span>}
+                      {aviso && <span className="rounded-full border border-amber-500/40 bg-amber-950/30 px-2 py-0.5 text-[10px] font-medium text-amber-200">{t(`copyright.avisos.${aviso}`)}</span>}
                     </span>
-                    <span className="block text-xs text-slate-400">{descricao}</span>
+                    <span className="block text-xs text-slate-400">{t(`copyright.projetos.${chave}`)}</span>
                   </span>
                 </a>
               </li>
@@ -90,7 +89,7 @@ export function CopyrightTab() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <span className="text-sm font-mono text-slate-400 uppercase tracking-wider text-center">Canais oficiais</span>
+        <span className="text-sm font-mono text-slate-400 uppercase tracking-wider text-center">{t('copyright.canaisOficiais')}</span>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {CANAIS.map(({ nome, usuario, url, cor, Icone }) => (
             <a key={nome} href={url} target="_blank" rel="noreferrer"

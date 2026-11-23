@@ -2,9 +2,12 @@ import { useDialog } from '../layout/useDialog';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 import { API_BASE_URL } from '../../api';
+import { useI18n, useTAtual } from '../../i18n/useI18n';
 
 export function StudioCropper({ source, previewPronto, buscandoPreview = false }) {
   const { notify } = useDialog();
+  const { t } = useI18n();
+  const tAtual = useTAtual();
   const [isEnabled, setIsEnabled] = useState(false);
   const [webcamBox, setWebcamBox] = useState({ x: 60, y: 55, width: 35, height: 35 });
   // Posição horizontal do recorte vertical do conteúdo: 0 = esquerda, 50 = centro, 100 = direita.
@@ -65,7 +68,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         body: JSON.stringify(configPayload),
       });
 
-      if (!response.ok) throw new Error('Erro ao salvar configuração no backend');
+      if (!response.ok) throw new Error(t('estudio.erroSalvar'));
       return await response.json();
     } finally {
       setIsSaving(false);
@@ -80,7 +83,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
     const controller = new AbortController();
     fetch(`${API_BASE_URL}/studio-config`, { signal: controller.signal })
       .then(async response => {
-        if (!response.ok) throw new Error('Erro ao carregar configuração do estúdio.');
+        if (!response.ok) throw new Error(tAtual.current('estudio.erroCarregar'));
         const data = await response.json();
         if (controller.signal.aborted) return;
         setIsEnabled(Boolean(data.modo_estudio_ativo));
@@ -100,7 +103,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       .catch(err => { if (!controller.signal.aborted) setError(err.message); })
       .finally(() => { if (!controller.signal.aborted) setIsLoadingConfig(false); });
     return () => controller.abort();
-  }, []);
+  }, [tAtual]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -117,18 +120,18 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       try {
         const param = source ? `?entrada=${encodeURIComponent(source)}` : '';
         const response = await fetch(`${API_BASE_URL}/studio/frame-base${param}`, { signal: controller.signal });
-        if (!response.ok) throw new Error('Falha ao consultar o preview.');
+        if (!response.ok) throw new Error(tAtual.current('estudio.erroConsultar'));
         const data = await response.json();
         if (controller.signal.aborted) return;
         if (data.tipo === 'erro') {
           // A geração falhou no backend: não adianta continuar esperando.
           setHasFrameError(true);
-          setError(`Não foi possível gerar o preview. ${data.mensagem || ''}`.trim());
+          setError(`${tAtual.current('estudio.erroGerar')} ${data.mensagem || ''}`.trim());
           return;
         }
         if (source && data.tipo !== 'video_real') {
           if (tentativa < 120) { timer = setTimeout(consultar, 1500); return; }
-          throw new Error('Preview indisponível. Tente atualizar após o processamento.');
+          throw new Error(tAtual.current('estudio.previewIndisponivelDetalhe'));
         }
         const root = API_BASE_URL.replace(/\/api$/, '');
         const url = data.url.startsWith('http') || !data.url.includes('temp_clip_cache')
@@ -145,7 +148,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
     };
     timer = setTimeout(consultar, 0);
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [source, previewPronto, frameRetry]);
+  }, [source, previewPronto, frameRetry, tAtual]);
 
   const handleToggleChange = async (e) => {
     const newValue = e.target.checked;
@@ -161,10 +164,10 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
   const handleSave = async () => {
     try {
       const result = await saveConfigToBackend(isEnabled, webcamBox);
-      notify(`⚡ ${result.mensagem || 'Configuração salva com sucesso!'}`);
+      notify(`⚡ ${result.mensagem || t('estudio.salvo')}`);
     } catch (err) {
       console.error("Erro ao salvar:", err);
-      notify('Erro ao salvar configuração no backend.');
+      notify(t('estudio.erroSalvar'));
     }
   };
 
@@ -265,25 +268,25 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       <div>
         <div className="flex justify-between items-center pb-2">
           <h3 className="text-sm font-bold flex items-center gap-2">
-            <span className="text-[#b3ff33]"></span> MODO ESTÚDIO
+            <span className="text-[#b3ff33]"></span> {t('estudio.titulo')}
           </h3>
 
           {/* Badge Preview Pronto */}
           <div role="status" className={`flex items-center gap-2 border px-3 py-2 rounded-full text-xs font-bold ${hasFrameError ? 'border-rose-500/50 bg-rose-950/40 text-rose-300' : source && (!mediaReady || buscandoPreview) ? 'border-amber-400/60 bg-amber-950/40 text-amber-300' : mediaReady ? 'border-lime-400/50 bg-lime-950/30 text-lime-300' : 'border-slate-600 text-slate-300'}`}>
             {source && (!mediaReady || buscandoPreview) && !hasFrameError && <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />}
-            <span>{hasFrameError ? 'Preview indisponível' : source && (!mediaReady || buscandoPreview) ? 'Fetching Preview' : mediaReady ? 'Preview pronto' : 'Aguardando fonte'}</span>
+            <span>{hasFrameError ? t('estudio.previewIndisponivel') : source && (!mediaReady || buscandoPreview) ? t('estudio.buscandoPreview') : mediaReady ? t('estudio.previewPronto') : t('estudio.aguardandoFonte')}</span>
           </div>
         </div>
         
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1b1528] to-transparent mb-2"></div>
 
         <p className="text-xs text-slate-400 text-center px-2 mb-2">
-          Enquadre sua câmera sobre o vídeo. Confira a área selecionada na lupa PIP.
+          {t('estudio.instrucao')}
         </p>
 
         {isLoadingConfig && (
           <div className="text-center text-xs text-amber-400 mb-2 font-mono p-2 bg-amber-950/30 rounded-lg animate-pulse border border-amber-500/20">
-            Gerando Preview...
+            {t('estudio.gerandoPreview')}
           </div>
         )}
         {error && (
@@ -304,7 +307,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
             <div className="w-9 h-5 bg-[#1b1528] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#b3ff33] peer-checked:to-[#00ffcc]"></div>
           </label>
           <span className="text-[11px] font-mono text-slate-300">
-            {isEnabled ? 'Ativo: Aplicando Enquadramento' : 'Desativado: Ignorar enquadramento'}
+            {isEnabled ? t('estudio.ativo') : t('estudio.desativado')}
           </span>
 
         </div>
@@ -315,7 +318,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
             <div className="flex items-center gap-2 mb-2">
               <span className={`w-2 h-2 rounded-full ${isInteracting ? 'bg-gradient-to-r from-pink-500 to-rose-500 animate-ping' : 'bg-gradient-to-r from-[#b3ff33] to-[#00ffcc]'}`}></span>
               <span className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider">
-                Preview enquadramento (Lupa PIP)
+                {t('estudio.lupa')}
               </span>
 
             </div>
@@ -344,7 +347,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
                   ) : (
                     <img 
                       src={frameUrl} 
-                      alt="Zoom Crop" 
+                      alt={t('estudio.altZoom')} 
                       className="absolute inset-0 w-full h-full object-contain p-2"
                     />
                   )}
@@ -356,7 +359,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       </div>
 
       {isEnabled && (
-        <label className="block text-xs text-slate-300">Largura da webcam: {webcamBox.width.toFixed(1)}%
+        <label className="block text-xs text-slate-300">{t('estudio.larguraWebcam', { valor: webcamBox.width.toFixed(1) })}
           <input type="range" min="5" max="80" step="0.1" value={webcamBox.width} disabled={!mediaReady}
             onChange={e => {
               const width = Math.min(Number(e.target.value), 100 - webcamBox.x, (100 - webcamBox.y) * 16 / 9 / mediaAspect);
@@ -368,13 +371,13 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       {mediaReady && !hasFrameError && (
         <label className="block text-xs text-slate-300">
           <span className="flex items-center justify-between">
-            <span>Posição do conteúdo: {Math.abs(foco - 50) < 2 ? 'centro' : foco < 50 ? 'esquerda' : 'direita'} ({foco.toFixed(0)}%)</span>
+            <span>{t('estudio.posicaoConteudo', { lado: t(Math.abs(foco - 50) < 2 ? 'estudio.centro' : foco < 50 ? 'estudio.esquerda' : 'estudio.direita'), valor: foco.toFixed(0) })}</span>
             <button type="button" onClick={() => setFoco(50)} disabled={foco === 50}
-              className="text-[11px] text-cyan-300 hover:text-cyan-200 disabled:opacity-40 disabled:cursor-default">Centralizar</button>
+              className="text-[11px] text-cyan-300 hover:text-cyan-200 disabled:opacity-40 disabled:cursor-default">{t('estudio.centralizar')}</button>
           </span>
           <input type="range" min="0" max="100" step="0.5" value={foco} onChange={e => setFoco(Number(e.target.value))}
             className="mt-2 block w-full accent-cyan-400" />
-          <span className="mt-1 block text-[11px] text-slate-500">Arraste a moldura no vídeo para escolher a parte que aparece no corte vertical.</span>
+          <span className="mt-1 block text-[11px] text-slate-500">{t('estudio.dicaMoldura')}</span>
         </label>
       )}
 
@@ -410,7 +413,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
               onTimeUpdate={syncPreview}
               onSeeked={syncPreview}
               src={frameUrl} 
-              alt="Preview do Enquadramento" 
+              alt={t('estudio.altPreview')} 
               className="absolute inset-0 w-full h-full object-contain bg-black"
               onError={() => setHasFrameError(true)}
             />
@@ -422,7 +425,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
                 className="w-24 h-24 object-contain opacity-75 mb-2 drop-shadow-lg"
               />
               <span className="text-[10px] font-mono tracking-widest text-slate-400">
-                AGUARDANDO CAPTURA DO FRAME...
+                {t('estudio.aguardandoFrame')}
               </span>
             </div>
           )}
@@ -438,9 +441,9 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
                 onMouseDown={arrastarMoldura}
                 style={{ left: `${esquerdaMoldura}%`, width: `${larguraMoldura}%` }}
                 className="absolute inset-y-0 border-2 border-cyan-300/80 cursor-ew-resize z-[5] flex items-start justify-center"
-                title="Arraste para os lados para escolher a parte do vídeo que aparece no corte"
+                title={t('estudio.dicaMolduraCurta')}
               >
-                <span className="mt-1 bg-black/50 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-200 font-bold pointer-events-none">Corte vertical</span>
+                <span className="mt-1 bg-black/50 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-200 font-bold pointer-events-none">{t('estudio.corteVertical')}</span>
               </div>
             </>
           )}
@@ -460,13 +463,13 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
             >
               <div className="box-content bg-black/20 px-2 py-0.5 rounded pointer-events-none flex items-center gap-1 opacity-60">
                 <span className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 animate-pulse shrink-0 shadow-[0_0_8px_#ec4899]"></span>
-                <span className="text-[10px] font-mono text-pink-200 font-bold tracking-wide truncate">Webcam</span>
+                <span className="text-[10px] font-mono text-pink-200 font-bold tracking-wide truncate">{t('estudio.webcam')}</span>
               </div>
 
               <div 
                 onMouseDown={(e) => initDragOrResize(e, 'resize')}
                 className="absolute bottom-0 right-0 w-7 h-7 bg-gradient-to-br from-pink-400 to-rose-600 rounded-tl-md cursor-se-resize hover:brightness-125 transition flex items-center justify-center shadow-md"
-                title="Arraste para redimensionar mantendo proporção 16:9"
+                title={t('estudio.dicaRedimensionar')}
               >
                 <div className="w-1.5 h-1.5 bg-black/60 rounded-full"></div>
               </div>
@@ -475,7 +478,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         </div>
       </div>
 
-      {hasFrameError && <button onClick={loadConfigAndFrame} className="text-xs text-amber-400">Atualizar preview</button>}
+      {hasFrameError && <button onClick={loadConfigAndFrame} className="text-xs text-amber-400">{t('estudio.atualizarPreview')}</button>}
       {/* 🟢 BOTÃO DE SALVAR */}
       <div className="pt-2 border-t border-[#1b1528] flex justify-center">
         <button 
@@ -483,7 +486,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
           disabled={isLoadingConfig || isSaving}
           className={`w-full py-3 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-[#b3ff33] via-[#8ce619] to-[#00ffcc] text-black hover:brightness-110 active:scale-[0.99] transition-all duration-200 shadow-[0_0_20px_rgba(179,255,51,0.25)] hover:shadow-[0_0_30px_rgba(0,255,204,0.4)] flex items-center justify-center gap-2 cursor-pointer ${(isLoadingConfig || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {isSaving ? '⚡ Salvando Configuração...' : isLoadingConfig ? 'Carregando...' : 'SALVAR POSIÇÃO DO QUADRO'}
+          {isSaving ? `⚡ ${t('estudio.salvando')}` : isLoadingConfig ? t('estudio.carregando') : t('estudio.salvar')}
         </button>
       </div>
 

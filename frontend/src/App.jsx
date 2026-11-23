@@ -2,6 +2,7 @@ import { useDialog } from './components/layout/useDialog';
 import React, { useState, useEffect, useRef } from 'react';
 
 import { apiFetch } from './api';
+import { useI18n, useTAtual } from './i18n/useI18n';
 
 import { GalleryDialog } from './components/layout/GalleryDialog';
 import { Header } from './components/layout/Header';
@@ -24,10 +25,12 @@ function salvarPreferencia(chave, valor) {
 
 function App() {
   const { notify, ask } = useDialog();
+  const { t } = useI18n();
+  const tAtual = useTAtual();
   async function limparCache() {
     try {
       const dados = await (await apiFetch('/revisao/cache')).json();
-      if (!await ask(`Remover ${dados.bases} bases de revisão (${(dados.bytes/1024/1024).toFixed(1)} MB)? Os vídeos finais, exportados e transcrições serão preservados. Sem os originais, não será possível reaplicar legendas nesses cortes.`, 'Limpar cache de revisão')) return;
+      if (!await ask(t('app.limparCachePergunta', { bases: dados.bases, mb: (dados.bytes/1024/1024).toFixed(1) }), t('app.limparCacheTitulo'))) return;
       const resultado = await (await apiFetch('/revisao/cache', { method: 'DELETE' })).json();
       notify(resultado.mensagem);
     } catch (e) { notify(e.message); }
@@ -105,18 +108,18 @@ function App() {
         setStatusInfo(prev => ({ ...data, videos: prev.videos }));
         if (terminou) await carregarClipsSalvos();
       } catch (e) {
-        if (!disposed) setStatusInfo(prev => ({ ...prev, status: `Sem comunicação com o backend: ${e.message}` }));
+        if (!disposed) setStatusInfo(prev => ({ ...prev, status: tAtual.current('app.semComunicacao', { erro: e.message }), semComunicacao: true }));
       } finally {
         if (!disposed) timer = setTimeout(consultar, 1000);
       }
     };
     consultar();
     return () => { disposed = true; clearTimeout(timer); };
-  }, []);
+  }, [tAtual]);
 
   const iniciarGeracao = async () => {
     if (!entrada) {
-      notify("Por favor, selecione um arquivo de vídeo ou insira uma URL!");
+      notify(t('app.semEntrada'));
       return;
     }
     setCarregando(true);
@@ -130,7 +133,7 @@ function App() {
       });
       executandoRef.current = true;
     } catch (e) {
-      notify(`Erro ao iniciar pipeline: ${e.message}`);
+      notify(t('app.erroIniciar', { erro: e.message }));
       setCarregando(false);
     }
   };
@@ -151,7 +154,7 @@ function App() {
   const exportarSelecionados = async () => {
     const listaParaExportar = Object.keys(selecionados).filter(k => selecionados[k] === true);
     if (listaParaExportar.length === 0) {
-      notify("Selecione pelo menos um corte usando as caixas de seleção na galeria!");
+      notify(t('app.semSelecaoExportar'));
       return;
     }
 
@@ -162,9 +165,9 @@ function App() {
         body: JSON.stringify({ videos: listaParaExportar })
       });
       const data = await res.json();
-      notify(`${data.mensagem}\n\nPasta de destino: ${data.pasta_destino}`, 'Exportação concluída');
+      notify(t('app.exportado', { mensagem: data.mensagem, pasta: data.pasta_destino }), t('app.exportacaoConcluida'));
     } catch (e) {
-      notify(`Erro ao exportar: ${e.message}`);
+      notify(t('app.erroExportar', { erro: e.message }));
     }
   };
 
@@ -172,10 +175,10 @@ function App() {
   const deletarSelecionados = () => {
     const videos = statusInfo.videos.filter(url => selecionados[url]);
     setDialog(videos.length ? {
-      title: 'Excluir cortes selecionados?',
-      message: `Excluir permanentemente ${videos.length} corte(s) da galeria? As cópias já exportadas serão mantidas.`,
+      title: t('app.excluirTitulo'),
+      message: t('app.excluirPergunta', { total: videos.length }),
       confirm: true, videos,
-    } : { title: 'Nenhum corte selecionado', message: 'Marque os cortes que deseja excluir na galeria.' });
+    } : { title: t('app.nenhumSelecionado'), message: t('app.marqueParaExcluir') });
   };
 
   const confirmarExclusao = async () => {
@@ -201,10 +204,10 @@ function App() {
       const removidos = new Set([...(data.arquivos || []), ...(data.ausentes || [])]);
       setSelecionados(prev => Object.fromEntries(Object.entries(prev).filter(([url]) => !removidos.has(url.split('/').pop()))));
       const problemas = [...(data.falhas || []), ...(data.avisos || [])];
-      setDialog({ title: problemas.length ? 'Exclusão com pendências' : 'Galeria atualizada',
+      setDialog({ title: problemas.length ? t('app.exclusaoPendencias') : t('app.galeriaAtualizada'),
         message: data.mensagem, details: problemas });
     } catch (e) {
-      setDialog({ title: 'Não foi possível concluir a exclusão', message: e.message });
+      setDialog({ title: t('app.erroExcluir'), message: e.message });
     } finally {
       await carregarClipsSalvos();
       setExcluindo(false);

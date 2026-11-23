@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../../i18n/useI18n';
 
 // Carrega apenas um quadro quando o card se aproxima da área visível.
 export function ClipThumbnail({ src }) {
+  const { t } = useI18n();
   const container = useRef(null);
   const [visible, setVisible] = useState(false);
   const [state, setState] = useState('loading');
@@ -20,7 +22,7 @@ export function ClipThumbnail({ src }) {
       onLoadedData={() => setState('ready')} onSeeked={() => setState('ready')} onError={() => setState('error')}
       className="pointer-events-none h-full w-full object-contain" />}
     {state !== 'ready' && <span className="absolute inset-0 flex items-center justify-center p-4 text-center text-xs text-slate-400">
-      {state === 'error' ? 'Miniatura indisponível' : 'Carregando miniatura…'}
+      {state === 'error' ? t('corte.miniaturaIndisponivel') : t('corte.carregandoMiniatura')}
     </span>}
   </div>;
 }
