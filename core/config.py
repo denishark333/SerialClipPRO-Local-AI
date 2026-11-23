@@ -47,7 +47,8 @@ def carregar_config_estudio() -> dict:
     return {
         "modo_estudio_ativo": False,
         "crop_jogo": {"w": 100, "h": 100, "x": 0, "y": 0},
-        "crop_webcam": {"w": 35, "h": 35, "x": 60, "y": 55}
+        "crop_webcam": {"w": 35, "h": 35, "x": 60, "y": 55},
+        "foco_conteudo": 50,
     }
 
 def salvar_config_estudio(config: dict):

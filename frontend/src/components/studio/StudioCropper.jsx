@@ -7,6 +7,8 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
   const { notify } = useDialog();
   const [isEnabled, setIsEnabled] = useState(false);
   const [webcamBox, setWebcamBox] = useState({ x: 60, y: 55, width: 35, height: 35 });
+  // Posição horizontal do recorte vertical do conteúdo: 0 = esquerda, 50 = centro, 100 = direita.
+  const [foco, setFoco] = useState(50);
   const [isInteracting, setIsInteracting] = useState(false);
   
   const [frameUrl, setFrameUrl] = useState('/serial-healer.png');
@@ -30,6 +32,15 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
   const containerRef = useRef(null);
   const boxRef = useRef(null);
 
+  // Mesma conta de core/composition.py: com webcam, o conteúdo ocupa 1080 x (1920 - altura da webcam).
+  const proporcaoConteudo = (() => {
+    if (!isEnabled || webcamBox.width <= 0) return 1080 / 1920;
+    const camAltura = Math.max(2, Math.min(960, Math.round(1080 * (webcamBox.height / webcamBox.width) / mediaAspect / 2) * 2));
+    return 1080 / (1920 - camAltura);
+  })();
+  const larguraMoldura = Math.min(100, proporcaoConteudo / mediaAspect * 100);
+  const esquerdaMoldura = (100 - larguraMoldura) * foco / 100;
+
   // 🎯 SALVA EM PORCENTAGEM PURA (0 a 100%) - INDEPENDENTE DE RESOLUÇÃO
   const saveConfigToBackend = async (newIsEnabled, currentBox) => {
     setIsSaving(true);
@@ -37,6 +48,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
     const configPayload = { 
       modo_estudio_ativo: newIsEnabled,
       enquadramento_feito: newIsEnabled,
+      foco_conteudo: Number(foco.toFixed(2)),
       crop_jogo: { x: 0, y: 0, w: 100, h: 100 },
       crop_webcam: { 
         x: Number(currentBox.x.toFixed(4)), 
@@ -72,6 +84,8 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         const data = await response.json();
         if (controller.signal.aborted) return;
         setIsEnabled(Boolean(data.modo_estudio_ativo));
+        const focoSalvo = Number(data.foco_conteudo);
+        if (Number.isFinite(focoSalvo)) setFoco(Math.max(0, Math.min(100, focoSalvo)));
         const box = data.crop_webcam;
         if (box?.w > 0 && box?.h > 0) {
           const pixels = box.w > 100 || box.h > 100;
@@ -152,6 +166,29 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
       console.error("Erro ao salvar:", err);
       notify('Erro ao salvar configuração no backend.');
     }
+  };
+
+  const arrastarMoldura = (e) => {
+    if (!containerRef.current || larguraMoldura >= 100) return;
+    e.preventDefault();
+    setIsInteracting(true);
+    const larguraContainer = containerRef.current.getBoundingClientRect().width;
+    const inicioX = e.clientX;
+    const focoInicial = foco;
+    const livre = 100 - larguraMoldura;
+    const onMouseMove = (moveEvent) => {
+      const deslocamento = (moveEvent.clientX - inicioX) / larguraContainer * 100;
+      const novo = Math.max(0, Math.min(100, focoInicial + deslocamento / livre * 100));
+      // Ímã no centro: fica fácil voltar exatamente para o meio.
+      setFoco(Math.abs(novo - 50) < 1.5 ? 50 : novo);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      setIsInteracting(false);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   };
 
   const initDragOrResize = useCallback((e, mode) => {
@@ -328,6 +365,19 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         </label>
       )}
 
+      {mediaReady && !hasFrameError && (
+        <label className="block text-xs text-slate-300">
+          <span className="flex items-center justify-between">
+            <span>Posição do conteúdo: {Math.abs(foco - 50) < 2 ? 'centro' : foco < 50 ? 'esquerda' : 'direita'} ({foco.toFixed(0)}%)</span>
+            <button type="button" onClick={() => setFoco(50)} disabled={foco === 50}
+              className="text-[11px] text-cyan-300 hover:text-cyan-200 disabled:opacity-40 disabled:cursor-default">Centralizar</button>
+          </span>
+          <input type="range" min="0" max="100" step="0.5" value={foco} onChange={e => setFoco(Number(e.target.value))}
+            className="mt-2 block w-full accent-cyan-400" />
+          <span className="mt-1 block text-[11px] text-slate-500">Arraste a moldura no vídeo para escolher a parte que aparece no corte vertical.</span>
+        </label>
+      )}
+
       {/* Container 16:9 Principal */}
       <div className="w-full flex items-center justify-center py-1">
         <div 
@@ -378,6 +428,22 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
           )}
 
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#b3ff33_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
+
+          {/* Moldura do recorte vertical do conteúdo */}
+          {mediaReady && !hasFrameError && larguraMoldura < 100 && (
+            <>
+              <div className="absolute inset-y-0 left-0 bg-black/55 pointer-events-none" style={{ width: `${esquerdaMoldura}%` }} />
+              <div className="absolute inset-y-0 right-0 bg-black/55 pointer-events-none" style={{ width: `${100 - esquerdaMoldura - larguraMoldura}%` }} />
+              <div
+                onMouseDown={arrastarMoldura}
+                style={{ left: `${esquerdaMoldura}%`, width: `${larguraMoldura}%` }}
+                className="absolute inset-y-0 border-2 border-cyan-300/80 cursor-ew-resize z-[5] flex items-start justify-center"
+                title="Arraste para os lados para escolher a parte do vídeo que aparece no corte"
+              >
+                <span className="mt-1 bg-black/50 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-200 font-bold pointer-events-none">Corte vertical</span>
+              </div>
+            </>
+          )}
 
           {/* 🎯 QUADRADO ROSA EM GRADIENTE */}
           {isEnabled && (

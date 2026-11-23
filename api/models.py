@@ -35,6 +35,8 @@ class StudioConfigRequest(BaseModel):
     modo_estudio_ativo: bool
     crop_jogo: CropBox
     crop_webcam: CropBox
+    #: Posição horizontal do recorte vertical do conteúdo: 0 = esquerda, 50 = centro, 100 = direita.
+    foco_conteudo: float = Field(50, ge=0, le=100, allow_inf_nan=False)
 
 class ExportRequest(BaseModel):
     videos: List[str]
