@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDialog } from './useDialog';
 import { version } from '../../../../version.json';
 import { useI18n } from '../../i18n/useI18n';
+import { AtualizacaoDialog } from './AtualizacaoDialog';
 
 export function Header() {
   const { notify } = useDialog();
   const { t } = useI18n();
+  const [atualizacaoAberta, setAtualizacaoAberta] = useState(false);
   const donations = [
     ['pix', t('cabecalho.doarPix'), 'https://livepix.gg/serialhealer'],
     ['paypal', t('cabecalho.doarPaypal'), 'https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL'],
@@ -24,7 +26,11 @@ export function Header() {
           <h1 className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#b3ff33] via-[#9333ea] to-[#00ffff] drop-shadow-[0_2px_10px_rgba(147,51,234,0.3)]">
             Serial ClipPRO - LOCAL AI
           </h1>
-          <span className="inline-block mt-1 rounded-full border border-purple-500/40 bg-purple-950/40 px-2 py-0.5 text-xs font-mono text-cyan-300">{t('cabecalho.versao', { versao: version })}</span>
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="inline-block rounded-full border border-purple-500/40 bg-purple-950/40 px-2 py-0.5 text-xs font-mono text-cyan-300">{t('cabecalho.versao', { versao: version })}</span>
+            <button type="button" onClick={() => setAtualizacaoAberta(true)}
+              className="text-[11px] text-slate-400 underline decoration-dotted underline-offset-2 hover:text-cyan-300 focus-visible:outline focus-visible:outline-cyan-300">{t('cabecalho.verificarAtualizacoes')}</button>
+          </span>
           <p className="text-slate-400 text-xs font-mono mt-0.5">{t('cabecalho.subtitulo')}</p>
         </div>
       </div>
@@ -48,6 +54,7 @@ export function Header() {
         </a>)}
       </div>
       </div>
+      <AtualizacaoDialog aberto={atualizacaoAberta} onFechar={() => setAtualizacaoAberta(false)} />
     </header>
   );
 }
