@@ -1,168 +1,171 @@
 # Serial ClipPRO
+
+**English** | [Português](README.pt-BR.md)
+
 <img width="1920" height="1045" alt="image" src="https://github.com/user-attachments/assets/4de74f11-5c49-43de-a4cd-ec6592ea3d06" />
 
-**Sua live continua em cada corte.**
+**Your stream lives on in every clip.**
 
-Lives longas, pouco tempo para editar? O Serial ClipPRO analisa suas VODs e prepara cortes verticais enquanto você está longe do PC. Depois, você revisa e escolhe o que publicar.
+Long streams and no time to edit? Serial ClipPRO analyzes your VODs and prepares vertical clips while you are away from your PC. Then you review them and choose what to post.
 
-Este repositório reúne o código-fonte, os pacotes de instalação e as versões públicas do aplicativo para Windows.
+This repository holds the source code, the installer packages and the public releases of the Windows app.
 
 ## Download
 
-Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão desejada (`Serial-ClipPRO-3.0.0-Setup-x64.exe` na versão 3.0).
+Go to **Releases** in this repository and download the installer attached to the version you want (`Serial-ClipPRO-3.0.0-Setup-x64.exe` for version 3.0).
 
-> Baixe o instalador **Serial ClipPRO**. Os arquivos automáticos “Source code (zip)” e “Source code (tar.gz)” contêm o código-fonte, não o aplicativo pronto.
+> Download the **Serial ClipPRO** installer. The automatic "Source code (zip)" and "Source code (tar.gz)" files contain the source code, not the ready-to-use app.
 
-## O que o aplicativo faz
+## What the app does
 
-- Processa VODs de Twitch, YouTube e Kick, além de vídeos locais.
-- Encontra os melhores momentos da VOD inteira com IA local, citando a fala que justifica cada corte.
-- Funciona com lives em vários idiomas e com qualquer gênero; o campo **O que procurar** indica os momentos que você quer priorizar.
-- Gera cortes verticais em formato 9:16 com legendas animadas: a palavra falada fica em destaque.
-- Permite ajustar o enquadramento da webcam e incluir a marca do seu canal em PNG.
-- Oferece uma galeria para revisar, baixar, exportar e excluir cortes.
-- Permite revisar e corrigir as legendas de cada corte.
-- Reúne atalhos para acessar as plataformas e publicar manualmente.
+- Processes VODs from Twitch, YouTube and Kick, as well as local videos.
+- Finds the best moments across the whole VOD with local AI, quoting the line that justifies each clip.
+- Works with streams in many languages and of any genre; the **What to look for** field tells it which moments to prioritize.
+- Creates vertical 9:16 clips with animated subtitles: the word being spoken is highlighted.
+- Lets you adjust the webcam framing and add your channel's logo as a PNG.
+- Offers a gallery to review, download, export and delete clips.
+- Lets you review and fix the subtitles of each clip.
+- Gathers shortcuts to the platforms so you can post manually.
 
-A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
+The AI helps with the selection. Review the clips and subtitles before posting.
 
-## Novidades da versão 3.0
+## What's new in version 3.0
 
-- **Curadoria refeita:** cortes que começam e terminam em frases completas, momentos curtos ampliados com o contexto ao redor e a fala-chave de cada corte conferida na transcrição.
-- **Modelo de IA à sua escolha:** Gemma 4 12B (recomendado), Llama 3.1 8B (leve) e outros; escolha na instalação e troque quando quiser no app.
-- **Idioma da live** e **O que procurar**, com modelos prontos para MMORPG, FPS, Just Chatting e Podcast.
-- **Legenda em destaque:** a palavra que está sendo falada cresce; o estilo clássico continua disponível na aba Marca.
-- **Kick:** VODs com o identificador novo funcionam, e links de live são recusados com a orientação de usar o VOD.
-- **Mais rápido:** transcrição na GPU NVIDIA (opcional na instalação) e etapas já feitas reaproveitadas ao processar a mesma VOD de novo.
-- **Instalador personalizável:** você escolhe os modelos e a aceleração NVIDIA, e a preparação acontece dentro do assistente, com barra de progresso.
+- **Rebuilt curation:** clips that start and end on complete sentences, short moments expanded with the surrounding context, and the key line of each clip checked against the transcript.
+- **Your choice of AI model:** Gemma 4 12B (recommended), Llama 3.1 8B (lightweight) and others; pick during installation and switch any time in the app.
+- **Stream language** and **What to look for**, with ready-made presets for MMORPG, FPS, Just Chatting and Podcast.
+- **Highlighted subtitles:** the word being spoken grows; the classic style is still available in the Channel branding tab.
+- **Kick:** VODs with the new identifier work, and live stream links are refused with a hint to use the VOD instead.
+- **Faster:** transcription on NVIDIA GPUs (optional during installation), and steps already done are reused when the same VOD is processed again.
+- **Customizable installer:** you choose the models and NVIDIA acceleration, and setup runs inside the wizard with a progress bar.
 
-## Instalação e primeiro uso
+## Installation and first run
 
-1. Baixe o instalador em **Releases** e execute-o.
-2. Na página **Componentes**, escolha:
-   - **Modelos de IA:** marque um ou mais. O **Gemma 4 12B** é o recomendado (precisa de ~10 GB de memória de vídeo); o **Llama 3.1 8B** é o mais leve. Se nenhum for marcado, o Llama 3.1 é instalado.
-   - **Aceleração NVIDIA (CUDA):** transcrição ~4x mais rápida em placas NVIDIA (download de 528 MB). Vem marcada quando há placa NVIDIA.
-   - Os componentes essenciais (aplicativo, FFmpeg, Ollama, Whisper, WebView2 e curl_cffi) são sempre instalados.
-3. Aguarde a preparação: a barra mostra cada download e verificação.
-4. Se aparecer a janela inicial do **Ollama**, prossiga com o **uso local**. Não é necessário usar modelos cloud.
-5. Ao final, abra o Serial ClipPRO pelo instalador ou pelo atalho criado.
+1. Download the installer from **Releases** and run it.
+2. On the **Components** page, choose:
+   - **AI models:** select one or more. **Gemma 4 12B** is recommended (needs ~10 GB of video memory); **Llama 3.1 8B** is the lightest. If none is selected, Llama 3.1 is installed.
+   - **NVIDIA acceleration (CUDA):** ~4x faster transcription on NVIDIA cards (528 MB download). Selected by default when an NVIDIA card is present.
+   - The essential components (app, FFmpeg, Ollama, Whisper, WebView2 and curl_cffi) are always installed.
+3. Wait for setup to finish: the bar shows each download and check.
+4. If the **Ollama** welcome window appears, continue with **local use**. Cloud models are not needed.
+5. When it finishes, open Serial ClipPRO from the installer or from the shortcut it created.
 
-Nos próximos usos, basta abrir o atalho **Serial ClipPRO**. Outros modelos podem ser instalados depois com `ollama pull nome-do-modelo` e escolhidos em **Primeiros Passos**.
+After that, just open the **Serial ClipPRO** shortcut. Other models can be installed later with `ollama pull model-name` and selected in **Getting Started**.
 
-### Durante a preparação
+### During setup
 
-- É necessária conexão com a internet.
-- Os modelos exigem downloads de vários GB e espaço disponível em disco.
-- O Windows pode solicitar permissão para instalar componentes.
-- Em falhas de rede, tente novamente no instalador ou use **Preparar ou reparar Serial ClipPRO** no menu Iniciar.
-- Se houver solicitação de reinício, reinicie o computador e use esse mesmo atalho para concluir.
-- A preparação do Whisper pode levar alguns minutos.
+- An internet connection is required.
+- The models are several GB to download and need free disk space.
+- Windows may ask for permission to install components.
+- If the network fails, retry in the installer or use **Prepare or repair Serial ClipPRO** in the Start menu.
+- If a restart is requested, restart the computer and use that same shortcut to finish.
+- Setting up Whisper may take a few minutes.
 
-Python e Node.js não precisam estar instalados no computador de destino.
+Python and Node.js do not need to be installed on the target computer.
 
-## Primeiro teste
+## First test
 
-Comece com um vídeo curto antes de processar uma VOD longa:
+Start with a short video before processing a long VOD:
 
-1. Informe o link de uma VOD (Twitch, Kick ou YouTube) ou selecione um arquivo local. Lives em andamento não são aceitas.
-2. Escolha o modo de análise e, em **Configurações avançadas**, o idioma da live.
-3. Ajuste o enquadramento e a marca, se desejar.
-4. Inicie o processamento.
-5. Revise os vídeos na galeria e exporte seus favoritos.
+1. Enter a VOD link (Twitch, Kick or YouTube) or select a local file. Streams that are still live are not accepted.
+2. Choose the analysis mode and, under **Advanced settings**, the stream language.
+3. Adjust the framing and branding if you want.
+4. Start processing.
+5. Review the videos in the gallery and export your favorites.
 
-Mantenha o computador ligado e sem entrar em suspensão durante o processamento.
+Keep the computer on and prevent it from sleeping while processing.
 
-## Modos de análise
+## Analysis modes
 
-| Modo | Como funciona |
+| Mode | How it works |
 |---|---|
-| **Híbrido** | Combina picos de áudio com amostras distribuídas ao longo de toda a VOD. Recomendado para lives longas. |
-| **Picos de áudio** | Avalia todos os momentos mais intensos da VOD e fica com os de maior nota. |
-| **Contexto completo** | Transcreve e analisa toda a fonte, exigindo mais tempo de processamento. |
+| **Hybrid** | Combines audio peaks with samples spread across the whole VOD. Recommended for long streams. |
+| **Audio peaks** | Evaluates every one of the most intense moments of the VOD and keeps the highest-scoring ones. |
+| **Full context** | Transcribes and analyzes the entire source, which takes longer to process. |
 
-Nos três modos, os cortes são escolhidos pela nota em toda a VOD, não pela ordem em que aparecem. Nenhum modo garante encontrar todos os momentos interessantes. O tempo varia conforme a duração da VOD, a conexão, o hardware e as configurações escolhidas.
+In all three modes, clips are picked by score across the whole VOD, not by the order in which they appear. No mode is guaranteed to find every interesting moment. Processing time depends on the VOD length, the connection, the hardware and the chosen settings.
 
-## Processamento local e hardware
+## Local processing and hardware
 
-A transcrição e a análise por IA utilizam **Whisper e Ollama no computador**.
+Transcription and AI analysis use **Whisper and Ollama on your computer**.
 
-- Com a **Aceleração NVIDIA** instalada, o Whisper transcreve na GPU; sem ela, ou sem placa NVIDIA, usa a CPU.
-- O modelo de IA da curadoria roda no Ollama; o Gemma 4 12B precisa de ~10 GB de memória de vídeo para rodar inteiro na placa.
-- A renderização tenta NVIDIA NVENC, depois AMD AMF, depois Intel QuickSync e, se nenhum estiver disponível, a CPU.
+- With **NVIDIA acceleration** installed, Whisper transcribes on the GPU; without it, or without an NVIDIA card, it uses the CPU.
+- The curation AI model runs in Ollama; Gemma 4 12B needs ~10 GB of video memory to run fully on the card.
+- Rendering tries NVIDIA NVENC, then AMD AMF, then Intel QuickSync and, if none is available, the CPU.
 
-O processamento local não elimina a necessidade de internet para baixar modelos, acessar VODs e abrir as plataformas sociais.
+Local processing still needs the internet to download models, access VODs and open the social platforms.
 
-## Onde ficam os arquivos?
+## Where are the files?
 
-O programa fica em `%LOCALAPPDATA%\Programs\Serial ClipPRO\`. Os dados ficam separados, em:
+The program is installed in `%LOCALAPPDATA%\Programs\Serial ClipPRO\`. Your data is kept separately in:
 
 `%LOCALAPPDATA%\Serial ClipPRO\`
 
-Cole esse caminho na barra de endereços do Explorador de Arquivos.
+Paste this path into the File Explorer address bar.
 
-| Pasta | Conteúdo |
+| Folder | Contents |
 |---|---|
-| `Cortes_Prontos` | Vídeos disponíveis na galeria. |
-| `Cortes_Exportados` | Cópias dos cortes exportados em lote. |
-| `transcricoes` | Cache de transcrições, amostras, mapas de áudio e curadoria. |
-| `relatorios_curadoria` | Relatórios da análise. |
-| `cache_revisao` | Bases para revisar legendas dos cortes. |
-| `marca` | Imagem e configuração da marca do canal. |
-| `logs` | Registros de diagnóstico. |
-| `tools` | FFmpeg e, se instalada, a aceleração NVIDIA. |
+| `Cortes_Prontos` | Videos shown in the gallery. |
+| `Cortes_Exportados` | Copies of clips exported in bulk. |
+| `transcricoes` | Cache of transcripts, samples, audio maps and curation. |
+| `relatorios_curadoria` | Analysis reports. |
+| `cache_revisao` | Source files for reviewing clip subtitles. |
+| `marca` | Channel logo image and its settings. |
+| `logs` | Diagnostic logs. |
+| `tools` | FFmpeg and, if installed, NVIDIA acceleration. |
 
-Excluir um corte da galeria não apaga as cópias já exportadas. O botão **Descarregar** permite escolher onde salvar um vídeo individual.
+Deleting a clip from the gallery does not delete copies already exported. The **Download** button lets you choose where to save a single video.
 
-## Redes sociais
+## Social media
 
-A aba Social reúne atalhos para Instagram, TikTok, YouTube, Twitch e Kick. BiliBili aparece como **Em breve**.
+The Social tab gathers shortcuts to Instagram, TikTok, YouTube, Twitch and Kick. BiliBili shows up as **Coming soon**.
 
-Login e publicação são feitos manualmente nos sites das plataformas. O aplicativo não publica automaticamente.
+Logging in and posting are done manually on the platforms' websites. The app does not post automatically.
 
-Se uma plataforma recusar o login na janela integrada, utilize **Abrir no navegador**.
+If a platform refuses to log in inside the built-in window, use **Open in browser**.
 
-## Atualização
+## Updating
 
-1. Aguarde o processamento terminar e feche o aplicativo.
-2. Baixe o instalador da nova versão em **Releases**.
-3. Execute o instalador.
+1. Wait for processing to finish and close the app.
+2. Download the new version's installer from **Releases**.
+3. Run the installer.
 
-Atualizações e desinstalação preservam vídeos, configurações e modelos. Consulte as notas da Release para eventuais instruções específicas.
+Updates and uninstalling keep your videos, settings and models. Check the Release notes for any version-specific instructions.
 
-## Problemas e sugestões
+## Issues and suggestions
 
-O projeto está em desenvolvimento. Para relatar um problema, abra uma **Issue** neste repositório e informe:
+The project is under development. To report a problem, open an **Issue** in this repository and include:
 
-- Versão do Serial ClipPRO.
-- Versão do Windows, processador, memória RAM e GPU.
-- Origem do vídeo e modo de análise utilizado.
-- Etapa em que ocorreu o problema.
-- Mensagem de erro e, se possível, uma captura de tela.
+- Serial ClipPRO version.
+- Windows version, processor, RAM and GPU.
+- Video source and analysis mode used.
+- The step where the problem happened.
+- The error message and, if possible, a screenshot.
 
-Para problemas de instalação, consulte:
+For installation problems, check:
 
 `%LOCALAPPDATA%\Serial ClipPRO\instalacao.log`
 
-Revise os logs antes de publicá-los e remova informações pessoais, tokens ou URLs privadas.
+Review logs before posting them and remove personal information, tokens or private URLs.
 
-## Apoie o projeto
+## Support the project
 
-Se o Serial ClipPRO ajudar na sua rotina, você pode contribuir com seu desenvolvimento:
+If Serial ClipPRO helps your routine, you can support its development:
 
-- [Apoiar via Pix — LivePix](https://livepix.gg/serialhealer)
-- [Apoiar via PayPal](https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL)
+- [Support via PayPal](https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL)
+- [Support via Pix — LivePix](https://livepix.gg/serialhealer) (Brazil)
 
-O apoio é voluntário.
+Support is voluntary.
 
 ---
 
-# Desenvolvimento
+# Development
 
-Aplicação local para transformar arquivos e VODs de Twitch, YouTube e Kick em cortes verticais. Interface React, API FastAPI, yt-dlp, FFmpeg, faster-whisper e Ollama.
+A local app that turns files and VODs from Twitch, YouTube and Kick into vertical clips. React interface, FastAPI API, yt-dlp, FFmpeg, faster-whisper and Ollama.
 
-## Uso pelo código
+## Running from source
 
-Requer Python e Node para desenvolvimento; FFmpeg/ffprobe no PATH e Ollama com ao menos um modelo (`llama3.1` por padrão; `gemma4:12b` recomendado) para processamento. Com uma placa NVIDIA, instale `nvidia-cublas-cu12` no ambiente para transcrever na GPU.
+Development requires Python and Node; processing requires FFmpeg/ffprobe on the PATH and Ollama with at least one model (`llama3.1` by default; `gemma4:12b` recommended). With an NVIDIA card, install `nvidia-cublas-cu12` in the environment to transcribe on the GPU.
 
 ```powershell
 python -m venv venv
@@ -174,101 +177,101 @@ cd ..
 venv\Scripts\python.exe main.py
 ```
 
-Abra http://127.0.0.1:8765. Para desenvolvimento com atualização automática, mantenha o backend ligado e execute `npm run dev` em `frontend`; acesse a URL indicada pelo Vite. Em **Arquivo**, clique em **Selecionar vídeo** para abrir o seletor do Windows (também no modo navegador local); o vídeo é usado diretamente, sem upload ou cópia. Em **Link**, cole a URL no campo digitável.
+Open http://127.0.0.1:8765. For development with hot reload, keep the backend running and run `npm run dev` in `frontend`; open the URL Vite shows. Under **File**, click **Choose video** to open the Windows file picker (also in local browser mode); the video is used in place, with no upload or copy. Under **Link**, paste the URL into the text field.
 
-Fechar a aba do navegador não encerra o servidor. Para encerrar, pressione **Ctrl+C no terminal que executou `main.py`** e aguarde o retorno do prompt antes de iniciar novamente. O encerramento solicita cancelamento do pipeline e aguarda as tarefas terminarem; chamadas de modelos podem demorar a responder. Se a porta estiver ocupada, a inicialização informa o conflito sem abrir outra aba. No desktop, feche a janela após terminar/cancelar o processamento; revisões e previews também bloqueiam o fechamento enquanto estão ativos. Encerramento forçado pelo Gerenciador de Tarefas não garante a limpeza de subprocessos ou temporários.
+Closing the browser tab does not stop the server. To stop it, press **Ctrl+C in the terminal running `main.py`** and wait for the prompt to return before starting again. Shutdown asks the pipeline to cancel and waits for tasks to finish; model calls may take a while to respond. If the port is busy, startup reports the conflict without opening another tab. On desktop, close the window after processing finishes or is cancelled; reviews and previews also block closing while they are running. Force-quitting from Task Manager does not guarantee that subprocesses and temporary files are cleaned up.
 
-## Instalador 3.0 - Windows x64
+## Installer 3.0 - Windows x64
 
-A distribuição usa um único `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). A página de componentes mostra os essenciais (fixos) e as opções: modelos de IA e aceleração NVIDIA. Depois da cópia dos arquivos, o assistente executa `bootstrap.ps1` sem console, com `-Modelos` e `-Gpu`; o script emite linhas `@@PROGRESSO|pct|mensagem`, que o assistente usa na barra de progresso.
+Distribution uses a single `Serial-ClipPRO-3.0.0-Setup-x64.exe` (Inno Setup). The components page shows the essential components (fixed) and the options: AI models and NVIDIA acceleration. After copying the files, the wizard runs `bootstrap.ps1` without a console, with `-Modelos` and `-Gpu`; the script emits `@@PROGRESSO|pct|message` lines, which the wizard uses for its progress bar.
 
-- Modelos são baixados pela API do Ollama; se o Ollama for antigo demais para um modelo, ele é atualizado e o download refeito. O mais forte entre os escolhidos vira o modelo da curadoria (`config_ia.json`).
-- A aceleração NVIDIA baixa o pacote oficial `nvidia-cublas-cu12` do PyPI (SHA256 fixo) e extrai só `cublas64_12.dll` e `cublasLt64_12.dll` para `tools/cuda`; o CTranslate2 já traz o cuDNN.
-- O atalho **Preparar ou reparar** roda a mesma preparação; sem escolha, mantém o modelo já configurado.
+- Models are downloaded through the Ollama API; if Ollama is too old for a model, it is updated and the download is retried. The strongest of the chosen models becomes the curation model (`config_ia.json`).
+- NVIDIA acceleration downloads the official `nvidia-cublas-cu12` package from PyPI (pinned SHA256) and extracts only `cublas64_12.dll` and `cublasLt64_12.dll` into `tools/cuda`; CTranslate2 already ships cuDNN.
+- The **Prepare or repair** shortcut runs the same setup; with no choice made, it keeps the model already configured.
 
-O programa fica em `%LOCALAPPDATA%/Programs/Serial ClipPRO/`, separado dos dados em `%LOCALAPPDATA%/Serial ClipPRO/`. Atualizações e desinstalação preservam vídeos, configurações e modelos. Feche o aplicativo após terminar/cancelar as operações antes de atualizar.
+The program lives in `%LOCALAPPDATA%/Programs/Serial ClipPRO/`, separate from the data in `%LOCALAPPDATA%/Serial ClipPRO/`. Updates and uninstalling keep videos, settings and models. Close the app after operations finish or are cancelled before updating.
 
-Para compilar, prepare um ambiente Python estável x64 chamado `build-env`, instale `requirements-build.lock.txt`, instale Inno Setup e execute `scripts/build_installer.ps1`. O resultado e seu SHA256 ficam em `dist/installer/`. O fluxo requer validação em Windows limpo antes de cada distribuição pública.
+To build, prepare a stable x64 Python environment named `build-env`, install `requirements-build.lock.txt`, install Inno Setup and run `scripts/build_installer.ps1`. The output and its SHA256 go to `dist/installer/`. Each public release needs to be validated on a clean Windows install first.
 
-O instalador verifica assinaturas dos instaladores Microsoft/Ollama e o SHA256 do FFmpeg e do pacote NVIDIA. Não altera exclusões nem desativa o Defender. Registra diagnóstico em `instalacao.log`, `self-test.json` e `models-setup.json` na pasta de dados.
+The installer verifies the signatures of the Microsoft/Ollama installers and the SHA256 of FFmpeg and the NVIDIA package. It does not change Defender exclusions or turn Defender off. It writes diagnostics to `instalacao.log`, `self-test.json` and `models-setup.json` in the data folder.
 
-O desktop bloqueia fechamento enquanto o pipeline estiver ativo: cancele e aguarde antes de fechar. Uma segunda instância desktop usando a mesma pasta de dados é recusada. `CLIPPRO_DATA_DIR` permite escolher outro diretório de dados; no desenvolvimento, os dados ficam na raiz do projeto.
+The desktop app blocks closing while the pipeline is running: cancel and wait before closing. A second desktop instance using the same data folder is refused. `CLIPPRO_DATA_DIR` lets you choose a different data directory; in development, data lives in the project root.
 
-## Modos e custo
+## Modes and cost
 
-- **Híbrido:** varre o áudio e combina picos com cobertura temporal. Até 40 amostras de 90 segundos por padrão (60 minutos de áudio para transcrição). Pode perder acontecimentos fora das amostras. O limite de amostras é diferente do limite de cortes gerados.
-- **Picos:** uma amostra por pico de áudio; todas são avaliadas e os cortes saem pela nota.
-- **Contexto completo:** prepara e transcreve toda a fonte em blocos; custa mais CPU e leitura de mídia.
+- **Hybrid:** scans the audio and combines peaks with time coverage. Up to 40 samples of 90 seconds by default (60 minutes of audio to transcribe). It can miss events outside the samples. The sample limit is separate from the limit on generated clips.
+- **Peaks:** one sample per audio peak; all of them are evaluated and clips are picked by score.
+- **Full context:** prepares and transcribes the whole source in chunks; costs more CPU and media reading.
 
-A varredura percorre toda a fonte, mesmo sem salvar a VOD integral. Na Twitch, a análise usa a variante só de áudio; na Kick, a menor qualidade de vídeo (mesmo áudio). Mapa de áudio, amostras transcritas e blocos avaliados ficam em cache: uma nova execução da mesma VOD só refaz o que mudou (o mapa é refeito se a VOD cresceu).
+The scan covers the whole source, even without saving the full VOD. On Twitch, analysis uses the audio-only variant; on Kick, the lowest video quality (same audio). The audio map, transcribed samples and evaluated chunks are cached: running the same VOD again only redoes what changed (the map is rebuilt if the VOD grew).
 
-A curadoria envia cada bloco ao modelo configurado com o idioma da live e as prioridades do campo **O que procurar**. A resposta segue um esquema JSON; a fala-chave de cada momento é conferida na transcrição, momentos curtos são ampliados com a fala vizinha, candidatos adjacentes são fundidos e os limites são ajustados a frases completas e pausas. Se a IA não aprovar nada, o app sugere trechos para revisão por sinais neutros (termos e foco informados, exclamações, perguntas, repetições, fala acelerada).
+Curation sends each chunk to the configured model along with the stream language and the priorities from the **What to look for** field. The response follows a JSON schema; each moment's key line is checked against the transcript, short moments are expanded with the neighboring speech, adjacent candidates are merged and boundaries are snapped to complete sentences and pauses. If the AI approves nothing, the app suggests segments for review based on neutral signals (provided terms and focus, exclamations, questions, repetition, fast speech).
 
-A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`), depois Intel QuickSync (`h264_qsv`) e, se todos falharem, CPU com libx264; um encoder que falhar não é tentado de novo na sessão. O áudio é normalizado em duas passagens a -14 LUFS. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
+Final rendering and subtitle review try NVIDIA NVENC, then AMD AMF (`h264_amf`), then Intel QuickSync (`h264_qsv`) and, if all of them fail, the CPU with libx264; an encoder that fails is not retried during the session. Audio is normalized in two passes to -14 LUFS. The Ollama/Whisper steps check for cancellation at the available points; not every call is interrupted instantly.
 
-Antes de preparar a mídia, o pipeline verifica se o Ollama responde e se o modelo configurado está instalado. Falhas técnicas não são apresentadas como rejeição editorial; só blocos sem avaliação tornam a curadoria parcial.
+Before preparing the media, the pipeline checks that Ollama responds and that the configured model is installed. Technical failures are not presented as editorial rejection; only chunks that were never evaluated make the curation partial.
 
-## Estúdio e marca
+## Studio and branding
 
-O preview do estúdio é extraído da **metade da VOD** (10 segundos), onde a live costuma estar em andamento e com a webcam visível. Sem duração conhecida, usa 30:00 na Twitch e o minuto 1 nas demais origens.
+The studio preview is taken from the **middle of the VOD** (10 seconds), where the stream is usually in progress with the webcam visible. When the duration is unknown, it uses 30:00 on Twitch and minute 1 for other sources.
 
-O enquadramento usa percentuais da imagem original. O preview acompanha a proporção da fonte, a lupa acompanha a área selecionada, e presets anteriores não são regravados automaticamente. Redimensionar mantém 16:9; o preset antigo pode ter outra proporção.
+Framing uses percentages of the original image. The preview follows the source's aspect ratio, the magnifier follows the selected area, and older presets are not rewritten automatically. Resizing keeps 16:9; an old preset may have a different aspect ratio.
 
-Na aba **Marca do canal**, envie um PNG (até 5 MB, 4096 pixels por dimensão), ajuste tamanho/posição e salve. Pode ser logo ou texto transparente com o endereço do canal. A posição automática acompanha a divisão webcam/conteúdo; sem webcam, vale a posição vertical configurada. A simulação ilustra uma webcam 16:9, não o vídeo renderizado real. Cada nova execução recebe uma cópia estável da marca; não altera vídeos já gerados.
+In the **Channel branding** tab, upload a PNG (up to 5 MB, 4096 pixels per side), adjust size/position and save. It can be a logo or transparent text with the channel address. Automatic positioning follows the webcam/content split; without a webcam, the configured vertical position applies. The simulation shows a 16:9 webcam, not the actual rendered video. Each new run gets a stable copy of the logo; videos already generated are not changed.
 
-O envio de um PNG ativa a marca automaticamente. Para uma imagem já salva e desativada, marque **Aplicar marca aos cortes** e salve. Desmarcar e salvar desativa a aplicação. O terminal informa o estado da marca no início de cada execução.
+Uploading a PNG turns branding on automatically. For an image that is already saved but turned off, check **Apply branding to clips** and save. Unchecking and saving turns it off. The terminal reports the branding state at the start of each run.
 
-Com o modo estúdio ativo, a webcam ocupa uma área acima do conteúdo, sem cobri-lo. O conteúdo preenche toda a área abaixo com recorte central, mantendo a proporção e cortando as laterais quando necessário, sem faixas de preenchimento. Sem webcam, permanece o recorte vertical central.
+With studio mode on, the webcam takes an area above the content without covering it. The content fills the whole area below with a center crop, keeping the aspect ratio and cutting the sides when needed, with no padding bars. Without a webcam, the vertical center crop remains.
 
-As legendas usam Bangers em amarelo, em grupos de até 5 palavras, quebrando em pausas e finais de frase. No estilo **Destaque** (padrão), a palavra que está sendo falada fica 22% maior; no **Clássico**, a frase aparece inteira de uma vez. O estilo é escolhido na aba Marca e vale também para a revisão. Os tempos vêm da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
+Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
 
-## Revisão opcional de legendas (teste)
+## Optional subtitle review (beta)
 
-Galeria e revisão usam a mesma ordenação: execuções mais recentes primeiro e número original do corte em ordem crescente dentro de cada execução. Edições não alteram essa ordem e exclusões não renumeram os demais. A revisão abre na lista de salvos; arquivos que existem apenas em Exportados ficam em um filtro separado. Os cards mostram a identificação da execução para distinguir números iguais de sessões diferentes.
+The gallery and the review use the same ordering: most recent runs first, and the clip's original number in ascending order within each run. Edits do not change this order and deletions do not renumber the rest. The review opens on the list of saved clips; files that exist only in Exports are in a separate filter (**Only in Exports**). The cards show the run identifier to tell apart equal numbers from different sessions.
 
-A aba **Revisão de legendas** e o card abaixo de **Hardware & Pastas** permitem abrir os cortes com base disponível. O modal mostra o original horizontal para ouvir a fala e editar os grupos por início/fim em segundos. É possível corrigir texto, adicionar ou excluir grupos; os tempos devem estar em ordem e sem sobreposição. A sobreposição no player é apenas uma prévia de edição.
+The **Subtitle review** tab and the card below **Hardware & Folders** let you open clips that have a review source available. The modal shows the horizontal original so you can hear the speech and edit the groups by start/end in seconds. You can fix text and add or delete groups; timings must be in order with no overlap. The overlay on the player is only an editing preview.
 
-**Aplicar e gerar corte corrigido** refaz somente a composição vertical, a marca e a legenda, usando as configurações salvas naquela execução. Após validação do vídeo, substitui o corte salvo. Cópias exportadas permanecem intactas: exporte novamente para atualizá-las. Em caso de erro de renderização, o vídeo anterior permanece disponível.
+**Apply and generate corrected clip** redoes only the vertical composition, branding and subtitles, using the settings saved for that run. Once the video is validated, it replaces the saved clip. Exported copies are left untouched: export again to update them. If rendering fails, the previous video stays available.
 
-As bases ficam em `cache_revisao/<id único>/`: original horizontal, marca da execução e JSON com sessão, vídeo final, enquadramento e legendas. Novos pipelines usam apenas seus próprios temporários e não removem essas bases. Cortes anteriores à mudança aparecem sem base de revisão.
+Review sources live in `cache_revisao/<unique id>/`: the horizontal original, the run's logo and a JSON file with the session, final video, framing and subtitles. New pipelines only use their own temporary files and do not remove these sources. Clips created before this change show up without a review source.
 
-**Limpar cache**, no lado direito das abas, mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
+**Clear cache**, on the right side of the tabs, shows the space and number of sources before you confirm. It removes only the review sources, keeping transcripts, final clips and exports. The pipeline, applying a review and clearing the cache cannot run at the same time. The cache stays until you clear it manually and takes up extra space.
 
-Ao aplicar uma revisão, frases não editadas mantêm o tempo real de cada palavra; nas editadas e nas bases antigas, o tempo é estimado pelo tamanho de cada palavra.
+When a review is applied, unedited phrases keep each word's real timing; in edited phrases and older sources, timing is estimated from each word's length.
 
-Whisper **Small** está ativo nos três modos, na GPU NVIDIA quando disponível e na CPU nos demais casos. O primeiro uso pode baixar o modelo.
+Whisper **Small** is used in all three modes, on the NVIDIA GPU when available and on the CPU otherwise. The first run may download the model.
 
-## Galeria e desktop
+## Gallery and desktop
 
-Na galeria, a exclusão libera os players antes de remover os arquivos. O resultado separa cortes excluídos, ausentes e bloqueados; as cópias em `Cortes_Exportados` são preservadas.
+In the gallery, deleting releases the players before removing the files. The result separates clips that were deleted, missing and locked; copies in `Cortes_Exportados` are kept.
 
-No desktop, **Descarregar** abre o seletor nativo “Salvar como” e copia o corte para o destino escolhido. A exportação em lote continua usando `Cortes_Exportados` e informa essa pasta no modal de resultado. Os botões de apoio Pix e PayPal ficam no cabeçalho e abrem suas páginas no navegador padrão.
+On desktop, **Download** opens the native "Save as" dialog and copies the clip to the chosen location. Bulk export still uses `Cortes_Exportados` and shows that folder in the result dialog. The Pix and PayPal support buttons are in the header and open their pages in the default browser.
 
-No desktop, “Abrir site” da aba Social abre uma janela WebView2 separada do mesmo aplicativo; no navegador, abre outra aba. As sessões ficam no perfil local do WebView2 e essas janelas não recebem a ponte Python da interface principal.
+On desktop, "Open site" in the Social tab opens a separate WebView2 window of the same app; in the browser, it opens another tab. Sessions are stored in the local WebView2 profile, and these windows do not get the Python bridge of the main interface.
 
-## Pastas e API
+## Folders and API
 
-- `core/`: análise, transcrição, seleção, composição, marca e execução.
-- `api/`: rotas, validação, marca e diagnóstico de dependências.
-- `frontend/src/`: interface React.
-- `desktop.py`: janela WebView2; `main.py`: servidor para navegador.
-- `Cortes_Prontos/`, `Cortes_Exportados/`: vídeos; a exportação copia os MP4.
-- `temp_clip_cache/`: previews e temporários; `transcricoes/`: cache completo.
-- `relatorios_curadoria/`: decisões e tempos; `marca/`: PNG/configuração.
-- `logs/`: diagnósticos do desktop. Cortes antigos não são apagados ao iniciar um processamento.
+- `core/`: analysis, transcription, selection, composition, branding and execution.
+- `api/`: routes, validation, branding and dependency diagnostics.
+- `frontend/src/`: React interface.
+- `desktop.py`: WebView2 window; `main.py`: server for the browser.
+- `Cortes_Prontos/`, `Cortes_Exportados/`: videos; exporting copies the MP4 files.
+- `temp_clip_cache/`: previews and temporary files; `transcricoes/`: full cache.
+- `relatorios_curadoria/`: decisions and timings; `marca/`: PNG/settings.
+- `logs/`: desktop diagnostics. Old clips are not deleted when a new run starts.
 
-Rotas principais: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`, `GET/PUT /api/ia`.
+Main routes: `POST /api/iniciar-pipeline`, `POST /api/stop-pipeline`, `GET /api/status`, `GET /api/clips`, `POST /api/gerar-preview`, `GET/POST /api/studio-config`, `POST /api/exportar-selecionados`, `POST /api/deletar-selecionados`, `GET /api/relatorios-curadoria/{nome}`, `GET/PUT/DELETE /api/marca`, `GET/PUT /api/marca/imagem`, `GET /api/ambiente`, `GET/PUT /api/social`, `GET/PUT /api/ia`.
 
-Parâmetros do pipeline: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`, `idioma`, `foco`.
+Pipeline parameters: `entrada`, `max_cortes`, `ignorar_inicio_segundos`, `modo_curadoria`, `termos_jogo`, `limite_amostras`, `idioma`, `foco`.
 
-## Diagnóstico
+## Diagnostics
 
-O executável aceita `--self-test`: verifica imports, frontend, runtime WebView2 e o acesso à Kick (curl_cffi) sem abrir janela nem baixar modelos; grava `self-test.json` na pasta de dados. Não valida a renderização da janela nem o pipeline completo.
+The executable accepts `--self-test`: it checks imports, the frontend, the WebView2 runtime and access to Kick (curl_cffi) without opening a window or downloading models, and writes `self-test.json` to the data folder. It does not validate window rendering or the full pipeline.
 
 ---
 
-## Licença
+## License
 
-Código sob licença [MIT](LICENSE): uso, modificação e redistribuição livres, inclusive comercial, mantendo o aviso de copyright. Componentes de terceiros permanecem sujeitos às respectivas licenças; veja [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Partes da curadoria e da transcrição foram adaptadas do [AutoClip](https://github.com/artbyjazi/autoclip), de Jad Ghazi (MIT). A fonte Bangers está sob a [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
+Code under the [MIT](LICENSE) license: free to use, modify and redistribute, including commercially, as long as the copyright notice is kept. Third-party components remain under their own licenses; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Parts of the curation and transcription were adapted from [AutoClip](https://github.com/artbyjazi/autoclip) by Jad Ghazi (MIT). The Bangers font is under the [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
 
-Desenvolvido por **SerialHealer**.
+Developed by **SerialHealer**.
