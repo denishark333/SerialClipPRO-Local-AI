@@ -307,6 +307,6 @@ O executável aceita `--self-test`: verifica imports, frontend, runtime WebView2
 
 ## Licença
 
-Código sob licença [MIT](LICENSE): uso, modificação e redistribuição livres, inclusive comercial, mantendo o aviso de copyright. Componentes de terceiros permanecem sujeitos às respectivas licenças; veja [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Partes da curadoria e da transcrição foram adaptadas do [AutoClip](https://github.com/artbyjazi/autoclip), de Jad Ghazi (MIT). A fonte Bangers está sob a [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
+Código sob licença [MIT](LICENSE): uso, modificação e redistribuição livres, inclusive comercial, mantendo o aviso de copyright. Componentes de terceiros permanecem sujeitos às respectivas licenças; veja [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). A fonte Bangers está sob a [SIL Open Font License](assets/fonts/Bangers/OFL.txt).
 
 Desenvolvido por **SerialHealer**.
