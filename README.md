@@ -33,7 +33,7 @@ The AI helps with the selection. Review the clips and subtitles before posting.
 ## What's new in version 3.0.1
 
 - **Update from inside the app:** the **Check for updates** button next to the version shows whether a new version exists and what changed, and installs it in one click. The app only checks when you ask and only updates if you want to. Each installer is verified by its digital signature before it runs, and videos, settings and your AI model are kept.
-- **English interface:** a **PT | EN** switcher below the header translates the whole interface, including the processing messages. On first run, the language follows Windows.
+- **English interface:** a **PT | EN** switcher below the header translates the whole interface, including the processing messages. The installer is also in English and Portuguese: the language you pick there is the one the app opens in (otherwise it follows Windows).
 - **Off-center vertical crop:** drag the frame to choose which part of the content appears in the clip, great for HUDs, chats or action away from the center.
 - **Framing per clip:** in **Subtitle review**, fix the webcam or the crop of a single clip when the camera moved or changed size during the stream, without reprocessing the VOD and without changing the other clips.
 - **AMD and Intel GPUs:** rendering now uses AMD AMF (tested on a Radeon GPU) and Intel QuickSync, besides NVIDIA NVENC, and falls back to the CPU when none is available. The model selector now also reads the video memory of AMD cards.
@@ -51,7 +51,7 @@ The AI helps with the selection. Review the clips and subtitles before posting.
 
 ## Installation and first run
 
-1. Download the installer from **Releases** and run it.
+1. Download the installer from **Releases** and run it, then choose the language (English or Portuguese). The app opens in the same language, and you can switch it later with **PT | EN**.
 2. On the **Components** page, choose:
    - **AI models:** select one or more. **Gemma 4 12B** is recommended (needs ~10 GB of video memory); **Llama 3.1 8B** is the lightest. If none is selected, Llama 3.1 is installed.
    - **NVIDIA acceleration (CUDA):** ~4x faster transcription on NVIDIA cards (528 MB download). Selected by default when an NVIDIA card is present.

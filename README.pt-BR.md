@@ -33,7 +33,7 @@ A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
 ## Novidades da versão 3.0.1
 
 - **Atualização pelo próprio app:** o botão **Verificar atualizações**, ao lado da versão, mostra se há versão nova e o que mudou, e instala com um clique. O app só confere quando você pede e só atualiza se você quiser. Cada instalador é verificado pela assinatura digital antes de rodar, e vídeos, configurações e o seu modelo de IA são mantidos.
-- **Interface em inglês:** o seletor **PT | EN**, abaixo do cabeçalho, traduz a interface inteira, inclusive as mensagens do processamento. No primeiro uso, o idioma segue o do Windows.
+- **Interface em inglês:** o seletor **PT | EN**, abaixo do cabeçalho, traduz a interface inteira, inclusive as mensagens do processamento. O instalador também está em português e inglês: o idioma escolhido nele é o que o app usa ao abrir (sem escolha, segue o do Windows).
 - **Recorte vertical fora do centro:** arraste a moldura para escolher qual parte do conteúdo aparece no corte, ideal para HUDs, chats ou ação fora do centro.
 - **Enquadramento por corte:** na **Revisão de legendas**, corrija a webcam ou o recorte de um corte específico quando a câmera mudou de lugar ou de tamanho na live, sem reprocessar a VOD e sem mudar os outros cortes.
 - **Placas AMD e Intel:** a renderização agora usa AMD AMF (testado em placa Radeon) e Intel QuickSync, além da NVIDIA NVENC, e recorre à CPU quando nenhuma está disponível. O seletor de modelos também passou a ler a memória de vídeo das placas AMD.
@@ -51,7 +51,7 @@ A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
 
 ## Instalação e primeiro uso
 
-1. Baixe o instalador em **Releases** e execute-o.
+1. Baixe o instalador em **Releases**, execute-o e escolha o idioma (português ou inglês). O app abre no mesmo idioma, e você pode trocar depois em **PT | EN**.
 2. Na página **Componentes**, escolha:
    - **Modelos de IA:** marque um ou mais. O **Gemma 4 12B** é o recomendado (precisa de ~10 GB de memória de vídeo); o **Llama 3.1 8B** é o mais leve. Se nenhum for marcado, o Llama 3.1 é instalado.
    - **Aceleração NVIDIA (CUDA):** transcrição ~4x mais rápida em placas NVIDIA (download de 528 MB). Vem marcada quando há placa NVIDIA.
