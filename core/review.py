@@ -93,9 +93,15 @@ def limpar():
         shutil.rmtree(ROOT)
 
 
-def aplicar(identificador, legendas, revisao):
+def aplicar(identificador, legendas, revisao, enquadramento=None):
+    """Refaz o corte com as legendas revisadas.
+
+    ``enquadramento`` (mesmo formato do studio-config) vale só para este corte:
+    substitui o da execução e fica salvo na base depois de um render válido.
+    """
     from core.pipeline import validar_video
     dados = carregar(identificador)
+    config = {**enquadramento, 'enquadramento_feito': True} if enquadramento else dados['config']
     if dados['revisao'] != revisao:
         raise ValueError(tr('revisao.legenda_mudou'))
     anterior = 0
@@ -110,7 +116,7 @@ def aplicar(identificador, legendas, revisao):
         legendas = [{**g, 'palavras': palavras_da_frase(g, dados['legendas'])} for g in legendas]
         legenda = tmp / 'legenda.ass'
         escrever_ass(legenda, [g['palavras'] for g in legendas], estilo_legenda())
-        filtro, altura = compor_video(dados['config'], dados['largura'], dados['altura'], filtro_legenda(legenda) if legendas else '')
+        filtro, altura = compor_video(config, dados['largura'], dados['altura'], filtro_legenda(legenda) if legendas else '')
         entradas = ['ffmpeg', '-y', '-i', str(base/'original.mp4')]
         saida = '[v_final]'
         if dados['marca']:
@@ -132,5 +138,5 @@ def aplicar(identificador, legendas, revisao):
         # Exportações anteriores nunca são sobrescritas.
         destino = Path(PASTA_DESTINO)/dados['nome']
         os.replace(video, destino)
-        dados.update(legendas=legendas, revisao=revisao+1)
+        dados.update(legendas=legendas, config=config, revisao=revisao+1)
         salvar_json(base/'dados.json', dados)

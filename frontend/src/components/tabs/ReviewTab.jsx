@@ -4,6 +4,8 @@ import { ClipThumbnail } from '../layout/ClipThumbnail';
 import { clipIdentity } from '../../clipIdentity';
 import { useDialog } from '../layout/useDialog';
 import { useI18n, useTAtual } from '../../i18n/useI18n';
+import { EditorEnquadramento } from '../studio/EditorEnquadramento';
+import { configParaEnquadramento, enquadramentoParaConfig } from '../studio/enquadramento';
 
 function TempoLegenda({ label, value, onChange }) {
   const [draft, setDraft] = useState(null);
@@ -27,6 +29,10 @@ export function ReviewTab() {
   const [message, setMessage] = useState('');
   const [time, setTime] = useState(0);
   const [origem, setOrigem] = useState('salvos');
+  // Enquadramento individual do corte aberto; só vai no pedido se for alterado.
+  const [enquadramento, setEnquadramento] = useState(null);
+  const [enquadramentoAlterado, setEnquadramentoAlterado] = useState(false);
+  const [erroOriginal, setErroOriginal] = useState(false);
   const modal = useRef(null);
   const player = useRef(null);
   const estavaExecutando = useRef(false);
@@ -62,7 +68,10 @@ export function ReviewTab() {
   }, [tAtual]);
   async function abrir(id) {
     try {
-      setCorte(await (await apiFetch(`/revisao/clips/${id}`)).json());
+      const dados = await (await apiFetch(`/revisao/clips/${id}`)).json();
+      setCorte(dados);
+      setEnquadramento(configParaEnquadramento(dados.config));
+      setEnquadramentoAlterado(false); setErroOriginal(false);
       setTime(0); setMessage('');
     } catch (e) { setMessage(e.message); }
   }
@@ -74,12 +83,17 @@ export function ReviewTab() {
   function alterar(i, chave, valor) {
     setCorte(prev => ({ ...prev, legendas: prev.legendas.map((g, n) => n === i ? { ...g, [chave]: valor } : g) }));
   }
+  function alterarEnquadramento(valor) {
+    setEnquadramento(valor); setEnquadramentoAlterado(true);
+  }
   async function aplicar() {
-    if (!await ask(t('revisao.aplicarPergunta'), t('revisao.aplicarTitulo'))) return;
+    const pergunta = enquadramentoAlterado ? 'revisao.aplicarPerguntaEnquadramento' : 'revisao.aplicarPergunta';
+    if (!await ask(t(pergunta), t('revisao.aplicarTitulo'))) return;
     try {
       player.current?.pause();
       await apiFetch(`/revisao/clips/${corte.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ revisao: corte.revisao, legendas: corte.legendas }) });
+        body: JSON.stringify({ revisao: corte.revisao, legendas: corte.legendas,
+          ...(enquadramentoAlterado && { enquadramento: enquadramentoParaConfig(enquadramento) }) }) });
       setBusy(true); setCorte(null); setMessage(t('revisao.iniciada'));
     } catch (e) { setMessage(e.message); }
   }
@@ -121,6 +135,28 @@ export function ReviewTab() {
           </div><p className="text-xs text-slate-400 mt-3">{t('revisao.dicaOriginal')}</p>
             <p className="text-sm text-cyan-300 mt-2">{t('revisao.posicaoAtual', { tempo: time.toFixed(2) })}</p>
             <p className="text-xs text-slate-400 mt-2">{t('revisao.dicaTempos')}</p>
+            <details className="mt-4 rounded-xl border border-purple-500/50 bg-purple-950/20 p-3 sm:p-4">
+              <summary className="cursor-pointer text-base font-bold text-purple-200">
+                {t('revisao.enquadramento')}
+                {enquadramentoAlterado && <span className="ml-2 text-xs font-normal text-cyan-300">· {t('revisao.enquadramentoAlterado')}</span>}
+              </summary>
+              <div className="mt-3 flex flex-col gap-2 text-slate-200">
+                <p className="text-xs text-slate-300">{t('revisao.dicaEnquadramento')}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={enquadramento.ativo} className="accent-cyan-400 h-4 w-4"
+                      onChange={e => alterarEnquadramento({ ...enquadramento, ativo: e.target.checked })} />
+                    {t('revisao.webcamNoCorte')}
+                  </label>
+                  <button type="button" disabled={!enquadramentoAlterado}
+                    onClick={() => { setEnquadramento(configParaEnquadramento(corte.config)); setEnquadramentoAlterado(false); }}
+                    className="text-xs text-cyan-300 hover:text-cyan-200 disabled:opacity-40 disabled:cursor-default">{t('revisao.desfazerEnquadramento')}</button>
+                </div>
+                <EditorEnquadramento value={enquadramento} onChange={alterarEnquadramento}
+                  mediaUrl={`${API_BASE_URL}/revisao/clips/${corte.id}/original`} isVideo
+                  hasMediaError={erroOriginal} onMediaError={() => setErroOriginal(true)} />
+              </div>
+            </details>
           </div>
           <div className="min-w-0 rounded-xl border border-purple-500/50 bg-purple-950/20 p-3 sm:p-4">
             <h4 className="mb-1 text-base font-bold text-purple-200">{t('revisao.textoSincronizacao')}</h4>

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from api.media import MediaResponse
 from pydantic import BaseModel, Field
 from core import review
+from api.models import StudioConfigRequest
 from core.execution import reservar_manutencao, liberar_manutencao
 
 router = APIRouter(prefix='/revisao')
@@ -20,6 +21,8 @@ class Grupo(BaseModel):
 class Edicao(BaseModel):
     revisao: int = Field(ge=0)
     legendas: list[Grupo] = Field(max_length=1000)
+    #: Enquadramento individual deste corte; ausente mantém o da execução.
+    enquadramento: StudioConfigRequest | None = None
 
 
 @router.get('/status')
@@ -69,7 +72,8 @@ def original(identificador: str):
 
 def executar(identificador, payload):
     try:
-        review.aplicar(identificador, [g.model_dump() for g in payload.legendas], payload.revisao)
+        review.aplicar(identificador, [g.model_dump() for g in payload.legendas], payload.revisao,
+                       payload.enquadramento.model_dump() if payload.enquadramento else None)
     except Exception as erro:
         with lock:
             estado['erro'] = str(erro)
