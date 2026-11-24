@@ -1,4 +1,8 @@
-# Serial ClipPRO
+<div align="center">
+  <img width="256" alt="Serial ClipPRO" src="https://github.com/user-attachments/assets/2953e1f4-7822-4cbd-99e9-09bf8a27694a" />
+  <h1>Serial ClipPRO</h1>
+</div>
+
 
 [English](README.md) | **Português**
 
