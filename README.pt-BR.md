@@ -1,10 +1,11 @@
 <div align="center">
   <img width="256" alt="Serial ClipPRO" src="https://github.com/user-attachments/assets/2953e1f4-7822-4cbd-99e9-09bf8a27694a" />
-  <h1>Serial ClipPRO</h1>
+  <p><b><font size="7">Serial ClipPRO</font></b></p>
+
+  <p>
+    <a href="README.md">English</a> | <b>Português</b>
+  </p>
 </div>
-
-
-[English](README.md) | **Português**
 
 <img width="1920" height="1045" alt="image" src="https://github.com/user-attachments/assets/4de74f11-5c49-43de-a4cd-ec6592ea3d06" />
 
