@@ -181,12 +181,15 @@ Revise os logs antes de publicá-los e remova informações pessoais, tokens ou 
 
 Se o Serial ClipPRO ajudar na sua rotina, você pode contribuir com seu desenvolvimento:
 
-- [Apoiar via Pix — LivePix](https://livepix.gg/serialhealer)
-- [Apoiar via PayPal](https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL)
+- [Apoiar com Pix — LivePix](https://livepix.gg/serialhealer)
+- [Apoie com PayPal](https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL)
+<div align="center">
+  <p><b><font size="6">O Apoio é Voluntário</font></b></p>
+  <p><i><font size="6">Todo o valor arrecadado será utilizado para realizar o processo de Code Signing (Assinatura de Código) utilizando um certificado digital emitido por uma Autoridade Certificadora (AC) confiável pela Microsoft.</font></i></p>
 
-O apoio é voluntário.
+</div>
 
----
+
 
 # Desenvolvimento
 
