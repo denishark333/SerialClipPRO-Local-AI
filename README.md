@@ -184,9 +184,13 @@ If Serial ClipPRO helps your routine, you can support its development:
 - [Support via PayPal](https://www.paypal.com/donate/?business=6KXEQHVYHLLQ8&no_recurring=0&item_name=Host%2FVPS&currency_code=BRL)
 - [Support via Pix — LivePix](https://livepix.gg/serialhealer) (Brazil)
 
-Support is voluntary.
+<div align="center">
+  <p><b><font size="6">Support is Voluntary</font></b></p>
+  <p><i><font size="6">All funds raised will be used to carry out the code signing process using a digital certificate issued by a Certificate Authority (CA) trusted by Microsoft.</font></i></p>
 
----
+</div>
+
+
 
 # Development
 
