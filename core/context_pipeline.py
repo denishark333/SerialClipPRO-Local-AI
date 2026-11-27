@@ -16,6 +16,17 @@ from core.erros import ErroFFmpeg
 REPORT_DIR = DATA_DIR / "relatorios_curadoria"
 #: Modos que transcrevem amostras da fonte em vez da fonte inteira.
 AMOSTRADOS = ("hibrido", "picos")
+#: Extração sem nenhum avanço por esse tempo (s) é dada como travada. Uma queda de conexão com a CDN
+#: (anti-cheat de jogo, troca de rede) deixa o FFmpeg esperando para sempre um dado que não vem.
+LIMITE_SEM_AVANCO = 60
+#: Tentativas por corte antes de desistir; cada uma baixa o trecho inteiro de novo.
+TENTATIVAS_EXTRACAO = 3
+#: Pausa (s) antes de tentar de novo, para a rede se recompor.
+ESPERA_NOVA_TENTATIVA = 3
+
+
+class ExtracaoParada(Exception):
+    """O FFmpeg da extração ficou sem avançar além do limite."""
 
 
 def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, max_cortes, execucao, ignorar_inicio, termos, resolver_video=None, modo="contexto", limite_amostras=40, idioma="pt", foco=""):
@@ -68,7 +79,6 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
             identificacao = f"[Extração {indice+1}/{len(resultado['selecionados'])}]"
             print(f"{identificacao} Iniciando trecho {inicio:.2f}s–{fim:.2f}s (duração {fim-inicio:.2f}s).", flush=True)
             progresso = Path(pasta_temp) / f"progresso_contexto_{indice+1}.txt"
-            progresso.unlink(missing_ok=True)
             ultimo = [None, time.monotonic()]
             def monitorar(decorrido):
                 dados = {}
@@ -91,22 +101,40 @@ def preparar_cortes_contextuais(entrada, fonte_audio, fonte_video, pasta_temp, m
                            if dados else 'aguardando o primeiro progresso do FFmpeg')
                 print(f"{identificacao} {decorrido:.0f}s decorridos; {detalhe}; "
                       f"{sem_avanco:.0f}s sem novo avanço observado.", flush=True)
+                if sem_avanco >= LIMITE_SEM_AVANCO:
+                    raise ExtracaoParada()
             cmd = ["ffmpeg", "-y", "-nostats", "-progress", str(progresso), "-ss", str(inicio), "-i", fonte_video]
             if fonte_audio != fonte_video:
                 cmd += ["-ss", str(inicio), "-i", fonte_audio, "-map", "0:v:0", "-map", "1:a:0"]
             cmd += ["-t", str(fim-inicio), "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-b:a", "192k", trecho]
             marco_corte = time.monotonic()
-            try:
-                res = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                       monitor=monitorar)
-            except PipelineCancelado:
-                print(f"{identificacao} Cancelado após {time.monotonic()-marco_corte:.1f}s.", flush=True)
-                raise
-            finally:
+            # Sem -rw_timeout de propósito: no HLS ele faz o FFmpeg pular o pedaço que não chegou e seguir,
+            # e o corte sairia com um salto. Travou, o trecho inteiro é baixado de novo.
+            for tentativa in range(1, TENTATIVAS_EXTRACAO + 1):
                 progresso.unlink(missing_ok=True)
-            if res.returncode:
-                print(f"{identificacao} FFmpeg terminou com erro {res.returncode} após {time.monotonic()-marco_corte:.1f}s.", flush=True)
-                raise ErroFFmpeg(tr('ffmpeg.extrair_trecho'), res.stderr)
+                ultimo[:] = [None, time.monotonic()]
+                marco_tentativa = time.monotonic()
+                try:
+                    res = executar_comando(cmd, execucao=execucao, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                           monitor=monitorar)
+                    falha = f"FFmpeg terminou com erro {res.returncode}" if res.returncode else None
+                except PipelineCancelado:
+                    print(f"{identificacao} Cancelado após {time.monotonic()-marco_corte:.1f}s.", flush=True)
+                    raise
+                except ExtracaoParada:
+                    res, falha = None, f"Sem avanço por {LIMITE_SEM_AVANCO}s; FFmpeg encerrado"
+                finally:
+                    progresso.unlink(missing_ok=True)
+                if not falha:
+                    break
+                print(f"{identificacao} {falha} após {time.monotonic()-marco_tentativa:.1f}s "
+                      f"(tentativa {tentativa}/{TENTATIVAS_EXTRACAO}).", flush=True)
+                if tentativa == TENTATIVAS_EXTRACAO:
+                    raise ErroFFmpeg(tr('ffmpeg.extrair_trecho'), res.stderr if res is not None else falha)
+                execucao.verificar()
+                time.sleep(ESPERA_NOVA_TENTATIVA)
+                execucao.verificar()
+                print(f"{identificacao} Baixando o trecho de novo.", flush=True)
             print(f"{identificacao} Extração concluída em {time.monotonic()-marco_corte:.1f}s.", flush=True)
             palavras = [
                 {"word": p["word"], "start": max(0, p["start"]-inicio), "end": min(fim, p["end"])-inicio}
