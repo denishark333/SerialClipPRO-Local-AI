@@ -13,7 +13,7 @@ from core.config import DATA_DIR, PASTA_DESTINO, PASTA_EXPORTADOS
 from core.clip_order import chave_corte
 from core.transcription import salvar_json
 from core.subtitles import grupos_para_revisao, palavras_da_frase, escrever_ass, filtro_legenda
-from core.composition import compor_video, posicao_da_legenda
+from core.composition import compor_video, posicao_da_legenda, modo_podcast
 from core.planos import segmentos as segmentos_podcast
 from core.branding import filtro_marca, estilo_legenda
 from core.execution import executar_comando
@@ -127,7 +127,7 @@ def aplicar(identificador, legendas, revisao, enquadramento=None):
         saida = '[v_final]'
         if dados['marca']:
             entradas += ['-i', str(base/'marca.png')]
-            filtro += ';' + filtro_marca(dados['marca'], altura)
+            filtro += ';' + filtro_marca(dados['marca'], altura, topo=modo_podcast(config))
             saida = '[v_marca]'
         video = tmp/'corrigido.mp4'
         audio_final = args_audio(medir_volume(base/'original.mp4', lambda comando: executar_comando(

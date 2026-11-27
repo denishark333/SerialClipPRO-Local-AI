@@ -21,7 +21,7 @@ from core.downloader import obter_url_direta_cdn, obter_fontes_cdn, extrair_info
 from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR, AMOSTRADOS
 from core.transcription import salvar_json
 from core.subtitles import filtro_legenda, escrever_legenda
-from core.composition import compor_video, posicao_da_legenda
+from core.composition import compor_video, posicao_da_legenda, modo_podcast
 from core.planos import segmentos as segmentos_podcast, referencias_do_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
@@ -293,7 +293,7 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
             entradas_render = ["ffmpeg", "-y", "-i", corte['trecho_path']]
             if marca:
                 entradas_render += ["-i", marca['arquivo']]
-                filtro += ';' + filtro_marca(marca, altura_webcam)
+                filtro += ';' + filtro_marca(marca, altura_webcam, topo=modo_podcast(config_estudio))
                 map_args = ["-filter_complex", filtro, "-map", "[v_marca]", "-map", "0:a"]
 
             def tentativa(nome):

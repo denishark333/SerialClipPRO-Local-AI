@@ -5,6 +5,9 @@ import { useI18n } from '../../i18n/useI18n';
 
 // Textos em marca.estilos.*; o exemplo é "antes / palavra falada / depois" para destacar a do meio.
 const ESTILOS_LEGENDA = ['destaque', 'classico'];
+const POSICOES = ['divisao', 'manual', 'topo'];
+// Margem do topo no corte de 1920 px (MARGEM_TOPO_PODCAST no backend), em % da altura.
+const TOPO_PCT = 48 / 1920 * 100;
 
 function ExemploLegenda({ id, t }) {
   const [antes, palavra, depois] = ['antes', 'palavra', 'depois'].map(parte => t(`marca.exemplo.${parte}`));
@@ -48,10 +51,11 @@ export function BrandTab() {
   const height = Math.min(100, width * 9 / 16 / aspect);
   const effectiveWidth = Math.min(width, height * 16 / 9 * aspect);
   const left = config ? (100 - effectiveWidth) * config.x_pct / 100 : 0;
-  const top = config ? (config.posicao === 'divisao' ? Math.max(0, Math.min(100 - height, 31.640625 - height / 2)) : (100 - height) * config.y_pct / 100) : 0;
+  const top = !config ? 0 : config.posicao === 'topo' ? TOPO_PCT
+    : config.posicao === 'divisao' ? Math.max(0, Math.min(100 - height, 31.640625 - height / 2)) : (100 - height) * config.y_pct / 100;
   return <section className="w-full lg:w-[94%] mx-auto bg-[#0a0712] border border-[#1b1528] p-6 rounded-2xl">
-    <h2 className="text-lg font-bold">{t('marca.titulo')}</h2>
-    <p className="text-sm text-slate-400 my-3">{t('marca.descricao')}</p>
+    <h2 className="text-lg font-bold text-center">{t('marca.titulo')}</h2>
+    <p className="text-sm text-slate-400 my-3 text-center">{t('marca.descricao')}</p>
     <p role="status" className="text-sm text-cyan-300">{message}</p>
     {config && <div className="grid gap-6 mt-6 items-start lg:grid-cols-2 xl:grid-cols-[minmax(220px,0.65fr)_minmax(190px,0.6fr)_minmax(230px,0.85fr)_minmax(280px,1.15fr)]">
       <fieldset disabled={busy} className="min-w-0 flex flex-col gap-5 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">
@@ -65,11 +69,23 @@ export function BrandTab() {
           }} />
         </label>
         <label><input type="checkbox" checked={config.ativo} disabled={!config.tem_imagem} onChange={e => setConfig({ ...config, ativo: e.target.checked })} /> {t('marca.aplicar')}</label>
-        <label>{t('marca.posicao')} <select className="bg-slate-900 p-2" value={config.posicao} onChange={e => setConfig({ ...config, posicao: e.target.value })}>
-          <option value="divisao">{t('marca.divisao')}</option><option value="manual">{t('marca.manual')}</option>
-        </select></label>
+        <div role="radiogroup" aria-label={t('marca.posicao')} className="flex flex-col gap-2">
+          <span>{t('marca.posicao')}</span>
+          <div className="grid grid-cols-3 gap-1 rounded-xl border border-purple-800/60 bg-[#05070b]/80 p-1">
+            {POSICOES.map(opcao => (
+              <button key={opcao} type="button" role="radio" aria-checked={config.posicao === opcao}
+                onClick={() => setConfig({ ...config, posicao: opcao })}
+                className={`rounded-lg px-2 py-1.5 text-xs font-bold whitespace-nowrap transition ${config.posicao === opcao
+                  ? 'bg-gradient-to-r from-[#9333ea]/40 to-[#00ffff]/25 text-white shadow'
+                  : 'text-slate-400 hover:bg-[#0e0a1a] hover:text-slate-200'}`}>
+                {t(`marca.${opcao}`)}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-slate-400">{t(`marca.dicas.${config.posicao}`)}</span>
+        </div>
         {[['largura_pct', 5, 80], ['x_pct', 0, 100], ['y_pct', 0, 100]].map(([key, min, max]) =>
-          <label key={key}>{t(`marca.controles.${key}`)}: {config[key]}%<input className="block w-full" type="range" min={min} max={max} value={config[key]} onChange={e => setConfig({ ...config, [key]: Number(e.target.value) })} /></label>)}
+          <label key={key} className={key === 'y_pct' && config.posicao === 'topo' ? 'opacity-40' : ''}>{t(`marca.controles.${key}`)}: {config[key]}%<input className="block w-full" type="range" min={min} max={max} value={config[key]} disabled={key === 'y_pct' && config.posicao === 'topo'} onChange={e => setConfig({ ...config, [key]: Number(e.target.value) })} /></label>)}
         <button className="bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl p-3 font-bold hover:brightness-110" onClick={() => action(() => apiFetch('/marca', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) }), config.ativo ? t('marca.salvaAtiva') : t('marca.salvaInativa'))}>{t('marca.salvar')}</button>
         <button disabled={!config.tem_imagem} onClick={async () => { if (await ask(t('marca.removerPergunta'), t('marca.titulo'))) action(() => apiFetch('/marca', { method: 'DELETE' }), t('marca.removida')); }}>{t('marca.remover')}</button>
       </fieldset>
@@ -86,6 +102,7 @@ export function BrandTab() {
         <p>{t('marca.identidadeTexto')}</p>
         <ol className="list-decimal pl-5 space-y-3"><li>{t('marca.passo1')}</li><li>{t('marca.passo2')}</li><li>{t('marca.passo3')}</li></ol>
         <p>{t('marca.automatica')}</p>
+        <p>{t('marca.podcast')}</p>
         <p className="rounded-lg border border-purple-600/40 bg-purple-950/40 p-3">{t('marca.mudancas')}</p>
       </aside>
       <fieldset disabled={busy} className="min-w-0 rounded-xl border border-purple-800/60 bg-purple-950/20 p-5">

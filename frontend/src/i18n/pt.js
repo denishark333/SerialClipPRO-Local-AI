@@ -42,7 +42,7 @@ export default {
   },
   abas: {
     pipeline: 'Pipeline VOD & Cortes',
-    marca: 'Marca do canal',
+    marca: 'Marca do Canal',
     passos: 'Primeiros Passos',
     comoUsar: 'Como Usar',
     social: 'Social • Publicar',
@@ -440,7 +440,7 @@ export default {
     },
   },
   marca: {
-    titulo: 'Marca do canal',
+    titulo: 'Marca do Canal',
     descricao: 'Envie sua logo ou um PNG transparente com o endereço do canal. A configuração salva vale para novas execuções.',
     imagem: 'Imagem PNG (até 5 MB e 4096 × 4096 pixels)',
     selecionarImagem: 'Selecionar imagem PNG para a marca do canal',
@@ -448,8 +448,14 @@ export default {
     imagemEnviada: 'Imagem enviada e marca ativada para novas execuções. Ajuste e salve para mudar a posição.',
     aplicar: 'Aplicar marca aos cortes',
     posicao: 'Posição',
-    divisao: 'Divisão entre webcam e conteúdo',
+    divisao: 'Divisão',
     manual: 'Manual',
+    topo: 'Topo',
+    dicas: {
+      divisao: 'A marca acompanha a divisão entre webcam e conteúdo. Sem webcam, vale a posição vertical.',
+      manual: 'Você escolhe a posição horizontal e vertical nos controles abaixo.',
+      topo: 'Fixa em cima, mantendo a posição horizontal. É a posição usada sempre no Podcast.',
+    },
     controles: {
       largura_pct: 'Largura',
       x_pct: 'Posição horizontal',
@@ -471,6 +477,7 @@ export default {
     passo2: 'O envio salva a imagem e ativa a marca. Ajuste largura e posição na simulação.',
     passo3: 'Clique em “Salvar marca” para confirmar os ajustes.',
     automatica: 'Na posição automática, a marca acompanha a divisão entre webcam e conteúdo. Sem webcam, é usada a posição vertical configurada.',
+    podcast: 'No Podcast, a marca fica sempre no Topo, seja qual for a posição escolhida: assim ela não disputa espaço com a legenda, que fica no meio na tela dividida e embaixo no close.',
     mudancas: 'As mudanças valem para novas execuções. Vídeos já gerados e a marca guardada nas bases de revisão permanecem como estavam.',
     estiloTitulo: 'Estilo da legenda',
     estiloTexto: 'Mesma fonte, cor e contorno nos dois estilos. Vale para novas execuções e para a Revisão de Legendas.',

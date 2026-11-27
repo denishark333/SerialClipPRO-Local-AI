@@ -42,8 +42,8 @@ A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
 Cada corte pode levar a identidade do seu canal. Quando um corte é compartilhado ou repostado, seu nome vai junto, e quem encontrar o vídeo em outro lugar sabe onde assistir à live completa.
 
 - **A sua imagem, não a do app:** use sua logo, uma assinatura ou o endereço do canal em PNG. Com fundo transparente, ela fica sobre o vídeo sem um retângulo em volta. O Serial ClipPRO não coloca nenhuma marca própria.
-- **Configure uma vez:** na aba **Marca do canal**, envie o PNG (até 5 MB e 4096 × 4096 pixels). O envio já ativa a marca d'água.
-- **Tamanho e posição:** ajuste a largura na simulação. Na posição **Divisão entre webcam e conteúdo**, a marca acompanha a divisão do seu enquadramento; em **Manual**, você escolhe a posição horizontal e vertical.
+- **Configure uma vez:** na aba **Marca do Canal**, envie o PNG (até 5 MB e 4096 × 4096 pixels). O envio já ativa a marca d'água.
+- **Tamanho e posição:** ajuste a largura na simulação. Na posição **Divisão**, a marca acompanha a divisão entre webcam e conteúdo; em **Manual**, você escolhe a posição horizontal e vertical; **Topo** a deixa fixa em cima. No enquadramento **Podcast**, ela usa sempre o **Topo**, longe da legenda.
 - **Clique em Salvar marca:** vale para todas as novas execuções e para os cortes gerados de novo na **Revisão de Legendas**. Cortes já gerados não mudam.
 
 Para desligar, desmarque **Aplicar marca aos cortes** e salve; a imagem continua guardada para depois.
@@ -270,7 +270,7 @@ O preview do estúdio junta **6 trechos de 10 segundos** espalhados pela VOD (em
 
 O enquadramento usa percentuais da imagem original. O preview acompanha a proporção da fonte, a lupa acompanha a área selecionada, e presets anteriores não são regravados automaticamente. Redimensionar mantém 16:9; o preset antigo pode ter outra proporção.
 
-Na aba **Marca do canal**, envie um PNG (até 5 MB, 4096 pixels por dimensão), ajuste tamanho/posição e salve. Pode ser logo ou texto transparente com o endereço do canal. A posição automática acompanha a divisão webcam/conteúdo; sem webcam, vale a posição vertical configurada. A simulação ilustra uma webcam 16:9, não o vídeo renderizado real. Cada nova execução recebe uma cópia estável da marca; não altera vídeos já gerados.
+Na aba **Marca do Canal**, envie um PNG (até 5 MB, 4096 pixels por dimensão), ajuste tamanho/posição e salve. Pode ser logo ou texto transparente com o endereço do canal. A posição automática acompanha a divisão webcam/conteúdo; sem webcam, vale a posição vertical configurada. A simulação ilustra uma webcam 16:9, não o vídeo renderizado real. Cada nova execução recebe uma cópia estável da marca; não altera vídeos já gerados.
 
 O envio de um PNG ativa a marca automaticamente. Para uma imagem já salva e desativada, marque **Aplicar marca aos cortes** e salve. Desmarcar e salvar desativa a aplicação. O terminal informa o estado da marca no início de cada execução.
 
@@ -282,7 +282,7 @@ O **Podcast** (Modo Estúdio → Podcast) é para podcasts e entrevistas com vá
 - **② Close**, usado quando a câmera mostra uma pessoa só: um corte vertical único, com a legenda embaixo.
 - **③ Automático** recebe as referências: pause o preview num plano aberto e clique em **Usar quadro atual como plano aberto**; depois faça o mesmo num close. Cada troca de câmera (`scdet` do FFmpeg) é comparada com elas por uma miniatura, sem detecção de rosto; cada plano segue a referência mais parecida, e trechos com menos de 1,5 s seguem o vizinho para a tela não piscar. Sem o plano aberto marcado, o corte inteiro sai em tela dividida. As referências valem só para o vídeo em que foram marcadas: com outro link, são descartadas.
 
-As abas só ajustam cada enquadramento; a aba aberta ao salvar não muda o resultado. Para podcasts sempre em close, desligue o Modo Estúdio: o corte vertical central já atende. **Como Funciona**, junto das abas, abre a seção do Podcast em **Como Usar**.
+As abas só ajustam cada enquadramento; a aba aberta ao salvar não muda o resultado. A marca d'água fica sempre no topo, longe da legenda nos dois enquadramentos. Para podcasts sempre em close, desligue o Modo Estúdio: o corte vertical central já atende. **Como Funciona**, junto das abas, abre a seção do Podcast em **Como Usar**.
 
 As legendas usam Bangers em amarelo, em grupos de até 5 palavras, quebrando em pausas e finais de frase. No estilo **Destaque** (padrão), a palavra que está sendo falada fica 22% maior; no **Clássico**, a frase aparece inteira de uma vez. O estilo é escolhido na aba Marca e vale também para a revisão. Os tempos vêm da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
 

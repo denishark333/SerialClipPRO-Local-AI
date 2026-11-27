@@ -42,8 +42,8 @@ The AI helps with the selection. Review the clips and subtitles before posting.
 Every clip can carry your channel's identity. When a clip is shared or reposted, your name goes with it, so people who find it elsewhere know where to watch the full stream.
 
 - **Your image, not the app's:** use your logo, a signature or your channel address as a PNG. With a transparent background, it sits over the video without a box around it. Serial ClipPRO adds no mark of its own.
-- **Set it up once:** in the **Channel branding** tab, upload the PNG (up to 5 MB and 4096 × 4096 pixels). Uploading turns the watermark on.
-- **Size and position:** adjust the width on the simulation. In the **Between webcam and content** position, the watermark follows the split of your framing; in **Manual**, you choose the horizontal and vertical position.
+- **Set it up once:** in the **Channel Branding** tab, upload the PNG (up to 5 MB and 4096 × 4096 pixels). Uploading turns the watermark on.
+- **Size and position:** adjust the width on the simulation. In the **Between** position, the watermark follows the split between webcam and content; in **Manual**, you choose the horizontal and vertical position; **Top** keeps it fixed at the top. With the **Podcast** framing, it always uses **Top**, clear of the subtitles.
 - **Click Save branding:** it applies to every new run and to clips regenerated in **Subtitle Review**. Clips already generated are not changed.
 
 To turn it off, uncheck **Apply branding to clips** and save; the image stays saved for later.
@@ -62,7 +62,7 @@ To turn it off, uncheck **Apply branding to clips** and save; the image stays sa
 - **Rebuilt curation:** clips that start and end on complete sentences, short moments expanded with the surrounding context, and the key line of each clip checked against the transcript.
 - **Your choice of AI model:** Gemma 4 12B (recommended), Llama 3.1 8B (lightweight) and others; pick during installation and switch any time in the app.
 - **Stream language** and **What to look for**, with ready-made presets for MMORPG, FPS, Just Chatting and Podcast.
-- **Highlighted subtitles:** the word being spoken grows; the classic style is still available in the Channel branding tab.
+- **Highlighted subtitles:** the word being spoken grows; the classic style is still available in the Channel Branding tab.
 - **Kick:** VODs with the new identifier work, and live stream links are refused with a hint to use the VOD instead.
 - **Faster:** transcription on NVIDIA GPUs (optional during installation), and steps already done are reused when the same VOD is processed again.
 - **Customizable installer:** you choose the models and NVIDIA acceleration, and setup runs inside the wizard with a progress bar.
@@ -271,7 +271,7 @@ The studio preview joins **6 stretches of 10 seconds** spread across the VOD (at
 
 Framing uses percentages of the original image. The preview follows the source's aspect ratio, the magnifier follows the selected area, and older presets are not rewritten automatically. Resizing keeps 16:9; an old preset may have a different aspect ratio.
 
-In the **Channel branding** tab, upload a PNG (up to 5 MB, 4096 pixels per side), adjust size/position and save. It can be a logo or transparent text with the channel address. Automatic positioning follows the webcam/content split; without a webcam, the configured vertical position applies. The simulation shows a 16:9 webcam, not the actual rendered video. Each new run gets a stable copy of the logo; videos already generated are not changed.
+In the **Channel Branding** tab, upload a PNG (up to 5 MB, 4096 pixels per side), adjust size/position and save. It can be a logo or transparent text with the channel address. Automatic positioning follows the webcam/content split; without a webcam, the configured vertical position applies. The simulation shows a 16:9 webcam, not the actual rendered video. Each new run gets a stable copy of the logo; videos already generated are not changed.
 
 Uploading a PNG turns branding on automatically. For an image that is already saved but turned off, check **Apply branding to clips** and save. Unchecking and saving turns it off. The terminal reports the branding state at the start of each run.
 
@@ -283,9 +283,9 @@ With studio mode on, the webcam takes an area above the content without covering
 - **② Close-up**, used when the camera shows one person: a single vertical crop, with subtitles at the bottom.
 - **③ Automatic** receives the references: pause the preview on a wide shot and click **Use current frame as wide shot**, then do the same on a close-up. Every camera change (FFmpeg `scdet`) is compared with them through a small thumbnail, with no face detection; each shot follows the closest reference, and stretches shorter than 1.5 s follow their neighbor so the screen does not flicker. Without the wide shot marked, the whole clip uses split screen. References only apply to the video they were marked on: with another link they are discarded.
 
-The tabs only adjust each framing; the tab open when saving does not change the result. For podcasts that are always in close-up, turn Studio Mode off: the centered vertical crop already covers it. **How it Works**, next to the tabs, opens the Podcast section of **How to Use**.
+The tabs only adjust each framing; the tab open when saving does not change the result. The watermark always goes at the top, clear of the subtitles in both framings. For podcasts that are always in close-up, turn Studio Mode off: the centered vertical crop already covers it. **How it Works**, next to the tabs, opens the Podcast section of **How to Use**.
 
-Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
+Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel Branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
 
 ## Optional subtitle review (beta)
 

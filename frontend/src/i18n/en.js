@@ -42,7 +42,7 @@ export default {
   },
   abas: {
     pipeline: 'VOD Pipeline & Clips',
-    marca: 'Channel branding',
+    marca: 'Channel Branding',
     passos: 'First Steps',
     comoUsar: 'How to Use',
     social: 'Social • Publish',
@@ -440,7 +440,7 @@ export default {
     },
   },
   marca: {
-    titulo: 'Channel branding',
+    titulo: 'Channel Branding',
     descricao: 'Upload your logo or a transparent PNG with your channel address. The saved settings apply to new runs.',
     imagem: 'PNG image (up to 5 MB and 4096 × 4096 pixels)',
     selecionarImagem: 'Choose a PNG image for the channel branding',
@@ -448,8 +448,14 @@ export default {
     imagemEnviada: 'Image uploaded and branding turned on for new runs. Adjust and save to change the position.',
     aplicar: 'Apply branding to clips',
     posicao: 'Position',
-    divisao: 'Between webcam and content',
+    divisao: 'Between',
     manual: 'Manual',
+    topo: 'Top',
+    dicas: {
+      divisao: 'The branding follows the split between webcam and content. Without a webcam, the vertical position applies.',
+      manual: 'You choose the horizontal and vertical position with the controls below.',
+      topo: 'Fixed at the top, keeping the horizontal position. This is always the position used in Podcast.',
+    },
     controles: {
       largura_pct: 'Width',
       x_pct: 'Horizontal position',
@@ -471,6 +477,7 @@ export default {
     passo2: 'Uploading saves the image and turns the branding on. Adjust width and position in the simulation.',
     passo3: 'Click “Save branding” to confirm the adjustments.',
     automatica: 'In the automatic position, the branding follows the split between webcam and content. Without a webcam, the configured vertical position is used.',
+    podcast: 'In Podcast, the branding always uses Top, whatever position is chosen, so it never competes with the subtitles, which sit in the middle in split screen and at the bottom in close-up.',
     mudancas: 'Changes apply to new runs. Videos already generated and the branding stored in the review bases stay as they were.',
     estiloTitulo: 'Subtitle style',
     estiloTexto: 'Same font, color and outline in both styles. Applies to new runs and to Subtitle Review.',

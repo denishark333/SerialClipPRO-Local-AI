@@ -22,7 +22,7 @@ class MarcaConfig(BaseModel):
     largura_pct: float = Field(default=35, ge=5, le=80, allow_inf_nan=False)
     x_pct: float = Field(default=50, ge=0, le=100, allow_inf_nan=False)
     y_pct: float = Field(default=8, ge=0, le=100, allow_inf_nan=False)
-    posicao: str = Field(default='divisao', pattern='^(divisao|manual)$')
+    posicao: str = Field(default='divisao', pattern='^(divisao|manual|topo)$')
     # Fica com a marca porque também é identidade visual; vale mesmo com a logo desativada.
     estilo_legenda: Literal['destaque', 'classico'] = 'destaque'
 
@@ -92,12 +92,24 @@ def snapshot(pasta):
         return {**config, 'arquivo': str(caminho)}
 
 
-def filtro_marca(marca, altura_webcam=0):
+#: Distância (px) da marca até o topo, na posição Topo e no Podcast.
+MARGEM_TOPO_PODCAST = 48
+
+
+def filtro_marca(marca, altura_webcam=0, topo=False):
+    """Sobreposição da marca no corte 1080x1920.
+
+    ``topo``: no Podcast a legenda fica no meio (tela dividida) ou embaixo (close), e a marca vai
+    sempre para cima, em qualquer enquadramento, mantendo a posição horizontal escolhida.
+    """
     largura = round(1080 * marca['largura_pct'] / 100)
     altura = min(1920, max(1, round(largura / marca['aspecto'])))
     largura = min(largura, max(1, round(altura * marca['aspecto'])))
     x = round((1080 - largura) * marca['x_pct'] / 100)
-    y = (round(altura_webcam - altura / 2) if marca['posicao'] == 'divisao' and altura_webcam
-         else round((1920 - altura) * marca['y_pct'] / 100))
+    if topo or marca['posicao'] == 'topo':
+        y = MARGEM_TOPO_PODCAST
+    else:
+        y = (round(altura_webcam - altura / 2) if marca['posicao'] == 'divisao' and altura_webcam
+             else round((1920 - altura) * marca['y_pct'] / 100))
     y = max(0, min(1920 - altura, y))
     return f'[1:v]format=rgba,scale={largura}:{altura}[marca];[v_final][marca]overlay={x}:{y}:eof_action=repeat[v_marca]'
