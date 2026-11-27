@@ -15,13 +15,6 @@ export function Tabs({ abaAtiva, setAbaAtiva, limparCache }) {
 
 
       <button 
-        onClick={() => setAbaAtiva('passos')}
-        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${abaAtiva === 'passos' ? 'bg-gradient-to-r from-[#9333ea]/30 to-[#00ffff]/20 border-b-2 border-[#9333ea] text-white shadow' : 'text-slate-400 hover:bg-[#0e0a1a] hover:text-slate-200'}`}
-      >
-        {t('abas.passos')}
-      </button>
-
-      <button 
         onClick={() => setAbaAtiva('social')}
         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${abaAtiva === 'social' ? 'bg-gradient-to-r from-[#9333ea]/30 to-[#00ffff]/20 border-b-2 border-[#9333ea] text-white shadow' : 'text-slate-400 hover:bg-[#0e0a1a] hover:text-slate-200'}`}
       >
@@ -35,7 +28,18 @@ export function Tabs({ abaAtiva, setAbaAtiva, limparCache }) {
         {t('abas.copyright')}
       </button>
       <button onClick={() => setAbaAtiva('revisao')} className={`px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap ${abaAtiva === 'revisao' ? 'bg-purple-900 text-white' : 'text-slate-400'}`}>{t('abas.revisao')}</button>
-      <button onClick={limparCache} className="ml-auto shrink-0 border border-cyan-400/60 bg-gradient-to-r from-purple-900 to-cyan-950 rounded-xl px-5 py-3 text-sm font-semibold text-cyan-100 hover:brightness-125 focus-visible:outline-2 focus-visible:outline-cyan-400">{t('abas.limparCache')}</button>
+      {/* Ajuda e manutenção ficam à direita, separadas das abas de trabalho. */}
+      <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-[#1b1528] pl-3">
+        {['passos', 'comoUsar'].map(aba => (
+          <button key={aba} onClick={() => setAbaAtiva(aba)}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${abaAtiva === aba
+              ? 'border-cyan-300 bg-cyan-950/60 text-cyan-100 shadow'
+              : 'border-cyan-400/50 text-cyan-300 hover:bg-cyan-950/40 hover:text-cyan-200'}`}>
+            {t(`abas.${aba}`)}
+          </button>
+        ))}
+      <button onClick={limparCache} className="shrink-0 border border-cyan-400/60 bg-gradient-to-r from-purple-900 to-cyan-950 rounded-xl px-5 py-3 text-sm font-semibold text-cyan-100 hover:brightness-125 focus-visible:outline-2 focus-visible:outline-cyan-400">{t('abas.limparCache')}</button>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { SocialTab } from './components/tabs/SocialTab';
 import { BrandTab } from './components/tabs/BrandTab';
 import { ReviewTab } from './components/tabs/ReviewTab';
 import { CopyrightTab } from './components/tabs/CopyrightTab';
+import { GuideTab } from './components/tabs/GuideTab';
 
 function lerPreferencia(chave, padrao) {
   try { return window.localStorage.getItem(chave) ?? padrao; } catch { return padrao; }
@@ -59,6 +60,13 @@ function App() {
   const [carregando, setCarregando] = useState(false);
   const [modoInput, setModoInput] = useState('arquivo');
   const [abaAtiva, setAbaAtiva] = useState('pipeline');
+  // Seção do Como usar pedida por um botão "?"; o contador força rolar de novo ao repetir o clique.
+  const [secaoGuia, setSecaoGuia] = useState(null);
+  useEffect(() => {
+    const abrir = (evento) => { setAbaAtiva('comoUsar'); setSecaoGuia({ id: evento.detail, vez: Date.now() }); };
+    window.addEventListener('clippro:como-usar', abrir);
+    return () => window.removeEventListener('clippro:como-usar', abrir);
+  }, []);
 
   const [dialog, setDialog] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -257,6 +265,7 @@ function App() {
             {abaAtiva === 'revisao' && <ReviewTab />}
 
             {abaAtiva === 'copyright' && <CopyrightTab />}
+            {abaAtiva === 'comoUsar' && <GuideTab secao={secaoGuia} />}
 
           </main>
         </div>
