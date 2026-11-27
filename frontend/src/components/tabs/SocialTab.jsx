@@ -34,10 +34,10 @@ export function SocialTab() {
     } catch (e) { setMessage(t('social.erroAbrir', { erro: e.message })); }
   }
   return <section className="w-full lg:w-[94%] mx-auto bg-[#0a0712] border border-[#1b1528] p-6 rounded-2xl flex flex-col gap-5">
-    <h2 className="text-lg font-bold">{t('social.titulo')}</h2>
-    <p className="text-sm text-slate-400">{t('social.descricao')}</p>
-    <p className="text-xs text-slate-400">{t('social.dicaJanela')}</p>
-    <p className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200 leading-relaxed">{t('social.avisoWeb')}</p>
+    <h2 className="text-lg font-bold text-center">{t('social.titulo')}</h2>
+    <p className="text-sm text-slate-400 text-center">{t('social.descricao')}</p>
+    <p className="text-xs text-slate-400 text-center">{t('social.dicaJanela')}</p>
+    <p className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200 leading-relaxed text-center">{t('social.avisoWeb')}</p>
     <p role="status" className="text-sm text-cyan-300">{message}</p>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {platforms.map(platform => {
