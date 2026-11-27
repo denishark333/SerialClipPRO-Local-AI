@@ -58,7 +58,7 @@ TEXTOS = {
 
     # --- Ollama e modelos ---
     'ollama.modelo_ausente': ('Modelo {modelo} não encontrado no Ollama. Instale-o ou escolha outro modelo em Primeiros Passos antes de iniciar.',
-                              'Model {modelo} not found in Ollama. Install it or choose another model in Getting Started before starting.'),
+                              'Model {modelo} not found in Ollama. Install it or choose another model in First Steps before starting.'),
     'ollama.recusou': ('Ollama recusou a verificação do modelo: {erro}', 'Ollama refused the model check: {erro}'),
     'ollama.offline': ('Ollama não respondeu. Abra o Ollama e verifique as dependências antes de iniciar novamente.',
                        'Ollama did not respond. Open Ollama and check the dependencies before starting again.'),

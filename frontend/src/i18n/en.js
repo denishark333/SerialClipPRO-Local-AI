@@ -287,7 +287,7 @@ export default {
     erroExcluir: 'Could not complete the deletion',
   },
   revisao: {
-    titulo: 'Subtitle review',
+    titulo: 'Subtitle Review',
     descricao: 'Optional: fix the text and timing, then reapply them to the original clip. Older videos without a review base remain available in the gallery.',
     reaplicando: 'Reapplying layout and subtitles. Wait before starting another pipeline.',
     concluida: 'Review complete. Check the updated video in the gallery. To update an export, export it again.',
@@ -473,7 +473,7 @@ export default {
     automatica: 'In the automatic position, the branding follows the split between webcam and content. Without a webcam, the configured vertical position is used.',
     mudancas: 'Changes apply to new runs. Videos already generated and the branding stored in the review bases stay as they were.',
     estiloTitulo: 'Subtitle style',
-    estiloTexto: 'Same font, color and outline in both styles. Applies to new runs and to Subtitle review.',
+    estiloTexto: 'Same font, color and outline in both styles. Applies to new runs and to Subtitle Review.',
     estiloSalvo: 'Subtitle style saved for new runs and reviews.',
     estilos: {
       destaque: { nome: 'Highlight', descricao: 'The whole sentence shows and the word being spoken gets bigger.' },

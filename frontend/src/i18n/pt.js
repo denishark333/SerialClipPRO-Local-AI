@@ -287,7 +287,7 @@ export default {
     erroExcluir: 'Não foi possível concluir a exclusão',
   },
   revisao: {
-    titulo: 'Revisão de legendas',
+    titulo: 'Revisão de Legendas',
     descricao: 'Opcional: corrija o texto e os tempos, depois reaplique ao corte original. Vídeos antigos sem base de revisão continuam disponíveis na galeria.',
     reaplicando: 'Reaplicando composição e legendas. Aguarde para iniciar outro pipeline.',
     concluida: 'Revisão concluída. Confira o vídeo atualizado na galeria. Para atualizar uma exportação, exporte novamente.',
@@ -473,7 +473,7 @@ export default {
     automatica: 'Na posição automática, a marca acompanha a divisão entre webcam e conteúdo. Sem webcam, é usada a posição vertical configurada.',
     mudancas: 'As mudanças valem para novas execuções. Vídeos já gerados e a marca guardada nas bases de revisão permanecem como estavam.',
     estiloTitulo: 'Estilo da legenda',
-    estiloTexto: 'Mesma fonte, cor e contorno nos dois estilos. Vale para novas execuções e para a Revisão de legendas.',
+    estiloTexto: 'Mesma fonte, cor e contorno nos dois estilos. Vale para novas execuções e para a Revisão de Legendas.',
     estiloSalvo: 'Estilo da legenda salvo para novas execuções e revisões.',
     estilos: {
       destaque: { nome: 'Destaque', descricao: 'A frase inteira aparece e a palavra que está sendo falada fica maior.' },
