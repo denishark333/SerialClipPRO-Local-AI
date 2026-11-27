@@ -28,6 +28,7 @@ Go to **Releases** in this repository and download the installer attached to the
 - Works with streams in many languages and of any genre; the **What to look for** field tells it which moments to prioritize.
 - Creates vertical 9:16 clips with animated subtitles: the word being spoken is highlighted.
 - Lets you adjust the webcam framing, choose which part of the content goes into the vertical clip, and add your channel's logo as a PNG.
+- **Podcast** framing for multi-camera podcasts and interviews: each clip switches on its own between split screen (two people) and close-up.
 - Offers a gallery to review, download, export and delete clips.
 - Lets you review and fix the subtitles and the framing of each clip.
 - Gathers shortcuts to the platforms so you can post manually.
@@ -40,7 +41,7 @@ The AI helps with the selection. Review the clips and subtitles before posting.
 - **Update from inside the app:** the **Check for updates** button next to the version shows whether a new version exists and what changed, and installs it in one click. The app only checks when you ask and only updates if you want to. Each installer is verified by its digital signature before it runs, and videos, settings and your AI model are kept.
 - **English interface:** a **PT | EN** switcher below the header translates the whole interface, including the processing messages. The installer is also in English and Portuguese: the language you pick there is the one the app opens in (otherwise it follows Windows).
 - **Off-center vertical crop:** drag the frame to choose which part of the content appears in the clip, great for HUDs, chats or action away from the center.
-- **Framing per clip:** in **Subtitle review**, fix the webcam or the crop of a single clip when the camera moved or changed size during the stream, without reprocessing the VOD and without changing the other clips.
+- **Framing per clip:** in **Subtitle Review**, fix the webcam or the crop of a single clip when the camera moved or changed size during the stream, without reprocessing the VOD and without changing the other clips.
 - **AMD and Intel GPUs:** rendering now uses AMD AMF (tested on a Radeon GPU) and Intel QuickSync, besides NVIDIA NVENC, and falls back to the CPU when none is available. The model selector now also reads the video memory of AMD cards.
 - **Clearer progress:** on long VODs, the progress bar moves while the audio is mapped and shows the point being read (e.g. "04:12:30 of 11:31:59"). The stream language is always visible next to **Advanced settings**, and the **AI Engine** card shows the AI model in use.
 
@@ -65,7 +66,7 @@ The AI helps with the selection. Review the clips and subtitles before posting.
 4. If the **Ollama** welcome window appears, continue with **local use**. Cloud models are not needed.
 5. When it finishes, open Serial ClipPRO from the installer or from the shortcut it created.
 
-After that, just open the **Serial ClipPRO** shortcut. Other models can be installed later with `ollama pull model-name` and selected in **Getting Started**.
+After that, just open the **Serial ClipPRO** shortcut. Other models can be installed later with `ollama pull model-name` and selected in **First Steps**.
 
 ### During setup
 
@@ -107,7 +108,7 @@ Transcription and AI analysis use **Whisper and Ollama on your computer**.
 - With **NVIDIA acceleration** installed, Whisper transcribes on the GPU; without it, or without an NVIDIA card, it uses the CPU.
 - The curation AI model runs in Ollama; Gemma 4 12B needs ~10 GB of video memory to run fully on the card.
 - Rendering tries NVIDIA NVENC, then AMD AMF, then Intel QuickSync and, if none is available, the CPU.
-- The model selector in **Getting Started** checks the video memory of NVIDIA and AMD cards to recommend a model.
+- The model selector in **First Steps** checks the video memory of NVIDIA and AMD cards to recommend a model.
 
 Local processing still needs the internet to download models, access VODs and open the social platforms.
 
@@ -244,6 +245,8 @@ The desktop app blocks closing while the pipeline is running: cancel and wait be
 
 The scan covers the whole source, even without saving the full VOD; ffmpeg writes its position with `-progress`, and the bar moves from 15% to 25% while the scan runs. On Twitch, analysis uses the audio-only variant; on Kick, the lowest video quality (same audio). The audio map, transcribed samples and evaluated chunks are cached: running the same VOD again only redoes what changed (the map is rebuilt if the VOD grew).
 
+Each clip is then extracted from the source. If the download makes no progress for 60 seconds (for example, a dropped connection to the CDN), FFmpeg is stopped and the whole stretch is downloaded again, up to 3 attempts, so a network hiccup does not hang or break the run.
+
 Curation sends each chunk to the configured model along with the stream language and the priorities from the **What to look for** field. The response follows a JSON schema; each moment's key line is checked against the transcript, short moments are expanded with the neighboring speech, adjacent candidates are merged and boundaries are snapped to complete sentences and pauses. If the AI approves nothing, the app suggests segments for review based on neutral signals (provided terms and focus, exclamations, questions, repetition, fast speech).
 
 Final rendering and subtitle review try NVIDIA NVENC, then AMD AMF (`h264_amf`), then Intel QuickSync (`h264_qsv`) and, if all of them fail, the CPU with libx264; an encoder that fails is not retried during the session. Audio is normalized in two passes to -14 LUFS. The Ollama/Whisper steps check for cancellation at the available points; not every call is interrupted instantly.
@@ -252,7 +255,7 @@ Before preparing the media, the pipeline checks that Ollama responds and that th
 
 ## Studio and branding
 
-The studio preview is taken from the **middle of the VOD** (10 seconds), where the stream is usually in progress with the webcam visible. When the duration is unknown, it uses 30:00 on Twitch and minute 1 for other sources.
+The studio preview joins **6 stretches of 10 seconds** spread across the VOD (at 10%, 26%, 42%, 58%, 74% and 90%), so the framing can be checked in different moments of the stream, such as different cameras in a podcast. Short or unknown-length sources fall back to a single stretch (30:00 on Twitch, minute 1 for other sources).
 
 Framing uses percentages of the original image. The preview follows the source's aspect ratio, the magnifier follows the selected area, and older presets are not rewritten automatically. Resizing keeps 16:9; an old preset may have a different aspect ratio.
 
@@ -262,13 +265,21 @@ Uploading a PNG turns branding on automatically. For an image that is already sa
 
 With studio mode on, the webcam takes an area above the content without covering it. The content fills the whole area below, keeping the aspect ratio and cutting the sides when needed, with no padding bars. Without a webcam, the content fills the whole vertical clip. In both cases, **Content position** (or dragging the **Vertical clip** frame over the preview) chooses which part of the image is kept, from left (0%) to right (100%); the default is the center (50%).
 
+**Podcast** (Studio Mode → Podcast) is meant for podcasts and interviews with several cameras. Each clip switches on its own, shot by shot, between two framings set up in their own tabs:
+
+- **① Split screen**, used on the wide shot: two 9:8 areas, each locked to its half of the video, become the top and bottom halves of the clip; subtitles sit on the seam. **Swap who is on top** changes the order.
+- **② Close-up**, used when the camera shows one person: a single vertical crop, with subtitles at the bottom.
+- **③ Automatic** receives the references: pause the preview on a wide shot and click **Use current frame as wide shot**, then do the same on a close-up. Every camera change (FFmpeg `scdet`) is compared with them through a small thumbnail, with no face detection; each shot follows the closest reference, and stretches shorter than 1.5 s follow their neighbor so the screen does not flicker. Without the wide shot marked, the whole clip uses split screen. References only apply to the video they were marked on: with another link they are discarded.
+
+The tabs only adjust each framing; the tab open when saving does not change the result. For podcasts that are always in close-up, turn Studio Mode off: the centered vertical crop already covers it. **How it Works**, next to the tabs, opens the Podcast section of **How to Use**.
+
 Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
 
 ## Optional subtitle review (beta)
 
 The gallery and the review use the same ordering: most recent runs first, and the clip's original number in ascending order within each run. Edits do not change this order and deletions do not renumber the rest. The review opens on the list of saved clips; files that exist only in Exports are in a separate filter (**Only in Exports**). The cards show the run identifier to tell apart equal numbers from different sessions.
 
-The **Subtitle review** tab and the card below **Hardware & Folders** let you open clips that have a review source available. The modal shows the horizontal original so you can hear the speech and edit the groups by start/end in seconds. You can fix text and add or delete groups; timings must be in order with no overlap. The overlay on the player is only an editing preview.
+The **Subtitle Review** tab and the card below **Hardware & Folders** let you open clips that have a review source available. The modal shows the horizontal original so you can hear the speech and edit the groups by start/end in seconds. You can fix text and add or delete groups; timings must be in order with no overlap. The overlay on the player is only an editing preview.
 
 **Framing for this clip**, below the player, opens the same framing editor as Studio Mode over that clip's original: turn the webcam on or off, move or resize it, and change the content position. The change applies only to that clip and is saved in its review source after a successful render; the Studio Mode default does not change.
 
@@ -276,7 +287,7 @@ The **Subtitle review** tab and the card below **Hardware & Folders** let you op
 
 Review sources live in `cache_revisao/<unique id>/`: the horizontal original, the run's logo and a JSON file with the session, final video, framing and subtitles. New pipelines only use their own temporary files and do not remove these sources. Clips created before this change show up without a review source.
 
-**Clear cache**, on the right side of the tabs, shows the space and number of sources before you confirm. It removes only the review sources, keeping transcripts, final clips and exports. The pipeline, applying a review and clearing the cache cannot run at the same time. The cache stays until you clear it manually and takes up extra space.
+**First Steps**, **How to Use** and **Clear cache** sit on the right side of the tabs. **How to Use** explains each feature in more detail, with common questions. **Clear cache** shows the space and number of sources before you confirm. It removes only the review sources, keeping transcripts, final clips and exports. The pipeline, applying a review and clearing the cache cannot run at the same time. The cache stays until you clear it manually and takes up extra space.
 
 When a review is applied, unedited phrases keep each word's real timing; in edited phrases and older sources, timing is estimated from each word's length.
 

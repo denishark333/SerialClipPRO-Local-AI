@@ -28,6 +28,7 @@ Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão
 - Funciona com lives em vários idiomas e com qualquer gênero; o campo **O que procurar** indica os momentos que você quer priorizar.
 - Gera cortes verticais em formato 9:16 com legendas animadas: a palavra falada fica em destaque.
 - Permite ajustar o enquadramento da webcam, escolher qual parte do conteúdo entra no corte vertical e incluir a marca do seu canal em PNG.
+- Enquadramento **Podcast** para podcasts e entrevistas com várias câmeras: cada corte alterna sozinho entre tela dividida (duas pessoas) e close.
 - Oferece uma galeria para revisar, baixar, exportar e excluir cortes.
 - Permite revisar e corrigir as legendas e o enquadramento de cada corte.
 - Reúne atalhos para acessar as plataformas e publicar manualmente.
@@ -40,7 +41,7 @@ A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
 - **Atualização pelo próprio app:** o botão **Verificar atualizações**, ao lado da versão, mostra se há versão nova e o que mudou, e instala com um clique. O app só confere quando você pede e só atualiza se você quiser. Cada instalador é verificado pela assinatura digital antes de rodar, e vídeos, configurações e o seu modelo de IA são mantidos.
 - **Interface em inglês:** o seletor **PT | EN**, abaixo do cabeçalho, traduz a interface inteira, inclusive as mensagens do processamento. O instalador também está em português e inglês: o idioma escolhido nele é o que o app usa ao abrir (sem escolha, segue o do Windows).
 - **Recorte vertical fora do centro:** arraste a moldura para escolher qual parte do conteúdo aparece no corte, ideal para HUDs, chats ou ação fora do centro.
-- **Enquadramento por corte:** na **Revisão de legendas**, corrija a webcam ou o recorte de um corte específico quando a câmera mudou de lugar ou de tamanho na live, sem reprocessar a VOD e sem mudar os outros cortes.
+- **Enquadramento por corte:** na **Revisão de Legendas**, corrija a webcam ou o recorte de um corte específico quando a câmera mudou de lugar ou de tamanho na live, sem reprocessar a VOD e sem mudar os outros cortes.
 - **Placas AMD e Intel:** a renderização agora usa AMD AMF (testado em placa Radeon) e Intel QuickSync, além da NVIDIA NVENC, e recorre à CPU quando nenhuma está disponível. O seletor de modelos também passou a ler a memória de vídeo das placas AMD.
 - **Progresso mais claro:** em VODs longas, a barra avança enquanto o áudio é mapeado e mostra o ponto que está sendo lido (ex.: "04:12:30 de 11:31:59"). O idioma da live fica sempre visível ao lado de **Configurações avançadas**, e o card **IA Engine** mostra o modelo de IA em uso.
 
@@ -243,6 +244,8 @@ O desktop bloqueia fechamento enquanto o pipeline estiver ativo: cancele e aguar
 
 A varredura percorre toda a fonte, mesmo sem salvar a VOD integral; o ffmpeg grava a posição com `-progress`, e a barra avança de 15% a 25% durante a varredura. Na Twitch, a análise usa a variante só de áudio; na Kick, a menor qualidade de vídeo (mesmo áudio). Mapa de áudio, amostras transcritas e blocos avaliados ficam em cache: uma nova execução da mesma VOD só refaz o que mudou (o mapa é refeito se a VOD cresceu).
 
+Depois, cada corte é extraído da fonte. Se o download ficar 60 segundos sem avançar (por exemplo, uma queda de conexão com a CDN), o FFmpeg é encerrado e o trecho inteiro é baixado de novo, em até 3 tentativas, para uma instabilidade de rede não travar nem derrubar a execução.
+
 A curadoria envia cada bloco ao modelo configurado com o idioma da live e as prioridades do campo **O que procurar**. A resposta segue um esquema JSON; a fala-chave de cada momento é conferida na transcrição, momentos curtos são ampliados com a fala vizinha, candidatos adjacentes são fundidos e os limites são ajustados a frases completas e pausas. Se a IA não aprovar nada, o app sugere trechos para revisão por sinais neutros (termos e foco informados, exclamações, perguntas, repetições, fala acelerada).
 
 A renderização final e a revisão de legendas tentam NVIDIA NVENC, depois AMD AMF (`h264_amf`), depois Intel QuickSync (`h264_qsv`) e, se todos falharem, CPU com libx264; um encoder que falhar não é tentado de novo na sessão. O áudio é normalizado em duas passagens a -14 LUFS. As etapas com Ollama/Whisper verificam cancelamento nos pontos disponíveis; nem toda chamada é interrompida instantaneamente.
@@ -251,7 +254,7 @@ Antes de preparar a mídia, o pipeline verifica se o Ollama responde e se o mode
 
 ## Estúdio e marca
 
-O preview do estúdio é extraído da **metade da VOD** (10 segundos), onde a live costuma estar em andamento e com a webcam visível. Sem duração conhecida, usa 30:00 na Twitch e o minuto 1 nas demais origens.
+O preview do estúdio junta **6 trechos de 10 segundos** espalhados pela VOD (em 10%, 26%, 42%, 58%, 74% e 90%), para conferir o enquadramento em momentos diferentes da live, como as câmeras diferentes de um podcast. Fontes curtas ou sem duração conhecida usam um trecho só (30:00 na Twitch, minuto 1 nas demais origens).
 
 O enquadramento usa percentuais da imagem original. O preview acompanha a proporção da fonte, a lupa acompanha a área selecionada, e presets anteriores não são regravados automaticamente. Redimensionar mantém 16:9; o preset antigo pode ter outra proporção.
 
@@ -261,13 +264,21 @@ O envio de um PNG ativa a marca automaticamente. Para uma imagem já salva e des
 
 Com o modo estúdio ativo, a webcam ocupa uma área acima do conteúdo, sem cobri-lo. O conteúdo preenche toda a área abaixo, mantendo a proporção e cortando as laterais quando necessário, sem faixas de preenchimento. Sem webcam, o conteúdo ocupa o corte vertical inteiro. Nos dois casos, **Posição do conteúdo** (ou arrastar a moldura **Corte vertical** sobre o preview) escolhe qual parte da imagem fica no corte, da esquerda (0%) à direita (100%); o padrão é o centro (50%).
 
+O **Podcast** (Modo Estúdio → Podcast) é para podcasts e entrevistas com várias câmeras. Cada corte alterna sozinho, plano a plano, entre dois enquadramentos ajustados em abas próprias:
+
+- **① Tela dividida**, usada no plano aberto: duas áreas 9:8, cada uma presa à sua metade do vídeo, viram as metades de cima e de baixo do corte; a legenda fica na emenda. **Inverter quem fica em cima** troca a ordem.
+- **② Close**, usado quando a câmera mostra uma pessoa só: um corte vertical único, com a legenda embaixo.
+- **③ Automático** recebe as referências: pause o preview num plano aberto e clique em **Usar quadro atual como plano aberto**; depois faça o mesmo num close. Cada troca de câmera (`scdet` do FFmpeg) é comparada com elas por uma miniatura, sem detecção de rosto; cada plano segue a referência mais parecida, e trechos com menos de 1,5 s seguem o vizinho para a tela não piscar. Sem o plano aberto marcado, o corte inteiro sai em tela dividida. As referências valem só para o vídeo em que foram marcadas: com outro link, são descartadas.
+
+As abas só ajustam cada enquadramento; a aba aberta ao salvar não muda o resultado. Para podcasts sempre em close, desligue o Modo Estúdio: o corte vertical central já atende. **Como Funciona**, junto das abas, abre a seção do Podcast em **Como Usar**.
+
 As legendas usam Bangers em amarelo, em grupos de até 5 palavras, quebrando em pausas e finais de frase. No estilo **Destaque** (padrão), a palavra que está sendo falada fica 22% maior; no **Clássico**, a frase aparece inteira de uma vez. O estilo é escolhido na aba Marca e vale também para a revisão. Os tempos vêm da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
 
 ## Revisão opcional de legendas (teste)
 
 Galeria e revisão usam a mesma ordenação: execuções mais recentes primeiro e número original do corte em ordem crescente dentro de cada execução. Edições não alteram essa ordem e exclusões não renumeram os demais. A revisão abre na lista de salvos; arquivos que existem apenas em Exportados ficam em um filtro separado. Os cards mostram a identificação da execução para distinguir números iguais de sessões diferentes.
 
-A aba **Revisão de legendas** e o card abaixo de **Hardware & Pastas** permitem abrir os cortes com base disponível. O modal mostra o original horizontal para ouvir a fala e editar os grupos por início/fim em segundos. É possível corrigir texto, adicionar ou excluir grupos; os tempos devem estar em ordem e sem sobreposição. A sobreposição no player é apenas uma prévia de edição.
+A aba **Revisão de Legendas** e o card abaixo de **Hardware & Pastas** permitem abrir os cortes com base disponível. O modal mostra o original horizontal para ouvir a fala e editar os grupos por início/fim em segundos. É possível corrigir texto, adicionar ou excluir grupos; os tempos devem estar em ordem e sem sobreposição. A sobreposição no player é apenas uma prévia de edição.
 
 **Enquadramento deste corte**, abaixo do player, abre o mesmo editor de enquadramento do Modo Estúdio sobre o original daquele corte: ligue ou desligue a webcam, mova ou redimensione o retângulo e mude a posição do conteúdo. A mudança vale só para aquele corte e fica salva na base de revisão dele depois de uma renderização válida; o padrão do Modo Estúdio não muda.
 
@@ -275,7 +286,7 @@ A aba **Revisão de legendas** e o card abaixo de **Hardware & Pastas** permitem
 
 As bases ficam em `cache_revisao/<id único>/`: original horizontal, marca da execução e JSON com sessão, vídeo final, enquadramento e legendas. Novos pipelines usam apenas seus próprios temporários e não removem essas bases. Cortes anteriores à mudança aparecem sem base de revisão.
 
-**Limpar cache**, no lado direito das abas, mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
+**Primeiros Passos**, **Como Usar** e **Limpar cache** ficam no lado direito das abas. **Como Usar** explica cada recurso com mais detalhes e dúvidas comuns. **Limpar cache** mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
 
 Ao aplicar uma revisão, frases não editadas mantêm o tempo real de cada palavra; nas editadas e nas bases antigas, o tempo é estimado pelo tamanho de cada palavra.
 
