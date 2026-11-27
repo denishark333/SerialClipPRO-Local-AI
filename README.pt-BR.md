@@ -27,7 +27,8 @@ Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão
 - Encontra os melhores momentos da VOD inteira com IA local, citando a fala que justifica cada corte.
 - Funciona com lives em vários idiomas e com qualquer gênero; o campo **O que procurar** indica os momentos que você quer priorizar.
 - Gera cortes verticais em formato 9:16 com legendas animadas: a palavra falada fica em destaque.
-- Permite ajustar o enquadramento da webcam, escolher qual parte do conteúdo entra no corte vertical e incluir a marca do seu canal em PNG.
+- Coloca **a sua própria marca d'água** em cada corte: sua logo, assinatura ou endereço do canal, onde você quiser.
+- Permite ajustar o enquadramento da webcam e escolher qual parte do conteúdo entra no corte vertical.
 - Enquadramento **Podcast** para podcasts e entrevistas com várias câmeras: cada corte alterna sozinho entre tela dividida (duas pessoas) e close.
 - Oferece uma galeria para revisar, baixar, exportar e excluir cortes.
 - Permite revisar e corrigir as legendas e o enquadramento de cada corte.
@@ -35,6 +36,17 @@ Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão
 - Interface em português ou inglês, e atualização pelo próprio app quando você quiser.
 
 A IA auxilia na seleção. Revise os cortes e as legendas antes de publicar.
+
+## Sua marca d'água
+
+Cada corte pode levar a identidade do seu canal. Quando um corte é compartilhado ou repostado, seu nome vai junto, e quem encontrar o vídeo em outro lugar sabe onde assistir à live completa.
+
+- **A sua imagem, não a do app:** use sua logo, uma assinatura ou o endereço do canal em PNG. Com fundo transparente, ela fica sobre o vídeo sem um retângulo em volta. O Serial ClipPRO não coloca nenhuma marca própria.
+- **Configure uma vez:** na aba **Marca do canal**, envie o PNG (até 5 MB e 4096 × 4096 pixels). O envio já ativa a marca d'água.
+- **Tamanho e posição:** ajuste a largura na simulação. Na posição **Divisão entre webcam e conteúdo**, a marca acompanha a divisão do seu enquadramento; em **Manual**, você escolhe a posição horizontal e vertical.
+- **Clique em Salvar marca:** vale para todas as novas execuções e para os cortes gerados de novo na **Revisão de Legendas**. Cortes já gerados não mudam.
+
+Para desligar, desmarque **Aplicar marca aos cortes** e salve; a imagem continua guardada para depois.
 
 ## Novidades da versão 3.0.1
 

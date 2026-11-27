@@ -27,7 +27,8 @@ Go to **Releases** in this repository and download the installer attached to the
 - Finds the best moments across the whole VOD with local AI, quoting the line that justifies each clip.
 - Works with streams in many languages and of any genre; the **What to look for** field tells it which moments to prioritize.
 - Creates vertical 9:16 clips with animated subtitles: the word being spoken is highlighted.
-- Lets you adjust the webcam framing, choose which part of the content goes into the vertical clip, and add your channel's logo as a PNG.
+- Puts **your own watermark** on every clip: your logo, signature or channel address, wherever you want it.
+- Lets you adjust the webcam framing and choose which part of the content goes into the vertical clip.
 - **Podcast** framing for multi-camera podcasts and interviews: each clip switches on its own between split screen (two people) and close-up.
 - Offers a gallery to review, download, export and delete clips.
 - Lets you review and fix the subtitles and the framing of each clip.
@@ -35,6 +36,17 @@ Go to **Releases** in this repository and download the installer attached to the
 - Interface in English or Portuguese, and updates from inside the app whenever you choose.
 
 The AI helps with the selection. Review the clips and subtitles before posting.
+
+## Your watermark
+
+Every clip can carry your channel's identity. When a clip is shared or reposted, your name goes with it, so people who find it elsewhere know where to watch the full stream.
+
+- **Your image, not the app's:** use your logo, a signature or your channel address as a PNG. With a transparent background, it sits over the video without a box around it. Serial ClipPRO adds no mark of its own.
+- **Set it up once:** in the **Channel branding** tab, upload the PNG (up to 5 MB and 4096 × 4096 pixels). Uploading turns the watermark on.
+- **Size and position:** adjust the width on the simulation. In the **Between webcam and content** position, the watermark follows the split of your framing; in **Manual**, you choose the horizontal and vertical position.
+- **Click Save branding:** it applies to every new run and to clips regenerated in **Subtitle Review**. Clips already generated are not changed.
+
+To turn it off, uncheck **Apply branding to clips** and save; the image stays saved for later.
 
 ## What's new in version 3.0.1
 
