@@ -129,15 +129,33 @@ def eventos(grupo, estilo):
     return saida
 
 
-def escrever_ass(caminho, grupos, estilo=PADRAO):
+#: Estilo padrão: alinhada embaixo (2) ou no meio da tela (5), na numeração do ASS v4+.
+_ESTILO_BAIXO = 'Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10,10,10,0'
+_ESTILO_CENTRO = 'Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,5,10,10,0,0'
+
+
+def escrever_ass(caminho, grupos, estilo=PADRAO, centro=False):
+    """Grava a legenda; ``centro`` a põe no meio da tela, na emenda do Modo Podcast.
+
+    ``centro`` também pode ser uma função do instante (s), quando o Podcast troca de perfil
+    plano a plano: cada frase fica onde pede o plano em que ela começa.
+    """
     estilo = estilo if estilo in ESTILOS else PADRAO
-    linhas = [f'Dialogue: 0,{_tempo(a)},{_tempo(b)},Default,,0,0,0,,{texto}\n'
-              for grupo in grupos if grupo for a, b, texto in eventos(grupo, estilo)]
-    Path(caminho).write_text(CABECALHO + ''.join(linhas), encoding='utf-8')
+    por_frase = callable(centro)
+    cabecalho = CABECALHO.replace(_ESTILO_BAIXO, _ESTILO_CENTRO) if centro is True else CABECALHO
+    linhas = []
+    for grupo in grupos:
+        if not grupo:
+            continue
+        # \an5: no meio da tela, só nesta frase (o estilo continua embaixo).
+        prefixo = '{\\an5}' if por_frase and centro(grupo[0]['start']) else ''
+        linhas += [f'Dialogue: 0,{_tempo(a)},{_tempo(b)},Default,,0,0,0,,{prefixo}{texto}\n'
+                   for a, b, texto in eventos(grupo, estilo)]
+    Path(caminho).write_text(cabecalho + ''.join(linhas), encoding='utf-8')
 
 
-def escrever_legenda(caminho, palavras, estilo=PADRAO):
-    escrever_ass(caminho, agrupar_palavras(palavras), estilo)
+def escrever_legenda(caminho, palavras, estilo=PADRAO, centro=False):
+    escrever_ass(caminho, agrupar_palavras(palavras), estilo, centro)
 
 
 def filtro_legenda(caminho):

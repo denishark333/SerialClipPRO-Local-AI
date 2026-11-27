@@ -11,7 +11,7 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
   const { notify } = useDialog();
   const { t } = useI18n();
   const tAtual = useTAtual();
-  const [enquadramento, setEnquadramento] = useState(ENQUADRAMENTO_PADRAO);
+  const [enquadramentoCarregado, setEnquadramento] = useState(ENQUADRAMENTO_PADRAO);
 
   const [frameUrl, setFrameUrl] = useState('/serial-healer.png');
   const [isMediaTypeVideo, setIsMediaTypeVideo] = useState(false);
@@ -21,6 +21,16 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
   const [error, setError] = useState('');
   const [mediaReady, setMediaReady] = useState(false);
   const marcarErroMidia = useCallback(() => setHasFrameError(true), []);
+
+  // Referências do Automático valem só para o vídeo em que foram marcadas: com outro link, o editor
+  // as mostra vazias (e salva assim). O pipeline também as ignora, mesmo sem salvar.
+  const origemAtual = isMediaTypeVideo ? /\/temp_clip_cache\/preview_([A-Za-z0-9_]+)\.mp4/.exec(frameUrl)?.[1] || null : null;
+  const origemMarcada = enquadramentoCarregado.referenciaOrigem;
+  const referenciasDescartadas = Boolean(origemAtual && origemMarcada && origemMarcada !== origemAtual);
+  const enquadramento = referenciasDescartadas
+    ? { ...enquadramentoCarregado, referencia: null, referenciaMiniatura: null, referenciaClose: null,
+        referenciaCloseMiniatura: null, referenciaOrigem: null }
+    : enquadramentoCarregado;
 
   // 🎯 SALVA EM PORCENTAGEM PURA (0 a 100%) - INDEPENDENTE DE RESOLUÇÃO
   const saveConfigToBackend = async (valor) => {
@@ -174,6 +184,11 @@ export function StudioCropper({ source, previewPronto, buscandoPreview = false }
         </div>
       </div>
 
+      {referenciasDescartadas && enquadramento.layout === 'podcast' && (
+        <div className="text-center text-xs text-amber-300 p-2 bg-amber-950/30 rounded-lg border border-amber-500/20">
+          {t('estudio.referenciaOutroVideo')}
+        </div>
+      )}
       <EditorEnquadramento
         value={enquadramento}
         onChange={setEnquadramento}

@@ -152,6 +152,9 @@ TEXTOS = {
     'preview.arquivo_ausente': ('Arquivo não encontrado: {entrada}', 'File not found: {entrada}'),
     'estudio.salvo': ('Configuração salva; será aplicada aos próximos cortes renderizados.',
                       'Settings saved; they will apply to the next rendered clips.'),
+    'estudio.referencia_midia': ('Não foi possível ler este quadro. Espere o preview carregar e tente de novo.', 'Could not read this frame. Wait for the preview to load and try again.'),
+    'estudio.referencia_invalida': ('A referência do plano aberto é inválida. Marque o quadro de novo.', 'The wide-shot reference is invalid. Mark the frame again.'),
+    'estudio.fora_do_lado': ('No Podcast, cada lado deve ficar na sua metade do vídeo.', 'In Podcast, each side must stay in its half of the video.'),
     'estudio.fora_do_video': ('O enquadramento deve ficar dentro do vídeo (0 a 100%).', 'The framing must stay inside the video (0 to 100%).'),
     'entrada.vazia': ('Informe um caminho de vídeo ou URL.', 'Provide a video path or URL.'),
 

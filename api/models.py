@@ -38,6 +38,42 @@ class StudioConfigRequest(BaseModel):
     crop_webcam: CropBox
     #: Posição horizontal do recorte vertical do conteúdo: 0 = esquerda, 50 = centro, 100 = direita.
     foco_conteudo: float = Field(50, ge=0, le=100, allow_inf_nan=False)
+    #: "webcam": webcam em cima e conteúdo embaixo; "podcast": duas pessoas, metade do corte cada.
+    layout_estudio: Literal["webcam", "podcast"] = "webcam"
+    #: Perfil do Podcast: "dividido" (duas pessoas), "centralizado" (um corte vertical único) ou
+    #: "automatico" (um ou outro em cada plano, comparando com o plano aberto de referência).
+    perfil_podcast: Literal["dividido", "centralizado", "automatico"] = "dividido"
+    #: Miniaturas 48x27 RGB (base64) do plano aberto e de um close, marcadas no editor para o modo automático.
+    referencia_plano_aberto: str | None = Field(None, max_length=6000)
+    #: Chave do vídeo em que as referências foram marcadas (a do preview do estúdio).
+    referencia_origem: str | None = Field(None, max_length=200, pattern=r"^[A-Za-z0-9_]+$")
+    referencia_close: str | None = Field(None, max_length=6000)
+    #: Imagens pequenas das referências, só para mostrar no editor.
+    referencia_miniatura: str | None = Field(None, max_length=60000, pattern=r'^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
+    referencia_close_miniatura: str | None = Field(None, max_length=60000, pattern=r'^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
+    #: Lados do plano aberto no Podcast: cada um preso à sua metade do vídeo.
+    crop_esquerda: CropBox | None = None
+    crop_direita: CropBox | None = None
+    #: No corte vertical, o lado esquerdo fica em cima, a menos que este campo seja verdadeiro.
+    podcast_direita_em_cima: bool = False
+
+    @model_validator(mode="after")
+    def validar_lados(self):
+        if (self.crop_esquerda and self.crop_esquerda.x + self.crop_esquerda.w > 50.001) or \
+                (self.crop_direita and self.crop_direita.x < 49.999):
+            raise ValueError(tr('estudio.fora_do_lado'))
+        from core.planos import referencia
+        for campo in ('referencia_plano_aberto', 'referencia_close'):
+            valor = getattr(self, campo)
+            if valor is not None and referencia({campo: valor}, campo) is None:
+                raise ValueError(tr('estudio.referencia_invalida'))
+        return self
+
+class ReferenciaRequest(BaseModel):
+    #: URL da mídia aberta no editor: o preview do estúdio ou o original de um corte da revisão.
+    midia: str = Field(min_length=1, max_length=500)
+    #: Instante (s) do quadro mostrado no editor.
+    tempo: float = Field(ge=0, le=86400, allow_inf_nan=False)
 
 class ExportRequest(BaseModel):
     videos: List[str]

@@ -4,14 +4,13 @@ import shutil
 import time
 import threading
 import re
-import hashlib
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, FileResponse
 from core.context_pipeline import REPORT_DIR
 from core.clip_order import chave_corte
 import json
-from api.models import PipelineRequest, StudioConfigRequest, ExportRequest
-from core.pipeline import executar_pipeline_background, gerar_preview_estudio, eh_url_twitch
+from api.models import PipelineRequest, StudioConfigRequest, ExportRequest, ReferenciaRequest
+from core.pipeline import executar_pipeline_background, gerar_preview_estudio, eh_url_twitch, obter_chave_unica
 from core.execution import reservar_execucao, finalizar_execucao, solicitar_cancelamento
 from core.config import (
     estado_pipeline, formatar_tempo, carregar_config_estudio, 
@@ -50,21 +49,6 @@ def executar_preview(entrada, nome_arquivo):
         with preview_lock:
             previews_ativos.discard(nome_arquivo)
 
-def obter_chave_unica(entrada: str) -> str:
-    """Extrai o ID da VOD da Twitch ou gera um hash único seguro para qualquer outra URL/ficheiro."""
-    if not entrada:
-        return "default"
-    
-    # Tenta extrair o ID numérico de uma VOD da Twitch (ex: twitch.tv/videos/123456789)
-    twitch_match = re.search(r"videos/(\d+)", entrada)
-    if eh_url_twitch(entrada):
-        identificador = twitch_match.group(1) if twitch_match else hashlib.md5(entrada.strip().encode('utf-8')).hexdigest()
-        # O sufixo muda junto com o ponto do preview: previews antigos não são reaproveitados.
-        return f"twitch_{identificador}_meio_10s"
-
-    # Para outros links ou caminhos de ficheiro locais, cria um hash MD5 único
-    return hashlib.md5(entrada.strip().encode('utf-8')).hexdigest() + "_meio"
-
 @router.post("/iniciar-pipeline")
 def iniciar_pipeline(data: PipelineRequest, background_tasks: BackgroundTasks):
     execucao = reservar_execucao()
@@ -91,7 +75,7 @@ def obter_relatorio_curadoria(nome: str):
 
 @router.post("/gerar-preview")
 def disparar_geracao_preview(data: PipelineRequest, background_tasks: BackgroundTasks):
-    """Gera o preview de 10 segundos de forma isolada, aplicando Cache Hit/Miss inteligente."""
+    """Gera o preview do estúdio de forma isolada, aplicando Cache Hit/Miss inteligente."""
     try:
         if not data.entrada:
             raise HTTPException(status_code=400, detail=tr('preview.entrada_invalida'))
@@ -155,6 +139,52 @@ def save_studio_config(config: StudioConfigRequest):
         return {"mensagem": tr('estudio.salvo')}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def _midia_do_editor(url):
+    """Arquivo local por trás da URL de mídia do editor; só aceita as duas origens conhecidas."""
+    from pathlib import Path
+    from urllib.parse import urlparse
+    from core import review
+    caminho = urlparse(url).path
+    if m := re.fullmatch(r'/temp_clip_cache/([\w.\-]+)', caminho):
+        arquivo = (Path(PASTA_TEMP) / m.group(1)).resolve()
+        if arquivo.parent != Path(PASTA_TEMP).resolve():
+            return None
+        return arquivo
+    if m := re.fullmatch(r'/api/revisao/clips/([0-9a-f]{32})/original', caminho):
+        return review.pasta(m.group(1)) / 'original.mp4'
+    return None
+
+
+@router.post("/studio/referencia")
+def criar_referencia(pedido: ReferenciaRequest):
+    """Assinatura do plano aberto (para o Podcast automático) a partir do quadro do editor.
+
+    Calculada pelo mesmo FFmpeg que compara os planos no render, para as duas baterem.
+    """
+    import base64
+    import subprocess
+    from core import planos
+    from core.execution import executar_comando
+    try:
+        arquivo = _midia_do_editor(pedido.midia)
+    except ValueError:
+        arquivo = None
+    if arquivo is None or not arquivo.is_file():
+        raise HTTPException(status_code=400, detail=tr('estudio.referencia_midia'))
+    rodar = lambda comando, binario=False: executar_comando(  # noqa: E731
+        comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=not binario, timeout=60)
+    assinatura = planos.assinatura(arquivo, pedido.tempo, rodar)
+    miniatura = rodar(['ffmpeg', '-v', 'error', '-ss', f'{pedido.tempo:.3f}', '-i', str(arquivo), '-frames:v', '1',
+                       '-vf', 'scale=192:-2', '-f', 'image2pipe', '-c:v', 'mjpeg', '-q:v', '5', '-'], binario=True)
+    if assinatura is None or miniatura.returncode != 0 or not miniatura.stdout:
+        raise HTTPException(status_code=400, detail=tr('estudio.referencia_midia'))
+    # Preview do estúdio: a chave do vídeo vai junto, para a referência não valer em outro vídeo.
+    nome = arquivo.name
+    origem = nome[len('preview_'):-len('.mp4')] if nome.startswith('preview_') and nome.endswith('.mp4') else None
+    return {'referencia': base64.b64encode(assinatura).decode(), 'origem': origem,
+            'miniatura': 'data:image/jpeg;base64,' + base64.b64encode(miniatura.stdout).decode()}
+
 
 @router.get("/studio/frame-base")
 def get_frame_base(entrada: str = Query(None)):

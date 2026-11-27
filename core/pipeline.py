@@ -1,4 +1,6 @@
 import os
+import re
+import hashlib
 from core.textos import tr
 import time
 import json
@@ -19,7 +21,8 @@ from core.downloader import obter_url_direta_cdn, obter_fontes_cdn, extrair_info
 from core.context_pipeline import preparar_cortes_contextuais, REPORT_DIR, AMOSTRADOS
 from core.transcription import salvar_json
 from core.subtitles import filtro_legenda, escrever_legenda
-from core.composition import compor_video
+from core.composition import compor_video, posicao_da_legenda
+from core.planos import segmentos as segmentos_podcast, referencias_do_video
 from core.review import guardar as guardar_base_revisao
 from core.curation_status import verificar_ollama, mensagem_conclusao
 from core.encoders import renderizar, medir_volume, args_audio
@@ -175,6 +178,10 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
         entrada = entrada.strip().strip('"').strip("'")
         if not entrada or not 1 <= max_cortes <= 50:
             raise ValueError(tr('pipeline.entrada_invalida'))
+        config_estudio, descartadas = referencias_do_video(config_estudio, obter_chave_unica(entrada))
+        if descartadas:
+            print('⚠️ [Podcast] As referências do Automático foram marcadas em outro vídeo e foram ignoradas: '
+                  'sem o plano aberto deste vídeo, os cortes saem em tela dividida.', flush=True)
         modelo_llm = modelo_ia()
         atualizar_estado(tr('status.verificando_ollama', modelo=modelo_llm), 1, 1)
         verificar_ollama(execucao, modelo_llm)
@@ -264,16 +271,23 @@ def executar_pipeline_background(entrada: str, max_cortes: int, execucao=None, i
             
             srt_param = ""
             srt_path = None
+            # Podcast automático: perfil 1 ou 2 em cada plano, comparando com o plano aberto de referência.
+            segmentos = segmentos_podcast(config_estudio, corte['trecho_path'], corte['duracao'],
+                lambda comando, binario=False: executar_comando(comando, execucao=execucao, stdout=subprocess.PIPE,
+                                                                stderr=subprocess.PIPE, text=not binario))
+            if segmentos:
+                print(f"🎬 [Podcast] Corte {idx+1}: " + ', '.join(
+                    f"{a:.1f}-{b:.1f}s {'aberto' if p == 'dividido' else 'close'}" for a, b, p in segmentos), flush=True)
             if corte['palavras'] and len(corte['palavras']) > 0:
                 srt_path = os.path.abspath(os.path.join(pasta_temp, f"legenda_corte_{idx+1}.ass"))
                 try:
-                    escrever_legenda(srt_path, corte['palavras'], estilo)
+                    escrever_legenda(srt_path, corte['palavras'], estilo, centro=posicao_da_legenda(config_estudio, segmentos))
 
                     srt_param = filtro_legenda(srt_path)
                 except Exception as e:
                     print(f"⚠️ Erro ao gerar SRT para o corte {idx+1}: {e}")
 
-            filtro, altura_webcam = compor_video(config_estudio, orig_w, orig_h, srt_param)
+            filtro, altura_webcam = compor_video(config_estudio, orig_w, orig_h, srt_param, segmentos)
             map_args = ["-filter_complex", filtro, "-map", "[v_final]", "-map", "0:a"]
 
             entradas_render = ["ffmpeg", "-y", "-i", corte['trecho_path']]
@@ -363,20 +377,59 @@ def validar_video(caminho, execucao=None, exigir_audio=True):
         raise RuntimeError(tr('pipeline.video_incompleto'))
 
 
+def obter_chave_unica(entrada: str) -> str:
+    """Extrai o ID da VOD da Twitch ou gera um hash único seguro para qualquer outra URL/ficheiro."""
+    # Igual à limpeza do pipeline: com ou sem aspas, o mesmo vídeo tem a mesma chave.
+    entrada = (entrada or '').strip().strip('"').strip("'")
+    if not entrada:
+        return "default"
+    
+    # Tenta extrair o ID numérico de uma VOD da Twitch (ex: twitch.tv/videos/123456789)
+    twitch_match = re.search(r"videos/(\d+)", entrada)
+    if eh_url_twitch(entrada):
+        identificador = twitch_match.group(1) if twitch_match else hashlib.md5(entrada.strip().encode('utf-8')).hexdigest()
+        # O sufixo muda junto com os pontos e a duração do preview: previews antigos não são reaproveitados.
+        return f"twitch_{identificador}_6trechos"
+
+    # Para outros links ou caminhos de ficheiro locais, cria um hash MD5 único
+    return hashlib.md5(entrada.strip().encode('utf-8')).hexdigest() + "_6trechos"
+
+
 def eh_url_twitch(entrada: str) -> bool:
     url = urlsplit(entrada.strip())
     host = (url.hostname or "").lower()
     return url.scheme in ("http", "https") and (host == "twitch.tv" or host.endswith(".twitch.tv"))
 
 
-def gerar_preview_estudio(entrada: str, nome_arquivo: str = "preview_10s.mp4", ao_falhar=None):
+#: Preview do estúdio: trechos de pontos distantes do VOD (em fração da duração), juntados.
+#: Pontos distantes costumam pegar momentos e câmeras diferentes, o que aumenta a chance de um
+#: podcast mostrar plano aberto e close para marcar as referências do modo automático (um trecho
+#: seguido de 60 s mostrou plano aberto em só 63% dos casos medidos; com 3 trechos de 20 s um
+#: podcast real ainda caiu só em closes). Entre 10% e 90%: longe da abertura e do encerramento.
+PONTOS_PREVIEW = (.10, .26, .42, .58, .74, .90)
+DURACAO_TRECHO_PREVIEW = 10
+#: Sem duração conhecida (ou vídeo curto), um trecho único com o mesmo tempo total.
+DURACAO_PREVIEW = len(PONTOS_PREVIEW) * DURACAO_TRECHO_PREVIEW
+
+
+def _comando_preview_trechos(fonte, duracao, saida):
+    """Um comando que corta os trechos nos pontos do VOD e junta só o vídeo (o editor roda mudo)."""
+    comando = ["ffmpeg", "-y"]
+    for ponto in PONTOS_PREVIEW:
+        comando += ["-ss", f"{duracao * ponto:.3f}", "-t", str(DURACAO_TRECHO_PREVIEW), "-i", fonte]
+    total = len(PONTOS_PREVIEW)
+    filtro = ''.join(f'[{i}:v:0]' for i in range(total)) + f'concat=n={total}:v=1:a=0[v]'
+    return comando + ["-filter_complex", filtro, "-map", "[v]", "-c:v", "libx264", "-preset", "ultrafast", saida]
+
+
+def gerar_preview_estudio(entrada: str, nome_arquivo: str = "preview.mp4", ao_falhar=None):
     """Gera o preview do estúdio; ``ao_falhar`` recebe o motivo quando não dá certo."""
     with tempfile.TemporaryDirectory(prefix="preview_job_", dir=PASTA_TEMP) as pasta_temp:
         return _gerar_preview(entrada, os.path.basename(nome_arquivo), pasta_temp, ao_falhar)
 
 
 def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
-    """Extrai o preview de 10 segundos rapidamente sob demanda."""
+    """Extrai o preview do estúdio rapidamente sob demanda."""
     try:
         os.makedirs(PASTA_TEMP, exist_ok=True)
         
@@ -396,11 +449,11 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
                 raise FileNotFoundError(tr('preview.arquivo_ausente', entrada=entrada))
 
         trecho_preview_mp4 = os.path.join(pasta_temp, nome_arquivo)
-        print(f"📸 [Preview Isolado] Extraindo trecho de 10 segundos para: {nome_arquivo}...")
-        
-        cmd_preview_10s = [
+        print(f"📸 [Preview Isolado] Extraindo {DURACAO_PREVIEW} segundos para: {nome_arquivo}...")
+
+        cmd_preview = [
             "ffmpeg", "-y", "-ss", "00:01:00", "-i", video_corte_fonte,
-            "-t", "10", "-c:v", "libx264", "-preset", "ultrafast",
+            "-t", str(DURACAO_PREVIEW), "-c:v", "libx264", "-preset", "ultrafast",
             "-c:a", "aac", trecho_preview_mp4
         ]
             
@@ -411,14 +464,21 @@ def _gerar_preview(entrada, nome_arquivo, pasta_temp, ao_falhar=None):
         duracao = medir_duracao(video_corte_fonte)
         if duracao and duracao > 20:
             inicios = (f"{duracao / 2:.3f}",) + inicios
-        for tentativa, inicio in enumerate(inicios):
-            cmd_preview_10s[3] = inicio
+        tentativas = []
+        # Com duração conhecida e VOD longo o bastante, primeiro os trechos espalhados.
+        if duracao and duracao >= 4 * DURACAO_PREVIEW:
+            tentativas.append(_comando_preview_trechos(video_corte_fonte, duracao, trecho_preview_mp4))
+        for inicio in inicios:
+            comando = list(cmd_preview)
+            comando[3] = inicio
+            tentativas.append(comando)
+        for tentativa, comando in enumerate(tentativas):
             try:
-                executar_comando(cmd_preview_10s, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                executar_comando(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
                 validar_video(trecho_preview_mp4, exigir_audio=False)
                 break
             except (RuntimeError, subprocess.CalledProcessError):
-                if tentativa == len(inicios) - 1:
+                if tentativa == len(tentativas) - 1:
                     raise
 
         if os.path.exists(trecho_preview_mp4) and os.path.getsize(trecho_preview_mp4) > 0:

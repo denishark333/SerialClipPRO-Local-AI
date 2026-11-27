@@ -13,7 +13,8 @@ from core.config import DATA_DIR, PASTA_DESTINO, PASTA_EXPORTADOS
 from core.clip_order import chave_corte
 from core.transcription import salvar_json
 from core.subtitles import grupos_para_revisao, palavras_da_frase, escrever_ass, filtro_legenda
-from core.composition import compor_video
+from core.composition import compor_video, posicao_da_legenda
+from core.planos import segmentos as segmentos_podcast
 from core.branding import filtro_marca, estilo_legenda
 from core.execution import executar_comando
 from core.encoders import renderizar, medir_volume, args_audio
@@ -115,8 +116,13 @@ def aplicar(identificador, legendas, revisao, enquadramento=None):
         # Frases sem alteração mantêm o tempo real de cada palavra; as editadas são estimadas.
         legendas = [{**g, 'palavras': palavras_da_frase(g, dados['legendas'])} for g in legendas]
         legenda = tmp / 'legenda.ass'
-        escrever_ass(legenda, [g['palavras'] for g in legendas], estilo_legenda())
-        filtro, altura = compor_video(config, dados['largura'], dados['altura'], filtro_legenda(legenda) if legendas else '')
+        segmentos = segmentos_podcast(config, base/'original.mp4', dados['duracao'],
+            lambda comando, binario=False: executar_comando(comando, stdout=subprocess.PIPE,
+                                                            stderr=subprocess.PIPE, text=not binario))
+        escrever_ass(legenda, [g['palavras'] for g in legendas], estilo_legenda(),
+                     centro=posicao_da_legenda(config, segmentos))
+        filtro, altura = compor_video(config, dados['largura'], dados['altura'],
+                                      filtro_legenda(legenda) if legendas else '', segmentos)
         entradas = ['ffmpeg', '-y', '-i', str(base/'original.mp4')]
         saida = '[v_final]'
         if dados['marca']:
