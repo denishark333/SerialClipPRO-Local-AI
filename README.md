@@ -17,7 +17,7 @@ This repository holds the source code, the installer packages and the public rel
 
 ## Download
 
-Go to **Releases** in this repository and download the installer attached to the version you want (`Serial-ClipPRO-3.0.1-Setup-x64.exe` for version 3.0.1). From 3.0.1 on, new versions can also be installed from inside the app (see [Updating](#updating)).
+Go to **Releases** in this repository and download the installer attached to the version you want (`Serial-ClipPRO-3.1.0-Setup-x64.exe` for version 3.1.0). From 3.0.1 on, new versions can also be installed from inside the app (see [Updating](#updating)).
 
 > Download the **Serial ClipPRO** installer. The automatic "Source code (zip)" and "Source code (tar.gz)" files contain the source code, not the ready-to-use app.
 
@@ -47,6 +47,14 @@ Every clip can carry your channel's identity. When a clip is shared or reposted,
 - **Click Save branding:** it applies to every new run and to clips regenerated in **Subtitle Review**. Clips already generated are not changed.
 
 To turn it off, uncheck **Apply branding to clips** and save; the image stays saved for later.
+
+## What's new in version 3.1.0
+
+- **Podcast mode:** under Studio Mode → **Podcast**, multi-camera podcasts and interviews get split screen on the wide shot and a single vertical crop on the close-up, switching on their own, shot by shot. Mark one wide frame and one close-up in **Automatic**, and the app recognizes each camera by comparing every shot with them, with no face detection.
+- **How to Use:** a new tab, next to **First Steps**, explains each feature in more detail, with common questions and a short example video in the interface language. **How it Works**, in the Podcast editor, opens it right at that section.
+- **Watermark at the top:** the new **Top** position keeps the watermark fixed at the top of the clip. Podcast always uses it, so it never competes with the subtitles.
+- **Steadier downloads:** if extracting a clip stops making progress for 60 seconds (for example, a dropped connection to the Twitch CDN), FFmpeg is stopped and the stretch is downloaded again, up to 3 times, instead of hanging the run.
+- **Studio preview in 6 stretches:** the preview joins 10-second stretches from different points of the VOD, so the framing can be checked against different moments and cameras.
 
 ## What's new in version 3.0.1
 
@@ -229,7 +237,7 @@ Closing the browser tab does not stop the server. To stop it, press **Ctrl+C in 
 
 ## Installer - Windows x64
 
-Distribution uses a single `Serial-ClipPRO-3.0.1-Setup-x64.exe` (Inno Setup). The components page shows the essential components (fixed) and the options: AI models and NVIDIA acceleration. After copying the files, the wizard runs `bootstrap.ps1` without a console, with `-Modelos` and `-Gpu`; the script emits `@@PROGRESSO|pct|message` lines, which the wizard uses for its progress bar.
+Distribution uses a single `Serial-ClipPRO-X.Y.Z-Setup-x64.exe` (Inno Setup). The components page shows the essential components (fixed) and the options: AI models and NVIDIA acceleration. After copying the files, the wizard runs `bootstrap.ps1` without a console, with `-Modelos` and `-Gpu`; the script emits `@@PROGRESSO|pct|message` lines, which the wizard uses for its progress bar.
 
 - Models are downloaded through the Ollama API; if Ollama is too old for a model, it is updated and the download is retried. The strongest of the chosen models becomes the curation model (`config_ia.json`).
 - NVIDIA acceleration downloads the official `nvidia-cublas-cu12` package from PyPI (pinned SHA256) and extracts only `cublas64_12.dll` and `cublasLt64_12.dll` into `tools/cuda`; CTranslate2 already ships cuDNN.

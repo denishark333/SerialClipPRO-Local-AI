@@ -17,7 +17,7 @@ Este repositório reúne o código-fonte, os pacotes de instalação e as versõ
 
 ## Download
 
-Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão desejada (`Serial-ClipPRO-3.0.1-Setup-x64.exe` na versão 3.0.1). A partir da 3.0.1, as versões novas também podem ser instaladas pelo próprio aplicativo (veja [Atualização](#atualização)).
+Acesse **Releases**, neste repositório, e baixe o instalador anexado à versão desejada (`Serial-ClipPRO-3.1.0-Setup-x64.exe` na versão 3.1.0). A partir da 3.0.1, as versões novas também podem ser instaladas pelo próprio aplicativo (veja [Atualização](#atualização)).
 
 > Baixe o instalador **Serial ClipPRO**. Os arquivos automáticos “Source code (zip)” e “Source code (tar.gz)” contêm o código-fonte, não o aplicativo pronto.
 
@@ -47,6 +47,14 @@ Cada corte pode levar a identidade do seu canal. Quando um corte é compartilhad
 - **Clique em Salvar marca:** vale para todas as novas execuções e para os cortes gerados de novo na **Revisão de Legendas**. Cortes já gerados não mudam.
 
 Para desligar, desmarque **Aplicar marca aos cortes** e salve; a imagem continua guardada para depois.
+
+## Novidades da versão 3.1.0
+
+- **Modo Podcast:** em Modo Estúdio → **Podcast**, podcasts e entrevistas com várias câmeras ganham tela dividida no plano aberto e um corte vertical único no close, alternando sozinhos, plano a plano. Marque um quadro aberto e um close em **Automático**, e o app reconhece cada câmera comparando cada plano com eles, sem detecção de rosto.
+- **Como Usar:** uma aba nova, ao lado de **Primeiros Passos**, explica cada recurso com mais detalhes, com dúvidas comuns e um vídeo curto de exemplo no idioma da interface. **Como Funciona**, no editor do Podcast, abre direto nessa seção.
+- **Marca d'água no topo:** a nova posição **Topo** deixa a marca fixa em cima do corte. O Podcast usa sempre essa posição, para a marca não disputar espaço com a legenda.
+- **Downloads mais estáveis:** se a extração de um corte ficar 60 segundos sem avançar (por exemplo, numa queda de conexão com a CDN da Twitch), o FFmpeg é encerrado e o trecho é baixado de novo, em até 3 tentativas, em vez de travar a execução.
+- **Preview do estúdio em 6 trechos:** o preview junta trechos de 10 segundos de pontos diferentes da VOD, para conferir o enquadramento em momentos e câmeras diferentes.
 
 ## Novidades da versão 3.0.1
 
@@ -228,7 +236,7 @@ Fechar a aba do navegador não encerra o servidor. Para encerrar, pressione **Ct
 
 ## Instalador - Windows x64
 
-A distribuição usa um único `Serial-ClipPRO-3.0.1-Setup-x64.exe` (Inno Setup). A página de componentes mostra os essenciais (fixos) e as opções: modelos de IA e aceleração NVIDIA. Depois da cópia dos arquivos, o assistente executa `bootstrap.ps1` sem console, com `-Modelos` e `-Gpu`; o script emite linhas `@@PROGRESSO|pct|mensagem`, que o assistente usa na barra de progresso.
+A distribuição usa um único `Serial-ClipPRO-X.Y.Z-Setup-x64.exe` (Inno Setup). A página de componentes mostra os essenciais (fixos) e as opções: modelos de IA e aceleração NVIDIA. Depois da cópia dos arquivos, o assistente executa `bootstrap.ps1` sem console, com `-Modelos` e `-Gpu`; o script emite linhas `@@PROGRESSO|pct|mensagem`, que o assistente usa na barra de progresso.
 
 - Modelos são baixados pela API do Ollama; se o Ollama for antigo demais para um modelo, ele é atualizado e o download refeito. O mais forte entre os escolhidos vira o modelo da curadoria (`config_ia.json`).
 - A aceleração NVIDIA baixa o pacote oficial `nvidia-cublas-cu12` do PyPI (SHA256 fixo) e extrai só `cublas64_12.dll` e `cublasLt64_12.dll` para `tools/cuda`; o CTranslate2 já traz o cuDNN.
