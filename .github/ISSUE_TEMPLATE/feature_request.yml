@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an idea or improvement. / Sugira uma ideia ou melhoria.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! You can fill this in **English or Portuguese**.
+        Obrigado pela sugestão! Pode preencher em **português ou inglês**.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve? / Que problema isso resolve?
+      description: Describe the situation, not only the solution. / Descreva a situação, não só a solução.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: How do you imagine it? / Como você imagina?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds / Alternativas ou contornos
+      description: What do you do today without this? / O que você faz hoje sem isso?
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself. / Gostaria de implementar isso eu mesmo.

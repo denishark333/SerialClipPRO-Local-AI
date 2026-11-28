@@ -1,0 +1,92 @@
+name: Bug report
+description: Something is not working as expected. / Algo não funciona como deveria.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! You can fill this in **English or Portuguese**.
+        Obrigado por relatar! Pode preencher em **português ou inglês**.
+
+        **Security problems:** do not report them here. See the [Security Policy](https://github.com/denishark333/SerialClipPRO-Local-AI/blob/main/.github/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Serial ClipPRO version
+      description: Shown in the app header. / Aparece no cabeçalho do app.
+      placeholder: "3.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Windows, CPU, RAM and GPU
+      placeholder: "Windows 11 23H2, Ryzen 7 5700X, 32 GB, RTX 4060 8 GB"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: AI model (Ollama)
+      placeholder: "gemma4:12b"
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Video source
+      options:
+        - Twitch
+        - YouTube
+        - Kick
+        - Local file / Arquivo local
+        - Not applicable / Não se aplica
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Analysis mode
+      options:
+        - Hybrid / Híbrido
+        - Audio peaks / Picos de áudio
+        - Full context / Contexto completo
+        - Not applicable / Não se aplica
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened? / O que aconteceu?
+      description: The step where it happened, the error message and what you expected. / A etapa, a mensagem de erro e o que você esperava.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / Passos para reproduzir
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots / Logs e prints
+      description: |
+        Installation: `%LOCALAPPDATA%\Serial ClipPRO\instalacao.log`
+        In-app updates: `%LOCALAPPDATA%\Serial ClipPRO\logs\atualizacao.log`
+        **Remove personal information, tokens and private URLs before posting.** / **Remova informações pessoais, tokens e URLs privadas antes de publicar.**
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I am using the latest release. / Estou usando a versão mais recente.
+        - label: I searched existing Issues and this is not a duplicate. / Procurei nas Issues e isto não é repetido.
+          required: true

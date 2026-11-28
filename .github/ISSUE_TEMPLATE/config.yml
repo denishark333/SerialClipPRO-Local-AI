@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability / Vulnerabilidade de segurança
+    url: https://github.com/denishark333/SerialClipPRO-Local-AI/security/advisories/new
+    about: Report privately, never in a public Issue. / Relate em privado, nunca numa Issue pública.
+  - name: Contributing guide / Guia de contribuição
+    url: https://github.com/denishark333/SerialClipPRO-Local-AI/blob/main/.github/CONTRIBUTING.md
+    about: How to set up the environment and send a Pull Request. / Como preparar o ambiente e enviar um Pull Request.
