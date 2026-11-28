@@ -282,7 +282,7 @@ O **Podcast** (Modo Estúdio → Podcast) é para podcasts e entrevistas com vá
 - **② Close**, usado quando a câmera mostra uma pessoa só: um corte vertical único, com a legenda embaixo.
 - **③ Automático** recebe as referências: pause o preview num plano aberto e clique em **Usar quadro atual como plano aberto**; depois faça o mesmo num close. Cada troca de câmera (`scdet` do FFmpeg) é comparada com elas por uma miniatura, sem detecção de rosto; cada plano segue a referência mais parecida, e trechos com menos de 1,5 s seguem o vizinho para a tela não piscar. Sem o plano aberto marcado, o corte inteiro sai em tela dividida. As referências valem só para o vídeo em que foram marcadas: com outro link, são descartadas.
 
-As abas só ajustam cada enquadramento; a aba aberta ao salvar não muda o resultado. A marca d'água fica sempre no topo, longe da legenda nos dois enquadramentos. Para podcasts sempre em close, desligue o Modo Estúdio: o corte vertical central já atende. **Como Funciona**, junto das abas, abre a seção do Podcast em **Como Usar**.
+As abas só ajustam cada enquadramento; a aba aberta ao salvar não muda o resultado. A marca d'água fica sempre no topo, longe da legenda nos dois enquadramentos. Para podcasts sempre em close, desligue o Modo Estúdio: o corte vertical central já atende. **Como Funciona**, junto das abas, abre a seção do Podcast em **Como Usar**, que mostra o fluxo completo num vídeo de exemplo.
 
 As legendas usam Bangers em amarelo, em grupos de até 5 palavras, quebrando em pausas e finais de frase. No estilo **Destaque** (padrão), a palavra que está sendo falada fica 22% maior; no **Clássico**, a frase aparece inteira de uma vez. O estilo é escolhido na aba Marca e vale também para a revisão. Os tempos vêm da transcrição; essa apresentação não corrige erros de reconhecimento ou sincronização.
 
@@ -298,7 +298,7 @@ A aba **Revisão de Legendas** e o card abaixo de **Hardware & Pastas** permitem
 
 As bases ficam em `cache_revisao/<id único>/`: original horizontal, marca da execução e JSON com sessão, vídeo final, enquadramento e legendas. Novos pipelines usam apenas seus próprios temporários e não removem essas bases. Cortes anteriores à mudança aparecem sem base de revisão.
 
-**Primeiros Passos**, **Como Usar** e **Limpar cache** ficam no lado direito das abas. **Como Usar** explica cada recurso com mais detalhes e dúvidas comuns. **Limpar cache** mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
+**Primeiros Passos**, **Como Usar** e **Limpar cache** ficam no lado direito das abas. **Como Usar** explica cada recurso com mais detalhes e dúvidas comuns, com um vídeo curto de exemplo, sem som, no idioma da interface (por enquanto, no Podcast). **Limpar cache** mostra espaço e quantidade de bases antes de confirmar. Remove somente as bases de revisão, preservando transcrições, finais e exportações. Pipeline, aplicação de revisão e limpeza são mutuamente exclusivos. O cache permanece até limpeza manual e ocupa espaço adicional.
 
 Ao aplicar uma revisão, frases não editadas mantêm o tempo real de cada palavra; nas editadas e nas bases antigas, o tempo é estimado pelo tamanho de cada palavra.
 

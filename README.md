@@ -283,7 +283,7 @@ With studio mode on, the webcam takes an area above the content without covering
 - **② Close-up**, used when the camera shows one person: a single vertical crop, with subtitles at the bottom.
 - **③ Automatic** receives the references: pause the preview on a wide shot and click **Use current frame as wide shot**, then do the same on a close-up. Every camera change (FFmpeg `scdet`) is compared with them through a small thumbnail, with no face detection; each shot follows the closest reference, and stretches shorter than 1.5 s follow their neighbor so the screen does not flicker. Without the wide shot marked, the whole clip uses split screen. References only apply to the video they were marked on: with another link they are discarded.
 
-The tabs only adjust each framing; the tab open when saving does not change the result. The watermark always goes at the top, clear of the subtitles in both framings. For podcasts that are always in close-up, turn Studio Mode off: the centered vertical crop already covers it. **How it Works**, next to the tabs, opens the Podcast section of **How to Use**.
+The tabs only adjust each framing; the tab open when saving does not change the result. The watermark always goes at the top, clear of the subtitles in both framings. For podcasts that are always in close-up, turn Studio Mode off: the centered vertical crop already covers it. **How it Works**, next to the tabs, opens the Podcast section of **How to Use**, which shows the whole flow in an example video.
 
 Subtitles use Bangers in yellow, in groups of up to 5 words, breaking on pauses and sentence endings. In the **Highlight** style (default), the word being spoken is 22% larger; in **Classic**, the whole phrase appears at once. The style is chosen in the Channel Branding tab and also applies to the review. Timings come from the transcript; this presentation does not fix recognition or sync errors.
 
@@ -299,7 +299,7 @@ The **Subtitle Review** tab and the card below **Hardware & Folders** let you op
 
 Review sources live in `cache_revisao/<unique id>/`: the horizontal original, the run's logo and a JSON file with the session, final video, framing and subtitles. New pipelines only use their own temporary files and do not remove these sources. Clips created before this change show up without a review source.
 
-**First Steps**, **How to Use** and **Clear cache** sit on the right side of the tabs. **How to Use** explains each feature in more detail, with common questions. **Clear cache** shows the space and number of sources before you confirm. It removes only the review sources, keeping transcripts, final clips and exports. The pipeline, applying a review and clearing the cache cannot run at the same time. The cache stays until you clear it manually and takes up extra space.
+**First Steps**, **How to Use** and **Clear cache** sit on the right side of the tabs. **How to Use** explains each feature in more detail, with common questions and a short muted example video in the interface language (Podcast so far). **Clear cache** shows the space and number of sources before you confirm. It removes only the review sources, keeping transcripts, final clips and exports. The pipeline, applying a review and clearing the cache cannot run at the same time. The cache stays until you clear it manually and takes up extra space.
 
 When a review is applied, unedited phrases keep each word's real timing; in edited phrases and older sources, timing is estimated from each word's length.
 
