@@ -341,10 +341,10 @@ export default {
     titulo: 'How to use Serial ClipPRO',
     subtitulo: 'Each feature explained in more detail, with an example and the most common questions.',
     indice: 'Features',
-    videoEmBreve: 'Example video coming soon.',
     duvidas: 'Common questions',
     podcast: {
       titulo: 'Studio Mode · Podcast',
+      video: 'Example video: pick the video, turn on Podcast, mark the references and generate the clips.',
       resumo: 'For podcasts and interviews with several cameras. The clip switches on its own between two framings: split screen when the camera shows the wide shot, and a single vertical crop when it shows one person in close-up. You adjust each framing once and show the app how to recognize each camera.',
       etapas: {
         dividida: {

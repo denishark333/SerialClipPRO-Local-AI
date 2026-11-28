@@ -341,10 +341,10 @@ export default {
     titulo: 'Como usar o Serial ClipPRO',
     subtitulo: 'Cada recurso explicado com mais calma, com exemplo e as dúvidas mais comuns.',
     indice: 'Recursos',
-    videoEmBreve: 'Vídeo de exemplo em breve.',
     duvidas: 'Dúvidas comuns',
     podcast: {
       titulo: 'Modo Estúdio · Podcast',
+      video: 'Vídeo de exemplo: escolher o vídeo, ligar o Podcast, marcar as referências e gerar os cortes.',
       resumo: 'Para podcasts e entrevistas com várias câmeras. O corte alterna sozinho entre dois enquadramentos: tela dividida quando a câmera mostra o plano aberto, e um corte vertical único quando mostra uma pessoa em close. Você ajusta cada enquadramento uma vez e mostra ao app como reconhecer cada câmera.',
       etapas: {
         dividida: {

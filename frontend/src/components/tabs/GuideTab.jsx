@@ -16,7 +16,7 @@ const SECOES = [
 ];
 
 export function GuideTab({ secao }) {
-  const { t } = useI18n();
+  const { t, idioma } = useI18n();
   const refs = useRef({});
 
   // Aberta por um botão "?" de um recurso: rola até a seção dele.
@@ -48,10 +48,10 @@ export function GuideTab({ secao }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4">
-            {/* Vídeo de exemplo: curto, sem som e em loop, gerado pelo próprio app. */}
-            <div className="flex aspect-video items-center justify-center rounded-xl border border-dashed border-[#2a2140] bg-[#0e0a1a] p-4 text-center text-xs text-slate-500">
-              {t('guia.videoEmBreve')}
-            </div>
+            {/* Vídeo de exemplo: curto, sem som e em loop, um por idioma (public/guia/<id>.<idioma>.mp4). */}
+            <video key={idioma} src={`/guia/${id}.${idioma}.mp4`} poster={`/guia/${id}.jpg`} aria-label={t(`guia.${id}.video`)}
+              autoPlay muted loop playsInline preload="auto" disablePictureInPicture
+              className="aspect-video w-full rounded-xl border border-[#2a2140] bg-[#0e0a1a] object-contain" />
             <ol className="flex flex-col gap-3">
               {etapas.map(({ chave, cor }) => (
                 <li key={chave} className={`rounded-xl border p-3 ${cor}`}>
